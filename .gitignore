@@ -40,3 +40,6 @@ deploy/linux/*.zip
 
 # Tool working directories holding full project snapshots (not source)
 .superpowers/
+
+# Vite build cache
+fitness-frontend/.vite/
