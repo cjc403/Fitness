@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: fitness-management-system
+  
+  datasource:
+    url: jdbc:h2:file:./data/fitness;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;NON_KEYWORDS=ROLE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+    open-in-view: false
+  
+  flyway:
+    # Local H2 is managed by Hibernate. Production keeps the versioned PostgreSQL migrations.
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-environment}
+  expiration: 86400000 # 24小时 (毫秒)
+  refresh-expiration: 604800000 # 7天 (毫秒)
+
+# 应用配置
+app:
+  name: 健身房管理系统
+  version: 1.4.0
+  ai:
+    enabled: ${AI_ENABLED:true}
+    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    api-key: ${DEEPSEEK_API_KEY:}
+    model: ${DEEPSEEK_MODEL:deepseek-v4-flash}
+    connect-timeout-seconds: ${DEEPSEEK_CONNECT_TIMEOUT:5}
+    read-timeout-seconds: ${DEEPSEEK_READ_TIMEOUT:25}
+    max-tokens: ${DEEPSEEK_MAX_TOKENS:700}
+    requests-per-minute: ${AI_REQUESTS_PER_MINUTE:10}
+    circuit-failure-threshold: ${AI_CIRCUIT_FAILURE_THRESHOLD:3}
+    circuit-open-seconds: ${AI_CIRCUIT_OPEN_SECONDS:60}
+  cors:
+    allowed-origins: 
+      - http://localhost:5173
+      - http://localhost:3000
+      - http://127.0.0.1:5173
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+
+# Swagger配置
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.gym.fitness: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

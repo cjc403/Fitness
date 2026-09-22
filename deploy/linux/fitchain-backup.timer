@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily FitChain database backup
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+RandomizedDelaySec=10m
+Unit=fitchain-backup.service
+
+[Install]
+WantedBy=timers.target

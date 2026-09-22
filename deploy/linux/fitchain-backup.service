@@ -1,0 +1,8 @@
+[Unit]
+Description=Create a verified FitChain PostgreSQL backup
+After=postgresql-18.service
+Requires=postgresql-18.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/fitchain-backup

@@ -1,0 +1,42 @@
+# IDE and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Project-local toolchain (large, reinstallable)
+.tools/
+
+# Frontend
+fitness-frontend/node_modules/
+fitness-frontend/dist/
+
+# Backend
+fitness-backend/target/
+fitness-backend/data/
+fitness-backend/logs/
+backups/
+*.log
+
+# Runtime logs and verification records (kept on disk, not versioned)
+logs/
+
+# Secrets
+.env
+.env.local
+.env.production
+application-local.yml
+
+# Deployment binaries / build artifacts shipped to the server
+deploy/linux/*.rpm
+deploy/linux/*.tar.gz
+deploy/linux/*.zip
+
+# Local H2 databases and temp files
+*.mv.db
+*.trace.db
+~$*
+
+# Tool working directories holding full project snapshots (not source)
+.superpowers/

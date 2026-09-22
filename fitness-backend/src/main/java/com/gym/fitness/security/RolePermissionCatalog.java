@@ -1,0 +1,93 @@
+package com.gym.fitness.security;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Central role/permission matrix used by Spring Security and returned to the UI.
+ * Keeping the matrix in one place prevents the menu and API rules from drifting.
+ */
+public final class RolePermissionCatalog {
+
+    public static final String DASHBOARD_READ = "DASHBOARD_READ";
+    public static final String MEMBER_READ = "MEMBER_READ";
+    public static final String MEMBER_WRITE = "MEMBER_WRITE";
+    public static final String COURSE_READ = "COURSE_READ";
+    public static final String COURSE_WRITE = "COURSE_WRITE";
+    public static final String SCHEDULE_WRITE = "SCHEDULE_WRITE";
+    public static final String BOOKING_READ = "BOOKING_READ";
+    public static final String BOOKING_WRITE = "BOOKING_WRITE";
+    public static final String CHECKIN_WRITE = "CHECKIN_WRITE";
+    public static final String VENUE_READ = "VENUE_READ";
+    public static final String VENUE_CREATE = "VENUE_CREATE";
+    public static final String VENUE_WRITE = "VENUE_WRITE";
+    public static final String VENUE_SWITCH = "VENUE_SWITCH";
+    public static final String ASSISTANT_USE = "ASSISTANT_USE";
+    public static final String MEMBER_SELF_SERVICE = "MEMBER_SELF_SERVICE";
+    public static final String COACH_WORKBENCH = "COACH_WORKBENCH";
+    public static final String ACCOUNT_MANAGE = "ACCOUNT_MANAGE";
+    public static final String PRODUCT_READ = "PRODUCT_READ";
+    public static final String PRODUCT_WRITE = "PRODUCT_WRITE";
+    public static final String SALE_READ = "SALE_READ";
+    public static final String SALE_WRITE = "SALE_WRITE";
+    public static final String MEMBERSHIP_READ = "MEMBERSHIP_READ";
+    public static final String MEMBERSHIP_WRITE = "MEMBERSHIP_WRITE";
+    public static final String FINANCE_READ = "FINANCE_READ";
+    public static final String REFUND_REQUEST = "REFUND_REQUEST";
+    public static final String REFUND_APPROVE = "REFUND_APPROVE";
+    public static final String REFUND_PAY = "REFUND_PAY";
+    public static final String VALUE_RECONCILE = "VALUE_RECONCILE";
+    public static final String VALUE_TRANSFER_VERIFY = "VALUE_TRANSFER_VERIFY";
+    public static final String FINANCE_REPORT_READ = "FINANCE_REPORT_READ";
+    public static final String ACCESS_WRITE = "ACCESS_WRITE";
+    public static final String COACH_PERFORMANCE_READ = "COACH_PERFORMANCE_READ";
+
+    private static final Map<String, String> ROLE_NAMES = Map.of(
+            "SUPER_ADMIN", "总部管理员",
+            "MANAGER", "店长",
+            "COACH", "教练",
+            "RECEPTION", "前台",
+            "MEMBER", "会员",
+            "SALES", "会籍顾问"
+    );
+
+    private static final Map<String, List<String>> PERMISSIONS = createPermissions();
+
+    private RolePermissionCatalog() {
+    }
+
+    public static List<String> permissionsFor(String role) {
+        return PERMISSIONS.getOrDefault(role, List.of());
+    }
+
+    public static String roleName(String role) {
+        return ROLE_NAMES.getOrDefault(role, role);
+    }
+
+    private static Map<String, List<String>> createPermissions() {
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        result.put("SUPER_ADMIN", List.of(
+                DASHBOARD_READ, MEMBER_READ, MEMBER_WRITE, COURSE_READ, COURSE_WRITE,
+                SCHEDULE_WRITE, BOOKING_READ, BOOKING_WRITE, CHECKIN_WRITE,
+                VENUE_READ, VENUE_CREATE, VENUE_WRITE, VENUE_SWITCH, ASSISTANT_USE, ACCOUNT_MANAGE,
+                PRODUCT_READ, PRODUCT_WRITE, SALE_READ, SALE_WRITE, MEMBERSHIP_READ, MEMBERSHIP_WRITE,
+                FINANCE_READ, REFUND_REQUEST, REFUND_APPROVE, REFUND_PAY, VALUE_RECONCILE, VALUE_TRANSFER_VERIFY, FINANCE_REPORT_READ, ACCESS_WRITE, COACH_PERFORMANCE_READ));
+        result.put("MANAGER", List.of(
+                DASHBOARD_READ, MEMBER_READ, MEMBER_WRITE, COURSE_READ, COURSE_WRITE,
+                SCHEDULE_WRITE, BOOKING_READ, BOOKING_WRITE, CHECKIN_WRITE,
+                VENUE_READ, VENUE_WRITE, ASSISTANT_USE, ACCOUNT_MANAGE,
+                PRODUCT_READ, PRODUCT_WRITE, SALE_READ, SALE_WRITE, MEMBERSHIP_READ, MEMBERSHIP_WRITE,
+                FINANCE_READ, REFUND_REQUEST, REFUND_APPROVE, REFUND_PAY, VALUE_RECONCILE, FINANCE_REPORT_READ, ACCESS_WRITE, COACH_PERFORMANCE_READ));
+        result.put("COACH", List.of(
+                COURSE_READ, BOOKING_READ, CHECKIN_WRITE, COACH_WORKBENCH, ASSISTANT_USE,
+                COACH_PERFORMANCE_READ));
+        result.put("RECEPTION", List.of(
+                MEMBER_READ, MEMBER_WRITE, COURSE_READ, BOOKING_READ,
+                BOOKING_WRITE, CHECKIN_WRITE, ASSISTANT_USE, PRODUCT_READ, SALE_READ, SALE_WRITE,
+                MEMBERSHIP_READ, MEMBERSHIP_WRITE, FINANCE_READ, REFUND_REQUEST, FINANCE_REPORT_READ, ACCESS_WRITE));
+        result.put("MEMBER", List.of(COURSE_READ, MEMBER_SELF_SERVICE, ASSISTANT_USE));
+        result.put("SALES", List.of(MEMBER_READ, MEMBER_WRITE, ASSISTANT_USE));
+        return Map.copyOf(result);
+    }
+}

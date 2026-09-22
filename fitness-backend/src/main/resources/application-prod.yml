@@ -1,0 +1,78 @@
+spring:
+  datasource:
+    url: "${DB_URL:jdbc:postgresql://127.0.0.1:5433/fitness_db?sslmode=disable&connectTimeout=5&socketTimeout=30}"
+    username: ${DB_USERNAME:fitness_user}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: FitChainPool
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN:5}
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Shanghai
+  flyway:
+    enabled: true
+    clean-disabled: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  shutdown: graceful
+
+management:
+  server:
+    port: ${MANAGEMENT_PORT:9091}
+    address: ${MANAGEMENT_ADDRESS:127.0.0.1}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    db:
+      enabled: true
+  metrics:
+    tags:
+      application: fitness-backend
+
+info:
+  app:
+    name: FitChain Management Suite
+    version: 1.4.0
+    stage: production
+
+jwt:
+  secret: ${JWT_SECRET}
+
+app:
+  bootstrap:
+    admin-password: ${APP_ADMIN_PASSWORD:}
+
+logging:
+  file:
+    name: ${LOG_FILE:logs/fitness-backend.log}
+  level:
+    root: WARN
+    com.gym.fitness: INFO
+  logback:
+    rollingpolicy:
+      max-file-size: 20MB
+      max-history: 30
+      total-size-cap: 1GB

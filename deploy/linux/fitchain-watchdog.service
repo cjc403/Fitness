@@ -1,0 +1,7 @@
+[Unit]
+Description=FitChain self-healing health check
+After=network-online.target postgresql-18.service nginx.service fitchain.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/fitchain-watchdog

@@ -1,0 +1,26 @@
+[Unit]
+Description=FitChain Fitness Management Backend
+After=network-online.target postgresql-18.service
+Wants=network-online.target
+Requires=postgresql-18.service
+
+[Service]
+Type=simple
+User=fitchain
+Group=fitchain
+WorkingDirectory=/opt/fitchain
+EnvironmentFile=/etc/fitchain/fitchain.env
+ExecStart=/usr/bin/java -Xms256m -Xmx768m -XX:+UseG1GC -XX:MaxMetaspaceSize=256m -jar /opt/fitchain/fitness-backend.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/var/log/fitchain
+
+[Install]
+WantedBy=multi-user.target
