@@ -49,7 +49,7 @@ public class MemberPortalController {
 
     @PostMapping("/purchase")
     public Result<CommercialDtos.OrderResponse> purchase(@Valid @RequestBody MemberPurchaseRequest request) {
-        return Result.success(service.purchase(request.getProductId(), request.getIdempotencyKey()));
+        return Result.success(service.purchase(request.getProductId(), request.getIdempotencyKey(), request.getMemberCouponId()));
     }
 
     @PostMapping("/recommendations")

@@ -17,4 +17,6 @@ public class MemberPurchaseRequest {
     @NotBlank
     @Size(max = 100)
     private String idempotencyKey;
+    /** 可选：使用哪张会员券。用券时实收金额由服务端计算。 */
+    private Long memberCouponId;
 }

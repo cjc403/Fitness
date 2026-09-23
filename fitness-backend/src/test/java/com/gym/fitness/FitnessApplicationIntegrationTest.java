@@ -1093,6 +1093,277 @@ class FitnessApplicationIntegrationTest {
                 .andExpect(jsonPath("$.data[?(@.category == 'SCHEDULE_CHANGED' && @.refId == " + scheduleId + ")]").isNotEmpty());
     }
 
+
+    // ------------------------------------------------ 2026-09-23 新功能回归测试
+
+    @Test
+    @Order(19)
+    void coachCannotBeDoubleBookedInOverlappingSlots() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        long coachUserId = coachUserId();
+        long venueId = firstVenueId(admin);
+        long courseId = newCourse(admin, "冲突检测团课", "GROUP", venueId);
+        java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(8)
+                .withHour(10).withMinute(0).withSecond(0).withNano(0);
+
+        mvc.perform(post("/api/v1/admin/schedules").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachUserId, "首席教练", start, start.plusHours(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 与已有排课重叠（10:30~11:30）：必须被拦下，并说明冲突在哪
+        java.time.LocalDateTime overlap = start.plusMinutes(30);
+        mvc.perform(post("/api/v1/admin/schedules").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachUserId, "首席教练", overlap, overlap.plusHours(1))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(2600))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("已有排课")));
+
+        // 首尾相接不算重叠（11:00~12:00 接 10:00~11:00）：应当允许
+        mvc.perform(post("/api/v1/admin/schedules").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachUserId, "首席教练",
+                                start.plusHours(1), start.plusHours(2))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    @Order(20)
+    void batchSchedulePreviewsConflictsThenCreatesTheRest() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        long coachUserId = coachUserId();
+        long venueId = firstVenueId(admin);
+        long courseId = newCourse(admin, "批量排课团课", "GROUP", venueId);
+        java.time.LocalDate from = java.time.LocalDate.now().plusDays(10);
+        java.time.LocalDate to = from.plusDays(2);
+
+        // 先占掉中间那天 19:00~20:00，制造一条可预期的冲突
+        java.time.LocalDateTime occupied = java.time.LocalDateTime.of(from.plusDays(1), java.time.LocalTime.of(19, 0));
+        mvc.perform(post("/api/v1/admin/schedules").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachUserId, "首席教练", occupied, occupied.plusHours(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        String dry = batchBody(courseId, coachUserId, from, to, true);
+        mvc.perform(post("/api/v1/admin/schedules/batch").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content(dry))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.dryRun").value(true))
+                .andExpect(jsonPath("$.data.created.length()").value(2))
+                .andExpect(jsonPath("$.data.skipped.length()").value(1))
+                .andExpect(jsonPath("$.data.skipped[0].note")
+                        .value(org.hamcrest.Matchers.containsString("已有排课")));
+
+        // 预检不得落库：再预检一次结果必须完全一样
+        mvc.perform(post("/api/v1/admin/schedules/batch").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content(dry))
+                .andExpect(jsonPath("$.data.created.length()").value(2))
+                .andExpect(jsonPath("$.data.skipped.length()").value(1));
+
+        // 正式生成
+        mvc.perform(post("/api/v1/admin/schedules/batch").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(batchBody(courseId, coachUserId, from, to, false)))
+                .andExpect(jsonPath("$.data.dryRun").value(false))
+                .andExpect(jsonPath("$.data.created.length()").value(2))
+                .andExpect(jsonPath("$.data.skipped.length()").value(1));
+
+        // 生成之后再预检：这 2 节现在也会被判为与该教练冲突，于是 3 节全跳过
+        mvc.perform(post("/api/v1/admin/schedules/batch").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content(dry))
+                .andExpect(jsonPath("$.data.created.length()").value(0))
+                .andExpect(jsonPath("$.data.skipped.length()").value(3));
+    }
+
+    @Test
+    @Order(21)
+    void couponDiscountsPaidAmountAndCannotBeReused() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        String member = login("member", "MEMBER", "会员");
+        long venueId = firstVenueId(admin);
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile").header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+
+        // 满 ¥100 减 ¥20 的券（金额一律用分）
+        String today = java.time.LocalDate.now().toString();
+        String until = java.time.LocalDate.now().plusDays(30).toString();
+        long templateId = mapper.readTree(mvc.perform(post("/api/v1/commercial/coupons")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"满100减20测试券\",\"couponType\":\"FULL_REDUCTION\","
+                                + "\"thresholdCents\":10000,\"discountCents\":2000,\"totalQuantity\":5,"
+                                + "\"validFrom\":\"" + today + "\",\"validUntil\":\"" + until + "\","
+                                + "\"venueId\":" + venueId + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+
+        mvc.perform(post("/api/v1/commercial/coupons/{id}/issue", templateId)
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberIds\":[" + memberId + "],\"quantityPerMember\":1}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.issued").value(1));
+
+        JsonNode myCoupons = mapper.readTree(mvc.perform(get("/api/v1/commercial/me/coupons")
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        long couponId = myCoupons.path("data").get(0).path("id").asLong();
+        org.assertj.core.api.Assertions.assertThat(myCoupons.path("data").get(0).path("status").asText())
+                .isEqualTo("UNUSED");
+
+        // ¥200 的商品
+        long productId = mapper.readTree(mvc.perform(post("/api/v1/commercial/products")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"券测试月卡\",\"category\":\"CARD\",\"productType\":\"MONTH_CARD\","
+                                + "\"validityDays\":30,\"price\":200.00,\"accessAllowed\":true,"
+                                + "\"venueId\":" + venueId + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+
+        // 试算：抵扣 2000 分，应付 180.00
+        mvc.perform(get("/api/v1/commercial/members/" + memberId + "/coupon-quote")
+                        .param("productId", String.valueOf(productId))
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.usableCount").value(1))
+                .andExpect(jsonPath("$.data.options[0].discountCents").value(2000))
+                .andExpect(jsonPath("$.data.options[0].payable").value(180.00));
+
+        // 用券开卡：实收必须是折后价，且服务端忽略前端传的金额
+        mvc.perform(post("/api/v1/commercial/orders").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":" + memberId + ",\"productId\":" + productId
+                                + ",\"paymentMethod\":\"CASH\",\"paidAmount\":200.00,\"memberCouponId\":" + couponId
+                                + ",\"idempotencyKey\":\"it-coupon-sale-1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.paidAmount").value(180.00))
+                .andExpect(jsonPath("$.data.discountCents").value(2000));
+
+        // 券已被核销
+        mvc.perform(get("/api/v1/commercial/me/coupons").header("Authorization", bearer(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").value("USED"));
+
+        // 同一张券不能再用一次
+        mvc.perform(post("/api/v1/commercial/orders").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":" + memberId + ",\"productId\":" + productId
+                                + ",\"paymentMethod\":\"CASH\",\"memberCouponId\":" + couponId
+                                + ",\"idempotencyKey\":\"it-coupon-sale-2\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(2600))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("优惠券不可用")));
+    }
+
+    @Test
+    @Order(22)
+    void memberCanReviewAnAttendedClassOnlyOnce() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        String member = login("member", "MEMBER", "会员");
+        String reception = login("reception", "RECEPTION", "前台");
+        String coach = login("coach", "COACH", "教练");
+        long coachUserId = coachUserId();
+        long venueId = firstVenueId(admin);
+        long courseId = newCourse(admin, "评价测试团课", "GROUP", venueId);
+        java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(9)
+                .withHour(15).withMinute(0).withSecond(0).withNano(0);
+        long scheduleId = mapper.readTree(mvc.perform(post("/api/v1/admin/schedules")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachUserId, "首席教练", start, start.plusHours(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile").header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        // 会员端 POST /member/bookings 只返回 Result<Void>，这里用管理端预约接口取 bookingId（归属仍是该会员）
+        long bookingId = mapper.readTree(mvc.perform(post("/api/v1/admin/bookings")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":" + memberId + ",\"scheduleId\":" + scheduleId + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+
+        // 还没签到：不允许评价
+        mvc.perform(post("/api/v1/member/reviews").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bookingId\":" + bookingId + ",\"rating\":5}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(2600))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("已签到")));
+
+        // 前台签到后进入待评价列表
+        mvc.perform(post("/api/v1/admin/bookings/{id}/check-in", bookingId)
+                        .header("Authorization", bearer(reception)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        mvc.perform(get("/api/v1/member/reviews/pending").header("Authorization", bearer(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.bookingId == " + bookingId + ")]").isNotEmpty());
+
+        // 提交评价
+        mvc.perform(post("/api/v1/member/reviews").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bookingId\":" + bookingId + ",\"rating\":5,\"tags\":\"教练专业\","
+                                + "\"content\":\"节奏很好\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.rating").value(5));
+
+        // 同一条预约不能重复评价
+        mvc.perform(post("/api/v1/member/reviews").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bookingId\":" + bookingId + ",\"rating\":3}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(2601));
+
+        // 教练端与管理端都能看到这条评价
+        mvc.perform(get("/api/v1/coach/reviews/summary").header("Authorization", bearer(coach)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reviewCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.averageRating").value(org.hamcrest.Matchers.notNullValue()));
+        mvc.perform(get("/api/v1/admin/reviews/summary").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reviewCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+    }
+
+    private long coachUserId() throws Exception {
+        return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
+    }
+
+    private long firstVenueId(String admin) throws Exception {
+        return mapper.readTree(mvc.perform(get("/api/v1/admin/venues").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").get(0).path("id").asLong();
+    }
+
+    private long newCourse(String admin, String name, String type, long venueId) throws Exception {
+        return mapper.readTree(mvc.perform(post("/api/v1/admin/courses")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"" + name + "\",\"type\":\"" + type + "\",\"venueId\":" + venueId
+                                + ",\"durationMinutes\":60,\"maxCapacity\":10,\"fee\":10}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+    }
+
+    private String scheduleBody(long courseId, long coachId, String coachName,
+                                java.time.LocalDateTime start, java.time.LocalDateTime end) {
+        return "{\"courseId\":" + courseId + ",\"coachId\":" + coachId + ",\"coachName\":\"" + coachName
+                + "\",\"scheduledStartTime\":\"" + start + "\",\"scheduledEndTime\":\"" + end + "\"}";
+    }
+
+    private String batchBody(long courseId, long coachId, java.time.LocalDate from,
+                             java.time.LocalDate to, boolean dryRun) {
+        return "{\"courseId\":" + courseId + ",\"coachId\":" + coachId + ",\"coachName\":\"首席教练\","
+                + "\"weekdays\":[1,2,3,4,5,6,7],\"startTime\":\"19:00\",\"endTime\":\"20:00\","
+                + "\"fromDate\":\"" + from + "\",\"toDate\":\"" + to + "\",\"maxStudents\":10,"
+                + "\"dryRun\":" + dryRun + "}";
+    }
+
     private String login(String username, String role, String roleName) throws Exception {
         String loginJson = loginResponse(username, "password");
         JsonNode loginNode = mapper.readTree(loginJson);

@@ -80,6 +80,36 @@
           <aside class="qr-card"><span>MEMBER QR PASS</span><h2>扫码入场</h2><img v-if="qrImage" :src="qrImage" alt="会员入场二维码"/><p>{{ accessCode?.memberName }} · {{ accessCode?.memberNo }}</p><small class="qr-ttl">{{ accessSecondsLeft > 0 ? `二维码 ${accessSecondsLeft} 秒后自动刷新` : '二维码已过期，正在刷新…' }}</small><small>一次性二维码：被扫过或超时即失效，截图无法重复入场。次卡核验通过后自动扣减 1 次。</small></aside>
         </div>
       </el-tab-pane>
+      <el-tab-pane :label="`我的优惠券 (${coupons.length})`" name="coupons">
+        <section>
+          <div class="section-head"><div><h2>我的优惠券</h2><p>购买会籍时可抵扣；一张券只能用一次，退款按折后实付计算。</p></div></div>
+          <ul class="coupon-list">
+            <li v-for="c in coupons" :key="c.id" :class="{ dim: !c.usable }">
+              <div class="coupon-left"><strong>{{ c.templateName }}</strong><span>{{ couponText(c) }}</span></div>
+              <div class="coupon-right"><el-tag :type="c.status==='UNUSED'?'success':c.status==='USED'?'info':'warning'">{{ c.status==='UNUSED'?'可用':c.status==='USED'?'已使用':'已过期' }}</el-tag><small>{{ c.validFrom }} ~ {{ c.validUntil }}</small></div>
+            </li>
+          </ul>
+          <el-empty v-if="!coupons.length" description="暂无优惠券，可向前台或会籍顾问索取" :image-size="65" />
+        </section>
+      </el-tab-pane>
+      <el-tab-pane :label="pendingReviews.length ? `课程评价 (${pendingReviews.length})` : '课程评价'" name="reviews">
+        <section>
+          <div class="section-head"><div><h2>待评价课程</h2><p>只有你已签到的课才能评价，每节课只能评价一次。</p></div></div>
+          <el-table v-if="pendingReviews.length" :data="pendingReviews" stripe>
+            <el-table-column label="课程 / 教练" min-width="180"><template #default="{row}"><strong>{{ row.courseName }}</strong><small>{{ row.coachName || '—' }}</small></template></el-table-column>
+            <el-table-column label="上课时间" min-width="140"><template #default="{row}">{{ formatDateTime(row.startTime) }}</template></el-table-column>
+            <el-table-column label="我的评分" width="190"><template #default="{row}"><el-rate v-model="reviewForms[row.bookingId].rating" /></template></el-table-column>
+            <el-table-column label="评价（可选）" min-width="200"><template #default="{row}"><el-input v-model="reviewForms[row.bookingId].content" size="small" placeholder="写点感受，教练和门店能看到" /></template></el-table-column>
+            <el-table-column label="操作" width="90" fixed="right"><template #default="{row}"><el-button type="primary" size="small" :disabled="busyReview" @click="submitMyReview(row)">提交</el-button></template></el-table-column>
+          </el-table>
+          <el-empty v-else description="没有待评价的课程（已签到的课才会出现在这里）" :image-size="65" />
+          <div class="section-head" style="margin-top:26px"><div><h2>我评价过的课</h2><p>评分会汇总给教练与门店。</p></div></div>
+          <ul class="review-list">
+            <li v-for="r in myReviews" :key="r.id"><div class="review-head"><strong>{{ r.courseName }}</strong><el-rate :model-value="r.rating" disabled /></div><p v-if="r.content">{{ r.content }}</p><small>{{ formatDateTime(r.createdAt) }} · {{ r.coachName || '—' }}</small></li>
+          </ul>
+          <el-empty v-if="!myReviews.length" description="还没有提交过评价" :image-size="65" />
+        </section>
+      </el-tab-pane>
       <el-tab-pane name="notices">
         <template #label>消息<span v-if="unreadCount" class="notice-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span></template>
         <section><div class="section-head"><div><h2>我的消息</h2><p>排课变动、商品下架、退款审批结果都会在这里通知你。</p></div><el-button :disabled="!unreadCount" @click="readAll">全部标为已读</el-button></div>
@@ -115,10 +145,20 @@
       <template #footer><el-button @click="packageDialog=false">取消</el-button><el-button type="primary" :disabled="!selectedPackage" :loading="bookingId!=null" @click="confirmPackageBooking">确认预占并预约</el-button></template>
     </el-dialog>
   </div>
+    <el-dialog v-model="couponPickerVisible" title="选择优惠券" width="470px">
+      <p class="muted">{{ pickingProduct?.name }} · 标价 ¥{{ pickingProduct?.price }}</p>
+      <el-radio-group v-model="pickedCouponId" class="coupon-picker">
+        <el-radio :value="0" border>不使用优惠券</el-radio>
+        <el-radio v-for="o in pickOptions" :key="o.memberCouponId" :value="o.memberCouponId" border>
+          {{ o.name }}（减 ¥{{ (o.discountCents/100).toFixed(2) }}，实收 ¥{{ Number(o.payable).toFixed(2) }}）
+        </el-radio>
+      </el-radio-group>
+      <template #footer><el-button @click="couponPickerVisible=false">取消</el-button><el-button type="primary" :loading="!!purchasingId" @click="confirmCouponPick">确认购买</el-button></template>
+    </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { Calendar, Clock, User } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/modules/auth'
@@ -128,6 +168,8 @@ import { cancelSelfBooking, createSelfBooking, getCourseRecommendations, getMemb
 import { getMyAccessCode, getMyEntitlements, type AccessCode, type Entitlement } from '@/api/modules/commercial'
 import { cancelMyRefund, createMyRefund, getMyEntitlementQuote, listMyRefunds, type EntitlementQuote, type MemberRefund } from '@/api/modules/finance'
 import { getNotificationSummary, listNotifications, markAllNotificationsRead, markNotificationRead, type NotificationItem } from '@/api/modules/notification'
+import { listMyCoupons, quoteMyCoupon, type CouponQuoteOption, type MemberCoupon } from '@/api/modules/coupon'
+import { listMyReviews, listPendingReviews, submitReview, type CourseReview, type PendingReview } from '@/api/modules/review'
 import { formatMoney, refundIntent } from '@/utils/financeUi.mjs'
 
 const authStore = useAuthStore()
@@ -155,6 +197,11 @@ const preferredTime = ref('ANY')
 const packageDialog=ref(false), selectedPackage=ref<number>(), selectedSchedule=ref<MemberSchedule>()
 const myRefunds=ref<MemberRefund[]>([]), refundsFailed=ref(false)
 const notices=ref<NotificationItem[]>([]), unreadCount=ref(0)
+const coupons=ref<MemberCoupon[]>([]), pendingReviews=ref<PendingReview[]>([]), myReviews=ref<CourseReview[]>([])
+const reviewForms=reactive<Record<number,{rating:number,content:string}>>({})
+const busyReview=ref(false)
+const couponPickerVisible=ref(false), pickingProduct=ref<MemberProduct|null>(null)
+const pickOptions=ref<CouponQuoteOption[]>([]), pickedCouponId=ref(0)
 const accessSecondsLeft=ref(0)
 let accessTimer:number|undefined
 const refundEntitlementId=ref<number>(), refundQuote=ref<EntitlementQuote>(), refundReason=ref(''), quoteLoading=ref(false), refundSubmitting=ref(false), refundIntentRef=ref<{idempotencyKey:string}>()
@@ -177,7 +224,7 @@ const load = async () => {
     accessCode.value = codeResponse.data
     qrImage.value = await QRCode.toDataURL(codeResponse.data.qrPayload, { width: 220, margin: 1, color: { dark: '#132445', light: '#ffffff' } })
     startAccessCountdown(codeResponse.data.ttlSeconds || 60)
-    if(can('MEMBER_SELF_SERVICE')) await Promise.all([loadRefunds(), loadNotices()])
+    if(can('MEMBER_SELF_SERVICE')) await Promise.all([loadRefunds(), loadNotices(), loadCoupons(), loadReviews()])
   } finally { loading.value = false }
 }
 
@@ -207,6 +254,23 @@ const withdrawMyRefund=async(row:MemberRefund)=>{
   await cancelMyRefund(row.id,reason);ElMessage.success('已撤回退款申请');await Promise.all([load(),loadRefunds()])
 }
 
+const couponText=(c:MemberCoupon)=>c.couponType==='DISCOUNT'
+  ? `${(Number(c.discountRate||1)*10).toFixed(1)} 折`+(c.thresholdCents?`（满 ¥${(c.thresholdCents/100).toFixed(2)} 可用）`:'')
+  : `满 ¥${((c.thresholdCents||0)/100).toFixed(2)} 减 ¥${((c.discountCents||0)/100).toFixed(2)}`
+const loadCoupons=async()=>{try{coupons.value=(await listMyCoupons()).data}catch{coupons.value=[]}}
+const loadReviews=async()=>{
+  try{
+    const [pending,mine]=await Promise.all([listPendingReviews(),listMyReviews()])
+    pendingReviews.value=pending.data;myReviews.value=mine.data
+    pending.data.forEach(p=>{if(!reviewForms[p.bookingId])reviewForms[p.bookingId]={rating:5,content:''}})
+  }catch{pendingReviews.value=[];myReviews.value=[]}
+}
+const submitMyReview=async(row:PendingReview)=>{
+  const form=reviewForms[row.bookingId]
+  if(!form)return
+  busyReview.value=true
+  try{await submitReview({bookingId:row.bookingId,rating:form.rating,content:form.content||undefined});ElMessage.success('感谢评价，已记录');await loadReviews()}finally{busyReview.value=false}
+}
 const loadNotices=async()=>{try{const [list,summary]=await Promise.all([listNotifications(),getNotificationSummary()]);notices.value=list.data;unreadCount.value=summary.data.unread}catch{notices.value=[]}}
 const readOne=async(item:NotificationItem)=>{if(item.read)return;await markNotificationRead(item.id);await loadNotices()}
 const readAll=async()=>{if(!unreadCount.value)return;await markAllNotificationsRead();await loadNotices()}
@@ -230,13 +294,25 @@ const refreshAccessCode=async()=>{
 }
 onUnmounted(()=>window.clearInterval(accessTimer))
 const loadProducts=async()=>{try{products.value=(await listMemberProducts()).data}catch{products.value=[]}}
-const purchase=async(item:MemberProduct)=>{
-  try{await ElMessageBox.confirm(`确认购买「${item.name}」？金额 ¥${item.price}，演示环境不产生真实扣款。`,'购买会籍',{type:'success',confirmButtonText:'确认购买',cancelButtonText:'取消'})}catch{return}
+const doPurchase=async(item:MemberProduct,couponId?:number)=>{
   let intent:{idempotencyKey:string}
   try{intent=refundIntent()}catch{ElMessage.error('无法生成安全随机申请编号，请检查浏览器后重试');return}
   purchasingId.value=item.id
-  try{await purchaseMembership(item.id,intent.idempotencyKey);ElMessage.success('购买成功，已加入“我的会籍”');await load()}finally{purchasingId.value=undefined}
+  try{
+    await purchaseMembership(item.id,intent.idempotencyKey,couponId)
+    ElMessage.success(couponId?'购买成功，优惠券已核销，已加入“我的会籍”':'购买成功，已加入“我的会籍”')
+    couponPickerVisible.value=false
+    await load()
+  }finally{purchasingId.value=undefined}
 }
+const purchase=async(item:MemberProduct)=>{
+  try{await ElMessageBox.confirm(`确认购买「${item.name}」？标价 ¥${item.price}，演示环境不产生真实扣款。`,'购买会籍',{type:'success',confirmButtonText:'下一步',cancelButtonText:'取消'})}catch{return}
+  let options:CouponQuoteOption[]=[]
+  try{options=(await quoteMyCoupon(item.id)).data.options}catch{options=[]}
+  if(options.length){pickingProduct.value=item;pickOptions.value=options;pickedCouponId.value=0;couponPickerVisible.value=true;return}
+  await doPurchase(item,undefined)
+}
+const confirmCouponPick=async()=>{const p=pickingProduct.value;if(p)await doPurchase(p,pickedCouponId.value||undefined)}
 
 const book = async (schedule: MemberSchedule) => {
   if(schedule.courseType==='PRIVATE'){selectedSchedule.value=schedule;selectedPackage.value=undefined;packageDialog.value=true;return}
@@ -299,5 +375,5 @@ onMounted(() => { load(); loadRecommendations() })
 </script>
 
 <style scoped>
-.member-home{max-width:1180px;margin:0 auto}.hero{display:flex;align-items:center;justify-content:space-between;min-height:210px;padding:40px 46px;border-radius:24px;color:#fff;background:radial-gradient(circle at 80% 25%,rgba(99,149,255,.5),transparent 32%),linear-gradient(135deg,#111b31,#1d417a)}.hero>div>span{color:#8eb2ff;font-size:11px;font-weight:800;letter-spacing:2px}.hero h1{margin:12px 0 10px;font-size:36px}.hero p{color:#b7c5dc}.hero-stats{display:flex;gap:12px}.hero-stats>div{min-width:110px;padding:20px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(255,255,255,.08)}.hero-stats strong,.hero-stats small{display:block}.hero-stats strong{font-size:30px}.hero-stats small{margin-top:4px;color:#b7c5dc}.portal-tabs{margin-top:24px}.portal-tabs :deep(.el-tabs__header){margin-bottom:22px}.recommendation-panel{margin-bottom:24px;padding:24px;border:1px solid #dce7ff;border-radius:20px;background:linear-gradient(135deg,#eff5ff,#fff)}.recommendation-copy>span{color:#3474ff;font-size:10px;font-weight:800;letter-spacing:2px}.recommendation-copy h2{margin:7px 0 6px;color:#17243c}.recommendation-copy p{margin:0;color:#65738b;font-size:13px}.recommendation-copy small{display:block;margin-top:7px;color:#96a1b3}.recommendation-controls{display:grid;grid-template-columns:1fr 140px 100px;gap:10px;margin-top:17px}.recommendation-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.recommendation-list article{padding:15px;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(35,75,150,.07)}.recommendation-list article>div{display:flex;justify-content:space-between;gap:8px}.recommendation-list p{min-height:38px;color:#66748b;font-size:12px;line-height:1.6}.recommendation-list small{display:block;color:#98a2b3;font-size:11px}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.schedule-filter{display:flex;align-items:center;gap:10px}.notice-badge{display:inline-block;min-width:16px;margin-left:6px;padding:0 5px;border-radius:9px;background:#e24b4a;color:#fff;font-size:11px;line-height:16px;text-align:center}.notice-list{list-style:none;margin:0;padding:0}.notice-list li{padding:14px 16px;margin-bottom:10px;border:1px solid #e7ecf4;border-radius:14px;background:#fff}.notice-list li.unread{border-color:#c9dcff;background:#f6faff}.notice-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}.notice-head strong{color:#1c2a44}.notice-head span{color:#9aa5b8;font-size:12px}.notice-list p{margin:6px 0 4px;color:#5f6d85;font-size:13px;line-height:1.7}.qr-ttl{color:#8eb2ff!important}.section-head h2{margin:0 0 6px;color:#19243a}.section-head p{margin:0;color:#8792a5;font-size:13px}.schedule-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.schedule-card{padding:20px;border:1px solid #e7ecf4;border-radius:17px;background:#fff}.card-top{display:flex;justify-content:space-between}.card-top strong{color:#1e2b42}.schedule-card h3{margin:16px 0 8px;color:#19243a}.schedule-card>p{height:42px;color:#7e899c;font-size:13px;line-height:1.6;overflow:hidden}.schedule-info{display:grid;gap:8px;margin:17px 0;color:#59677e;font-size:12px}.schedule-info span{display:flex;align-items:center;gap:7px}.schedule-info .el-icon{color:#3474ff}.capacity{display:flex;align-items:center;gap:12px;margin:15px 0}.capacity .el-progress{flex:1}.capacity small{color:#7f8a9d}.schedule-card>.el-button{width:100%}.booking-table{border-radius:17px}.booking-table strong,.booking-table small{display:block}.booking-table small{margin-top:4px;color:#8a95a8}.muted{color:#b4bbc7}.membership-layout{display:grid;grid-template-columns:1fr 310px;gap:22px}.entitlement-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.entitlement-grid article{padding:20px;border:1px solid #e1e8f3;border-radius:17px;background:#fff}.entitlement-grid article>div{display:flex;justify-content:space-between;color:#98a2b3;font-size:10px}.entitlement-grid h3{margin:16px 0 8px}.entitlement-grid strong{font-size:25px;color:#2d6bf3}.entitlement-grid p,.entitlement-grid small{display:block;color:#8792a5;font-size:12px}.entitlement-grid small{color:#e17b21}.qr-card{align-self:start;padding:28px;border-radius:20px;background:linear-gradient(145deg,#17223a,#274e89);color:#fff;text-align:center}.qr-card>span{color:#8eb2ff;font-size:10px;font-weight:800;letter-spacing:2px}.qr-card h2{margin:8px 0 20px}.qr-card img{width:220px;border:10px solid #fff;border-radius:12px}.qr-card p{margin:14px 0 6px}.qr-card small{color:#b9c7dc;line-height:1.6}.entitlement-grid .venue-line{color:#8792a5!important}.refund-apply{margin-bottom:24px;padding:22px;border:1px solid #dce7ff;border-radius:20px;background:linear-gradient(135deg,#f2f7ff,#fff)}.refund-apply-form{display:grid;grid-template-columns:1fr 150px;gap:10px}.refund-quote{margin-top:16px;padding:18px;border:1px solid #e1e8f3;border-radius:16px;background:#fff}.quote-amount{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}.quote-amount span{color:#8792a5;font-size:13px}.quote-amount strong{font-size:28px;color:#2d6bf3}.quote-amount small{color:#e17b21}.quote-blocks{margin:6px 0 0;padding-left:18px;line-height:1.7}@media(max-width:980px){.schedule-grid,.recommendation-list{grid-template-columns:repeat(2,1fr)}.membership-layout{grid-template-columns:1fr}.qr-card{max-width:300px}}@media(max-width:680px){.hero{padding:30px}.hero-stats{display:none}.schedule-grid,.recommendation-list,.entitlement-grid,.refund-apply-form{grid-template-columns:1fr}.recommendation-controls{grid-template-columns:1fr}.section-head{align-items:flex-start}.section-head .el-tag{display:none}}
+.member-home{max-width:1180px;margin:0 auto}.hero{display:flex;align-items:center;justify-content:space-between;min-height:210px;padding:40px 46px;border-radius:24px;color:#fff;background:radial-gradient(circle at 80% 25%,rgba(99,149,255,.5),transparent 32%),linear-gradient(135deg,#111b31,#1d417a)}.hero>div>span{color:#8eb2ff;font-size:11px;font-weight:800;letter-spacing:2px}.hero h1{margin:12px 0 10px;font-size:36px}.hero p{color:#b7c5dc}.hero-stats{display:flex;gap:12px}.hero-stats>div{min-width:110px;padding:20px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(255,255,255,.08)}.hero-stats strong,.hero-stats small{display:block}.hero-stats strong{font-size:30px}.hero-stats small{margin-top:4px;color:#b7c5dc}.portal-tabs{margin-top:24px}.portal-tabs :deep(.el-tabs__header){margin-bottom:22px}.recommendation-panel{margin-bottom:24px;padding:24px;border:1px solid #dce7ff;border-radius:20px;background:linear-gradient(135deg,#eff5ff,#fff)}.recommendation-copy>span{color:#3474ff;font-size:10px;font-weight:800;letter-spacing:2px}.recommendation-copy h2{margin:7px 0 6px;color:#17243c}.recommendation-copy p{margin:0;color:#65738b;font-size:13px}.recommendation-copy small{display:block;margin-top:7px;color:#96a1b3}.recommendation-controls{display:grid;grid-template-columns:1fr 140px 100px;gap:10px;margin-top:17px}.recommendation-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.recommendation-list article{padding:15px;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(35,75,150,.07)}.recommendation-list article>div{display:flex;justify-content:space-between;gap:8px}.recommendation-list p{min-height:38px;color:#66748b;font-size:12px;line-height:1.6}.recommendation-list small{display:block;color:#98a2b3;font-size:11px}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.schedule-filter{display:flex;align-items:center;gap:10px}.notice-badge{display:inline-block;min-width:16px;margin-left:6px;padding:0 5px;border-radius:9px;background:#e24b4a;color:#fff;font-size:11px;line-height:16px;text-align:center}.notice-list{list-style:none;margin:0;padding:0}.notice-list li{padding:14px 16px;margin-bottom:10px;border:1px solid #e7ecf4;border-radius:14px;background:#fff}.notice-list li.unread{border-color:#c9dcff;background:#f6faff}.notice-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}.notice-head strong{color:#1c2a44}.notice-head span{color:#9aa5b8;font-size:12px}.notice-list p{margin:6px 0 4px;color:#5f6d85;font-size:13px;line-height:1.7}.qr-ttl{color:#8eb2ff!important}.coupon-list,.review-list{list-style:none;margin:0;padding:0}.coupon-list li{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;margin-bottom:10px;border:1px solid #e7ecf4;border-radius:14px;background:#fff}.coupon-list li.dim{opacity:.6}.coupon-left strong{display:block;color:#1c2a44}.coupon-left span{margin-top:5px;display:block;color:#2768ff;font-size:13px;font-weight:600}.coupon-right{text-align:right}.coupon-right small{display:block;margin-top:6px;color:#9aa5b8;font-size:12px}.review-list li{padding:14px 16px;margin-bottom:10px;border:1px solid #e7ecf4;border-radius:14px;background:#fff}.review-head{display:flex;align-items:center;justify-content:space-between}.review-head strong{color:#1c2a44}.review-list p{margin:8px 0 4px;color:#5f6d85;font-size:13px}.review-list small{color:#9aa5b8;font-size:12px}.coupon-picker{display:flex;flex-direction:column;gap:10px;width:100%}.coupon-picker .el-radio{margin-right:0}.section-head h2{margin:0 0 6px;color:#19243a}.section-head p{margin:0;color:#8792a5;font-size:13px}.schedule-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.schedule-card{padding:20px;border:1px solid #e7ecf4;border-radius:17px;background:#fff}.card-top{display:flex;justify-content:space-between}.card-top strong{color:#1e2b42}.schedule-card h3{margin:16px 0 8px;color:#19243a}.schedule-card>p{height:42px;color:#7e899c;font-size:13px;line-height:1.6;overflow:hidden}.schedule-info{display:grid;gap:8px;margin:17px 0;color:#59677e;font-size:12px}.schedule-info span{display:flex;align-items:center;gap:7px}.schedule-info .el-icon{color:#3474ff}.capacity{display:flex;align-items:center;gap:12px;margin:15px 0}.capacity .el-progress{flex:1}.capacity small{color:#7f8a9d}.schedule-card>.el-button{width:100%}.booking-table{border-radius:17px}.booking-table strong,.booking-table small{display:block}.booking-table small{margin-top:4px;color:#8a95a8}.muted{color:#b4bbc7}.membership-layout{display:grid;grid-template-columns:1fr 310px;gap:22px}.entitlement-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.entitlement-grid article{padding:20px;border:1px solid #e1e8f3;border-radius:17px;background:#fff}.entitlement-grid article>div{display:flex;justify-content:space-between;color:#98a2b3;font-size:10px}.entitlement-grid h3{margin:16px 0 8px}.entitlement-grid strong{font-size:25px;color:#2d6bf3}.entitlement-grid p,.entitlement-grid small{display:block;color:#8792a5;font-size:12px}.entitlement-grid small{color:#e17b21}.qr-card{align-self:start;padding:28px;border-radius:20px;background:linear-gradient(145deg,#17223a,#274e89);color:#fff;text-align:center}.qr-card>span{color:#8eb2ff;font-size:10px;font-weight:800;letter-spacing:2px}.qr-card h2{margin:8px 0 20px}.qr-card img{width:220px;border:10px solid #fff;border-radius:12px}.qr-card p{margin:14px 0 6px}.qr-card small{color:#b9c7dc;line-height:1.6}.entitlement-grid .venue-line{color:#8792a5!important}.refund-apply{margin-bottom:24px;padding:22px;border:1px solid #dce7ff;border-radius:20px;background:linear-gradient(135deg,#f2f7ff,#fff)}.refund-apply-form{display:grid;grid-template-columns:1fr 150px;gap:10px}.refund-quote{margin-top:16px;padding:18px;border:1px solid #e1e8f3;border-radius:16px;background:#fff}.quote-amount{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}.quote-amount span{color:#8792a5;font-size:13px}.quote-amount strong{font-size:28px;color:#2d6bf3}.quote-amount small{color:#e17b21}.quote-blocks{margin:6px 0 0;padding-left:18px;line-height:1.7}@media(max-width:980px){.schedule-grid,.recommendation-list{grid-template-columns:repeat(2,1fr)}.membership-layout{grid-template-columns:1fr}.qr-card{max-width:300px}}@media(max-width:680px){.hero{padding:30px}.hero-stats{display:none}.schedule-grid,.recommendation-list,.entitlement-grid,.refund-apply-form{grid-template-columns:1fr}.recommendation-controls{grid-template-columns:1fr}.section-head{align-items:flex-start}.section-head .el-tag{display:none}}
 </style>

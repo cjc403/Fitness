@@ -35,6 +35,8 @@ public final class CommercialDtos {
         @NotBlank private String paymentMethod;
         @DecimalMin("0.01") private BigDecimal paidAmount;
         private String remark;
+        /** 使用哪张会员券（可选）。用券时实收金额由服务端按分计算，忽略请求里的 paidAmount。 */
+        private Long memberCouponId;
         /** 同一操作者+同一幂等键只会落一单，防止连点或重试重复开卡。 */
         @NotBlank @Size(max = 100) private String idempotencyKey;
     }
@@ -93,7 +95,8 @@ public final class CommercialDtos {
                                 String memberNo, String memberName, Long productId, String productName,
                                 Long venueId, BigDecimal originalAmount, BigDecimal paidAmount,
                                 BigDecimal refundedAmount, String paymentMethod, String status,
-                                String remark, LocalDateTime paidAt, LocalDateTime createdAt) {}
+                                String remark, LocalDateTime paidAt, LocalDateTime createdAt,
+                                Long memberCouponId, Long discountCents) {}
 
     public record EntitlementResponse(Long id, String entitlementNo, Long memberId, String memberNo,
                                       String memberName, Long productId, String productName, String productType,

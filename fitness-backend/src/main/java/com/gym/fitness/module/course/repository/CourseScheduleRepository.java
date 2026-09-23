@@ -25,4 +25,17 @@ public interface CourseScheduleRepository extends JpaRepository<CourseScheduleEn
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from CourseScheduleEntity s where s.id = :id")
     Optional<CourseScheduleEntity> findByIdForUpdate(@Param("id") Long id);
+
+    /**
+     * 同一教练在同一时间段内的其它排课（用于冲突检测）。
+     * 重叠判定：已有排课.start &lt; 新排课.end 且 已有排课.end &gt; 新排课.start。
+     * {@code excludeId} 用于"编辑排课时排除自身"，新建时传 0 即可（没有 id 为 0 的排课）。
+     */
+    @Query("select s from CourseScheduleEntity s where s.coachId = :coachId and s.id <> :excludeId "
+            + "and s.status <> 'CANCELLED' and s.scheduledStartTime < :end and s.scheduledEndTime > :start "
+            + "order by s.scheduledStartTime asc")
+    List<CourseScheduleEntity> findCoachOverlaps(@Param("coachId") Long coachId,
+                                                 @Param("start") LocalDateTime start,
+                                                 @Param("end") LocalDateTime end,
+                                                 @Param("excludeId") Long excludeId);
 }

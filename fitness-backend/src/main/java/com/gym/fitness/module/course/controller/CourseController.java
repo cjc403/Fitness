@@ -2,6 +2,8 @@ package com.gym.fitness.module.course.controller;
 
 import com.gym.fitness.common.response.Result;
 import com.gym.fitness.module.course.dto.CourseRequest;
+import com.gym.fitness.module.course.dto.ScheduleBatchRequest;
+import com.gym.fitness.module.course.dto.ScheduleBatchResult;
 import com.gym.fitness.module.course.dto.ScheduleRequest;
 import com.gym.fitness.module.course.dto.ScheduleUpdateRequest;
 import com.gym.fitness.module.course.entity.CourseEntity;
@@ -47,6 +49,11 @@ public class CourseController {
     @PostMapping("/schedules")
     @PreAuthorize("hasAuthority('SCHEDULE_WRITE')")
     public Result<CourseScheduleEntity> schedule(@Valid @RequestBody ScheduleRequest request) { return Result.success(service.createSchedule(request)); }
+    @PostMapping("/schedules/batch")
+    @PreAuthorize("hasAuthority('SCHEDULE_WRITE')")
+    public Result<ScheduleBatchResult> batchSchedules(@Valid @RequestBody ScheduleBatchRequest request) {
+        return Result.success(service.createBatchSchedule(request));
+    }
     @PutMapping("/schedules/{id}")
     @PreAuthorize("hasAuthority('SCHEDULE_WRITE')")
     public Result<CourseScheduleEntity> updateSchedule(@PathVariable Long id,

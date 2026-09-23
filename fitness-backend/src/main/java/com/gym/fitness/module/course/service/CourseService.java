@@ -6,6 +6,8 @@ import com.gym.fitness.common.util.SecurityUtil;
 import com.gym.fitness.module.auth.repository.SysUserRepository;
 import com.gym.fitness.module.booking.repository.BookingRepository;
 import com.gym.fitness.module.course.dto.CourseRequest;
+import com.gym.fitness.module.course.dto.ScheduleBatchRequest;
+import com.gym.fitness.module.course.dto.ScheduleBatchResult;
 import com.gym.fitness.module.course.dto.ScheduleRequest;
 import com.gym.fitness.module.course.dto.ScheduleUpdateRequest;
 import com.gym.fitness.module.course.entity.CourseEntity;
@@ -23,12 +25,22 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class CourseService {
+    /** 冲突提示里用的时间格式。 */
+    private static final DateTimeFormatter SCHEDULE_TIME = DateTimeFormatter.ofPattern("MM-dd HH:mm");
+    private static final DateTimeFormatter SCHEDULE_DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final String[] WEEKDAY_NAMES = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+    /** 单次批量排课的日期跨度上限，避免一次点出几年的课表。 */
+    private static final long MAX_BATCH_DAYS = 180;
+
     private final CourseRepository courseRepository;
     private final CourseScheduleRepository scheduleRepository;
     private final VenueRepository venueRepository;
@@ -131,6 +143,8 @@ public class CourseService {
 
         String previousCoach = schedule.getCoachName();
         LocalDateTime previousStart = schedule.getScheduledStartTime();
+        assertCoachAvailable(request.getCoachId(), request.getScheduledStartTime(),
+                request.getScheduledEndTime(), id);
         schedule.setCourseId(course.getId());
         schedule.setVenueId(course.getVenueId());
         schedule.setCoachId(request.getCoachId());
@@ -209,6 +223,8 @@ public class CourseService {
         if (!course.getVenueId().equals(venueId)) {
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "排课场馆必须与课程所属场馆一致");
         }
+        assertCoachAvailable(request.getCoachId(), request.getScheduledStartTime(),
+                request.getScheduledEndTime(), null);
         CourseScheduleEntity entity = new CourseScheduleEntity();
         entity.setCourseId(course.getId());
         entity.setCoachId(request.getCoachId());
@@ -221,6 +237,94 @@ public class CourseService {
         entity.setStatus("SCHEDULED");
         entity.setCreatedBy(SecurityUtil.getCurrentUserId());
         return scheduleRepository.save(entity);
+    }
+
+    /**
+     * 同一教练在同一时段只能有一节课。
+     *
+     * <p>此前没有任何校验：管理员可以把一个教练排到两个重叠时段，会员两边都能预约成功，
+     * 到店才发现教练只有一个。这里统一在校验期拦住，并把冲突的那节课报给操作者。</p>
+     *
+     * @return 冲突原因；无冲突返回 {@code null}（批量排课用它决定跳过哪几节）
+     */
+    private String coachConflictReason(Long coachId, LocalDateTime start, LocalDateTime end, Long excludeId) {
+        if (coachId == null) return null;
+        List<CourseScheduleEntity> clashes = scheduleRepository.findCoachOverlaps(
+                coachId, start, end, excludeId == null ? 0L : excludeId);
+        if (clashes.isEmpty()) return null;
+        CourseScheduleEntity first = clashes.get(0);
+        String courseName = courseRepository.findById(first.getCourseId())
+                .map(CourseEntity::getName).orElse("课程");
+        return "该教练 " + SCHEDULE_TIME.format(first.getScheduledStartTime()) + "~"
+                + SCHEDULE_TIME.format(first.getScheduledEndTime()) + " 已有排课《" + courseName + "》";
+    }
+
+    private void assertCoachAvailable(Long coachId, LocalDateTime start, LocalDateTime end, Long excludeId) {
+        String reason = coachConflictReason(coachId, start, end, excludeId);
+        if (reason != null) {
+            throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, reason + "，同一时段不能重复排课");
+        }
+    }
+
+    /**
+     * 周期性批量排课。逐日展开日期区间，命中选定周几的日期生成一节课；
+     * 已过去的时段、以及与该教练其它排课冲突的时段会被跳过并说明原因，不阻断整批。
+     */
+    @Transactional
+    public ScheduleBatchResult createBatchSchedule(ScheduleBatchRequest request) {
+        if (!request.getEndTime().isAfter(request.getStartTime())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "结束时间必须晚于开始时间");
+        }
+        if (request.getToDate().isBefore(request.getFromDate())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "结束日期不能早于开始日期");
+        }
+        if (ChronoUnit.DAYS.between(request.getFromDate(), request.getToDate()) > MAX_BATCH_DAYS) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "单次批量排课最长 " + MAX_BATCH_DAYS + " 天");
+        }
+        CourseEntity course = findAccessibleCourse(request.getCourseId());
+        Long venueId = request.getVenueId() == null ? course.getVenueId() : request.getVenueId();
+        if (!venueRepository.existsById(venueId)) throw new BusinessException(ErrorCode.VENUE_NOT_FOUND);
+        if (!course.getVenueId().equals(venueId)) {
+            throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "排课场馆必须与课程所属场馆一致");
+        }
+        List<Integer> weekdays = request.getWeekdays().stream().distinct().sorted().toList();
+        boolean dryRun = Boolean.TRUE.equals(request.getDryRun());
+        int maxStudents = request.getMaxStudents() == null ? course.getMaxCapacity() : request.getMaxStudents();
+        LocalDateTime now = LocalDateTime.now();
+        List<ScheduleBatchResult.Slot> created = new ArrayList<>();
+        List<ScheduleBatchResult.Slot> skipped = new ArrayList<>();
+        for (LocalDate day = request.getFromDate(); !day.isAfter(request.getToDate()); day = day.plusDays(1)) {
+            if (!weekdays.contains(day.getDayOfWeek().getValue())) continue;
+            LocalDateTime start = LocalDateTime.of(day, request.getStartTime());
+            LocalDateTime end = LocalDateTime.of(day, request.getEndTime());
+            String label = SCHEDULE_DAY.format(start) + "（"
+                    + WEEKDAY_NAMES[day.getDayOfWeek().getValue() - 1] + "）";
+            if (start.isBefore(now)) {
+                skipped.add(new ScheduleBatchResult.Slot(label, "时间已过去"));
+                continue;
+            }
+            String conflict = coachConflictReason(request.getCoachId(), start, end, null);
+            if (conflict != null) {
+                skipped.add(new ScheduleBatchResult.Slot(label, conflict));
+                continue;
+            }
+            if (!dryRun) {
+                CourseScheduleEntity entity = new CourseScheduleEntity();
+                entity.setCourseId(course.getId());
+                entity.setCoachId(request.getCoachId());
+                entity.setCoachName(request.getCoachName().trim());
+                entity.setVenueId(venueId);
+                entity.setScheduledStartTime(start);
+                entity.setScheduledEndTime(end);
+                entity.setMaxStudents(maxStudents);
+                entity.setEnrolledCount(0);
+                entity.setStatus("SCHEDULED");
+                entity.setCreatedBy(SecurityUtil.getCurrentUserId());
+                scheduleRepository.save(entity);
+            }
+            created.add(new ScheduleBatchResult.Slot(label, dryRun ? "可生成" : "已生成"));
+        }
+        return new ScheduleBatchResult(created, skipped, dryRun);
     }
 
     private void applyCourse(CourseEntity entity, CourseRequest request) {

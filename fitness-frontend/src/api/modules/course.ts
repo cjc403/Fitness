@@ -25,5 +25,14 @@ export const updateCourse = (id: number, data: Partial<CourseRequest>) => reques
 export const deleteCourse = (id: number) => request.delete<void>(`/v1/admin/courses/${id}`)
 export const listSchedules = (params?: { from?: string; to?: string }) => request.get<Schedule[]>('/v1/admin/schedules', { params })
 export const createSchedule = (data: ScheduleRequest) => request.post<Schedule>('/v1/admin/schedules', data)
+export interface ScheduleBatchRequest {
+  courseId: number; coachId?: number; coachName: string; venueId?: number
+  weekdays: number[]; startTime: string; endTime: string
+  fromDate: string; toDate: string; maxStudents?: number; dryRun?: boolean
+}
+export interface BatchSlot { label: string; note: string }
+export interface ScheduleBatchResult { created: BatchSlot[]; skipped: BatchSlot[]; dryRun: boolean }
+export const createBatchSchedules = (data: ScheduleBatchRequest) =>
+  request.post<ScheduleBatchResult>('/v1/admin/schedules/batch', data)
 export const updateSchedule = (id: number, data: ScheduleUpdateRequest) => request.put<Schedule>(`/v1/admin/schedules/${id}`, data)
 export const deleteSchedule = (id: number) => request.delete<void>(`/v1/admin/schedules/${id}`)

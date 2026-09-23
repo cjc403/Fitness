@@ -54,8 +54,8 @@ public class MemberPortalService {
      * 会员自助购买：不接入真实支付，金额取商品标价、渠道固定为自助；幂等键由会员端生成。
      */
     @Transactional
-    public CommercialDtos.OrderResponse purchase(Long productId, String idempotencyKey) {
-        return commercialService.createSelfServiceSale(currentMember().getId(), productId, idempotencyKey);
+    public CommercialDtos.OrderResponse purchase(Long productId, String idempotencyKey, Long memberCouponId) {
+        return commercialService.createSelfServiceSale(currentMember().getId(), productId, idempotencyKey, memberCouponId);
     }
 
     @Transactional(readOnly = true)

@@ -60,6 +60,19 @@
       <el-tab-pane v-if="can('MEMBERSHIP_READ')" label="私教消课与结算" name="training"><TrainingPanel @changed="loadAll" @go="onTrainingGuide" /></el-tab-pane>
       <el-tab-pane v-if="can('REFUND_REQUEST')" label="退款申请 / 审批" name="refunds"><RefundPanel ref="refundPanel" :entitlements="entitlements" :orders="orders" @changed="loadAll" /></el-tab-pane>
       <el-tab-pane v-if="can('FINANCE_REPORT_READ')" label="财务对账报表" name="finance-report"><FinanceReportPanel /></el-tab-pane>
+      <el-tab-pane v-if="can('COUPON_READ')" label="优惠券" name="coupons">
+        <div class="tab-head"><div><h2>优惠券</h2><p>建券并发放给会员；会员开卡时可直接抵扣，折后实收金额进精确价值账（退款按实付）。</p></div><el-button v-if="can('COUPON_WRITE')" type="primary" @click="openCoupon()"><el-icon><Plus/></el-icon> 新建优惠券</el-button></div>
+        <el-table :data="couponTemplates" stripe>
+          <el-table-column prop="name" label="名称" min-width="150" />
+          <el-table-column label="力度" min-width="190"><template #default="{row}">{{ couponText(row) }}</template></el-table-column>
+          <el-table-column label="有效期" min-width="180"><template #default="{row}">{{ row.validFrom }} ~ {{ row.validUntil }}</template></el-table-column>
+          <el-table-column label="已发 / 总量" width="110"><template #default="{row}">{{ row.issuedQuantity }} / {{ row.totalQuantity || '不限' }}</template></el-table-column>
+          <el-table-column label="状态" width="90"><template #default="{row}"><el-tag :type="row.status==='ACTIVE'?'success':'info'">{{ row.status==='ACTIVE'?'启用':'停用' }}</el-tag></template></el-table-column>
+          <el-table-column v-if="can('COUPON_WRITE')" label="操作" width="200" fixed="right"><template #default="{row}"><el-button link type="primary" @click="openIssue(row)">发放</el-button><el-button link @click="openCoupon(row)">编辑</el-button><el-button link :type="row.status==='ACTIVE'?'danger':'primary'" @click="toggleCoupon(row)">{{ row.status==='ACTIVE'?'停用':'启用' }}</el-button></template></el-table-column>
+        </el-table>
+        <el-empty v-if="!couponTemplates.length" description="还没有优惠券，点右上角新建" :image-size="70" />
+      </el-tab-pane>
+
     </el-tabs>
 
     <el-dialog v-model="productVisible" :title="editingProduct?'编辑会籍商品':'新增会籍商品'" width="570px">
@@ -70,7 +83,26 @@
       </el-form><template #footer><div class="dialog-footer"><el-button v-if="editingProduct && can('PRODUCT_WRITE')" type="danger" plain @click="removeProduct">删除商品</el-button><span class="footer-right"><el-button @click="productVisible=false">取消</el-button><el-button type="primary" @click="saveProduct">保存商品</el-button></span></div></template>
     </el-dialog>
 
-    <el-dialog v-model="saleVisible" title="销售开卡" width="520px"><el-form label-width="90px"><el-form-item label="会员"><el-select v-model="saleForm.memberId" filterable style="width:100%" @change="syncMemberProducts"><el-option v-for="m in members" :key="m.id" :label="`${m.realName} · ${m.memberNo}`" :value="m.id"/></el-select></el-form-item><el-form-item label="商品"><el-select v-model="saleForm.productId" style="width:100%" @change="syncSaleAmount"><el-option v-for="p in activeProducts" :key="p.id" :label="`${p.name} · ¥${p.price}`" :value="p.id"/></el-select></el-form-item><el-form-item label="实收金额"><el-input-number v-model="saleForm.paidAmount" :min="0.01" :precision="2" style="width:100%"/></el-form-item><el-form-item label="支付方式"><el-select v-model="saleForm.paymentMethod" style="width:100%"><el-option label="微信" value="WECHAT"/><el-option label="支付宝" value="ALIPAY"/><el-option label="银行卡" value="CARD"/><el-option label="现金" value="CASH"/></el-select></el-form-item><el-form-item label="备注"><el-input v-model="saleForm.remark"/></el-form-item></el-form><template #footer><el-button @click="saleVisible=false">取消</el-button><el-button type="primary" :loading="saleSubmitting" :disabled="saleSubmitting" @click="submitSale">确认收款并开卡</el-button></template></el-dialog>
+    <el-dialog v-model="saleVisible" title="销售开卡" width="520px"><el-form label-width="90px"><el-form-item label="会员"><el-select v-model="saleForm.memberId" filterable style="width:100%" @change="syncMemberProducts"><el-option v-for="m in members" :key="m.id" :label="`${m.realName} · ${m.memberNo}`" :value="m.id"/></el-select></el-form-item><el-form-item label="商品"><el-select v-model="saleForm.productId" style="width:100%" @change="syncSaleAmount"><el-option v-for="p in activeProducts" :key="p.id" :label="`${p.name} · ¥${p.price}`" :value="p.id"/></el-select></el-form-item><el-form-item label="优惠券"><el-select v-model="saleForm.memberCouponId" clearable style="width:100%" :placeholder="saleCouponOptions.length ? '不使用优惠券' : '该会员暂无可用券'"><el-option v-for="o in saleCouponOptions" :key="o.memberCouponId" :label="`${o.name}（减 ¥${(o.discountCents/100).toFixed(2)}，实收 ¥${Number(o.payable).toFixed(2)}）`" :value="o.memberCouponId" /></el-select></el-form-item><el-form-item label="实收金额"><el-input-number v-model="saleForm.paidAmount" :min="0.01" :precision="2" :disabled="!!saleForm.memberCouponId" style="width:100%"/><div v-if="saleForm.memberCouponId" class="form-hint">已选优惠券：实收金额由服务端按分计算，这里填什么都不影响结果</div></el-form-item><el-form-item label="支付方式"><el-select v-model="saleForm.paymentMethod" style="width:100%"><el-option label="微信" value="WECHAT"/><el-option label="支付宝" value="ALIPAY"/><el-option label="银行卡" value="CARD"/><el-option label="现金" value="CASH"/></el-select></el-form-item><el-form-item label="备注"><el-input v-model="saleForm.remark"/></el-form-item></el-form><template #footer><el-button @click="saleVisible=false">取消</el-button><el-button type="primary" :loading="saleSubmitting" :disabled="saleSubmitting" @click="submitSale">确认收款并开卡</el-button></template></el-dialog>
+    <el-dialog v-model="couponDialog" :title="editingCouponId ? '编辑优惠券' : '新建优惠券'" width="540px">
+      <el-form label-width="120px">
+        <el-form-item label="名称"><el-input v-model="couponForm.name" placeholder="例如：新客体验券 / 续费九折" /></el-form-item>
+        <el-form-item label="类型"><el-radio-group v-model="couponForm.couponType"><el-radio-button value="FULL_REDUCTION">满减</el-radio-button><el-radio-button value="DISCOUNT">折扣</el-radio-button></el-radio-group></el-form-item>
+        <el-form-item label="使用门槛（元）"><el-input-number v-model="couponForm.thresholdYuan" :min="0" :precision="2" /><span class="form-hint">0 表示无门槛</span></el-form-item>
+        <el-form-item v-if="couponForm.couponType==='FULL_REDUCTION'" label="减免（元）"><el-input-number v-model="couponForm.discountYuan" :min="0.01" :precision="2" /></el-form-item>
+        <el-form-item v-else label="折扣（%）"><el-input-number v-model="couponForm.ratePercent" :min="1" :max="99" /><span class="form-hint">90 表示九折</span></el-form-item>
+        <el-form-item label="有效期"><el-date-picker v-model="couponDates" type="daterange" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
+        <el-form-item label="发放总量"><el-input-number v-model="couponForm.totalQuantity" :min="0" /><span class="form-hint">0 表示不限量</span></el-form-item>
+        <el-form-item label="备注"><el-input v-model="couponForm.note" /></el-form-item>
+      </el-form>
+      <template #footer><el-button @click="couponDialog=false">取消</el-button><el-button type="primary" :loading="couponSaving" @click="saveCoupon">保存</el-button></template>
+    </el-dialog>
+    <el-dialog v-model="issueDialog" title="发放优惠券" width="540px">
+      <p class="muted">选择要发券的会员（可多选），同一会员可发多张。</p>
+      <el-select v-model="issueForm.memberIds" multiple filterable style="width:100%" placeholder="选择会员"><el-option v-for="m in members" :key="m.id" :label="`${m.realName} · ${m.memberNo}`" :value="m.id" /></el-select>
+      <el-form label-width="120px" style="margin-top:14px"><el-form-item label="每人张数"><el-input-number v-model="issueForm.quantityPerMember" :min="1" :max="10" /></el-form-item></el-form>
+      <template #footer><el-button @click="issueDialog=false">取消</el-button><el-button type="primary" :loading="couponSaving" @click="submitIssue">确认发放</el-button></template>
+    </el-dialog>
 
     <el-dialog v-model="renewVisible" title="会员续费" width="500px"><el-form label-width="100px"><el-form-item label="顺延天数"><el-input-number v-model="renewForm.additionalDays" :min="1" style="width:100%"/></el-form-item><el-form-item label="增加次数"><el-input-number v-model="renewForm.additionalUses" :min="0" style="width:100%"/></el-form-item><el-form-item label="实收金额"><el-input-number v-model="renewForm.amount" :min="0.01" :precision="2" style="width:100%"/></el-form-item><el-form-item label="支付方式"><el-select v-model="renewForm.paymentMethod" style="width:100%"><el-option label="微信" value="WECHAT"/><el-option label="支付宝" value="ALIPAY"/><el-option label="银行卡" value="CARD"/><el-option label="现金" value="CASH"/></el-select></el-form-item></el-form><template #footer><el-button @click="renewVisible=false">取消</el-button><el-button type="primary" @click="submitRenew">确认续费</el-button></template></el-dialog>
 
@@ -85,6 +117,7 @@ import { Plus, Refresh } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/modules/auth'
 import TrainingPanel from '@/components/TrainingPanel.vue'
 import { refundIntent } from '@/utils/financeUi.mjs'
+import { createCouponTemplate, issueCoupon, listCouponTemplates, quoteCouponForMember, updateCouponTemplate, type CouponQuoteOption, type CouponTemplate } from '@/api/modules/coupon'
 import RefundPanel from '@/components/RefundPanel.vue'
 import FinanceReportPanel from '@/components/FinanceReportPanel.vue'
 import { listMembers, type Member } from '@/api/modules/member'
@@ -99,14 +132,42 @@ const products=ref<Product[]>([]),orders=ref<Order[]>([]),entitlements=ref<Entit
 const saleSubmitting=ref(false)
 const productVisible=ref(false),saleVisible=ref(false),renewVisible=ref(false),transferVisible=ref(false),editingProduct=ref<Product>(),actionEntitlement=ref<Entitlement>(),transferMemberId=ref<number>()
 const productForm=reactive<any>({name:'',category:'CARD',productType:'MONTH_CARD',description:'',validityDays:30,totalUses:undefined,accessAllowed:true,price:399,status:'ACTIVE',venueId:auth.userInfo?.organizationId})
-const saleForm=reactive<any>({memberId:undefined,productId:undefined,paymentMethod:'WECHAT',paidAmount:undefined,remark:''})
+const saleForm=reactive<any>({memberId:undefined,productId:undefined,paymentMethod:'WECHAT',paidAmount:undefined,remark:'',memberCouponId:undefined})
 const renewForm=reactive<any>({additionalDays:30,additionalUses:0,amount:399,paymentMethod:'WECHAT'})
 const scanToken=ref(''),scanning=ref(false),scanResult=ref<AccessRecord>()
 const refundPanel=ref<{startFor:(id:number)=>Promise<void>}>()
 const activeProducts=computed(()=>{const member=members.value.find(m=>m.id===saleForm.memberId);return products.value.filter(p=>p.status==='ACTIVE'&&(!member||p.venueId===member.venueId))})
 const transferCandidates=computed(()=>members.value.filter(m=>m.id!==actionEntitlement.value?.memberId))
 
-const loadAll=async()=>{loading.value=true;try{const jobs:any[]=[getCommercialOverview(),listProducts(),listOrders(),listEntitlements(),listMembers({page:1,size:100})];if(can('FINANCE_READ'))jobs.push(listPayments(),listDocuments());if(can('ACCESS_WRITE'))jobs.push(listAccessRecords());const [o,p,so,e,m,pay,doc,access]=await Promise.all(jobs);overview.value=o.data;products.value=p.data;orders.value=so.data;entitlements.value=e.data;members.value=m.data.items;if(pay)payments.value=pay.data;if(doc)documents.value=doc.data;if(access)accessRecords.value=access.data;if(isSuperAdmin.value)venues.value=(await listVenues()).data}finally{loading.value=false}}
+// ---- 优惠券 ----
+const couponTemplates=ref<CouponTemplate[]>([]),saleCouponOptions=ref<CouponQuoteOption[]>([])
+const couponDialog=ref(false),issueDialog=ref(false),couponSaving=ref(false)
+const editingCouponId=ref<number|null>(null),issueTemplateId=ref<number|null>(null)
+const couponForm=reactive({name:'',couponType:'FULL_REDUCTION',thresholdYuan:0,discountYuan:20,ratePercent:90,totalQuantity:0,note:''})
+const couponDates=ref<[string,string]|undefined>()
+const issueForm=reactive({memberIds:[] as number[],quantityPerMember:1})
+const couponText=(row:CouponTemplate)=>row.couponType==='DISCOUNT'
+  ? `${(Number(row.discountRate||1)*10).toFixed(1)} 折`+(row.thresholdCents?`（满 ¥${(row.thresholdCents/100).toFixed(2)} 可用）`:'')
+  : `满 ¥${((row.thresholdCents||0)/100).toFixed(2)} 减 ¥${((row.discountCents||0)/100).toFixed(2)}`
+const loadCoupons=async()=>{if(!can('COUPON_READ'))return;try{couponTemplates.value=(await listCouponTemplates()).data}catch{couponTemplates.value=[]}}
+const loadSaleCoupons=async()=>{saleCouponOptions.value=[];if(!can('COUPON_READ')||!saleForm.memberId||!saleForm.productId)return;try{saleCouponOptions.value=(await quoteCouponForMember(saleForm.memberId,saleForm.productId)).data.options}catch{saleCouponOptions.value=[]}}
+const openCoupon=(row?:CouponTemplate)=>{editingCouponId.value=row?.id??null;couponForm.name=row?.name??'';couponForm.couponType=row?.couponType??'FULL_REDUCTION';couponForm.thresholdYuan=row?Number(row.thresholdCents||0)/100:0;couponForm.discountYuan=row?Number(row.discountCents||0)/100:20;couponForm.ratePercent=row?Math.round(Number(row.discountRate||0.9)*100):90;couponForm.totalQuantity=row?.totalQuantity??0;couponForm.note=row?.note??'';couponDates.value=row?[row.validFrom,row.validUntil]:undefined;couponDialog.value=true}
+const couponBody=()=>({name:couponForm.name.trim(),couponType:couponForm.couponType,thresholdCents:Math.round(couponForm.thresholdYuan*100),discountCents:couponForm.couponType==='FULL_REDUCTION'?Math.round(couponForm.discountYuan*100):0,discountRate:couponForm.couponType==='DISCOUNT'?couponForm.ratePercent/100:undefined,totalQuantity:couponForm.totalQuantity,validFrom:couponDates.value![0],validUntil:couponDates.value![1],note:couponForm.note,status:'ACTIVE'})
+const saveCoupon=async()=>{
+  if(!couponForm.name.trim())return ElMessage.warning('请填写优惠券名称')
+  if(!couponDates.value)return ElMessage.warning('请选择有效期')
+  if(couponForm.couponType==='FULL_REDUCTION'&&couponForm.discountYuan<=0)return ElMessage.warning('请填写减免金额')
+  couponSaving.value=true
+  try{
+    if(editingCouponId.value)await updateCouponTemplate(editingCouponId.value,couponBody() as any)
+    else await createCouponTemplate(couponBody() as any)
+    ElMessage.success('优惠券已保存');couponDialog.value=false;await loadCoupons()
+  }finally{couponSaving.value=false}
+}
+const toggleCoupon=async(row:CouponTemplate)=>{couponSaving.value=true;try{await updateCouponTemplate(row.id,{...row,thresholdCents:row.thresholdCents,discountCents:row.discountCents,discountRate:row.discountRate,status:row.status==='ACTIVE'?'INACTIVE':'ACTIVE'} as any);await loadCoupons()}finally{couponSaving.value=false}}
+const openIssue=(row:CouponTemplate)=>{issueTemplateId.value=row.id;issueForm.memberIds=[];issueForm.quantityPerMember=1;issueDialog.value=true}
+const submitIssue=async()=>{if(!issueForm.memberIds.length)return ElMessage.warning('请选择会员');couponSaving.value=true;try{const r=await issueCoupon(issueTemplateId.value!,issueForm.memberIds,issueForm.quantityPerMember);ElMessage.success(`已发放 ${r.data.issued} 张`);issueDialog.value=false;await loadCoupons()}finally{couponSaving.value=false}}
+const loadAll=async()=>{loading.value=true;try{const jobs:any[]=[getCommercialOverview(),listProducts(),listOrders(),listEntitlements(),listMembers({page:1,size:100})];if(can('FINANCE_READ'))jobs.push(listPayments(),listDocuments());if(can('ACCESS_WRITE'))jobs.push(listAccessRecords());const [o,p,so,e,m,pay,doc,access]=await Promise.all(jobs);overview.value=o.data;products.value=p.data;orders.value=so.data;entitlements.value=e.data;members.value=m.data.items;if(pay)payments.value=pay.data;if(doc)documents.value=doc.data;if(access)accessRecords.value=access.data;if(isSuperAdmin.value)venues.value=(await listVenues()).data;await loadCoupons()}finally{loading.value=false}}
 const loadEntitlements=async()=>{entitlements.value=(await listEntitlements({remindersOnly:remindersOnly.value})).data}
 const openProduct=()=>{editingProduct.value=undefined;Object.assign(productForm,{name:'',category:'CARD',productType:'MONTH_CARD',description:'',validityDays:30,totalUses:undefined,accessAllowed:true,price:399,status:'ACTIVE',venueId:auth.userInfo?.organizationId||venues.value[0]?.id});productVisible.value=true}
 const editProduct=(p:Product)=>{editingProduct.value=p;Object.assign(productForm,p);productVisible.value=true}
@@ -128,8 +189,8 @@ const toggleProductStatus=async(item:Product)=>{
   ElMessage.success(next==='ACTIVE'?'商品已上架':'商品已下架')
   await loadAll()
 }
-const syncMemberProducts=()=>{saleForm.productId=undefined;saleForm.paidAmount=undefined}
-const syncSaleAmount=()=>{saleForm.paidAmount=products.value.find(p=>p.id===saleForm.productId)?.price}
+const syncMemberProducts=()=>{saleForm.productId=undefined;saleForm.paidAmount=undefined;saleForm.memberCouponId=undefined;loadSaleCoupons()}
+const syncSaleAmount=()=>{saleForm.paidAmount=products.value.find(p=>p.id===saleForm.productId)?.price;saleForm.memberCouponId=undefined;loadSaleCoupons()}
 const submitSale=async()=>{
   if(saleSubmitting.value)return
   if(!saleForm.memberId||!saleForm.productId||!saleForm.paidAmount)return ElMessage.warning('请完整填写销售资料')
@@ -141,7 +202,7 @@ const submitSale=async()=>{
     await createSale({...saleForm,idempotencyKey:intent.idempotencyKey})
     ElMessage.success('收款成功，会员权益、合同和收据已生成')
     saleVisible.value=false
-    await loadAll()
+    await loadAll();saleForm.memberCouponId=undefined;saleCouponOptions.value=[]
   }finally{saleSubmitting.value=false}
 }
 const freeze=async(e:Entitlement)=>{await ElMessageBox.confirm(`冻结 ${e.memberName} 的“${e.productName}”？`,'冻结权益',{type:'warning'});await freezeEntitlement(e.id);ElMessage.success('权益已冻结');await loadAll()}

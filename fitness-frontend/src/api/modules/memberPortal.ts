@@ -99,7 +99,7 @@ export const getMemberProfile = () => request.get<MemberProfile>('/v1/member/pro
 export const listMemberSchedules = () => request.get<MemberSchedule[]>('/v1/member/schedules')
 export const listMemberBookings = () => request.get<MemberBooking[]>('/v1/member/bookings')
 export const listMemberProducts = () => request.get<MemberProduct[]>('/v1/member/products')
-export const purchaseMembership = (productId: number, idempotencyKey: string) => request.post<MemberOrder>('/v1/member/purchase', { productId, idempotencyKey })
+export const purchaseMembership = (productId: number, idempotencyKey: string, memberCouponId?: number) => request.post<MemberOrder>('/v1/member/purchase', { productId, idempotencyKey, memberCouponId })
 export const createSelfBooking = (scheduleId: number, entitlementId?: number) => request.post('/v1/member/bookings', { scheduleId, entitlementId })
 export const cancelSelfBooking = (id: number) => request.put(`/v1/member/bookings/${id}/cancel`)
 export const joinScheduleWaitlist = (scheduleId: number) => request.post(`/v1/member/schedules/${scheduleId}/waitlist`)

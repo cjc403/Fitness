@@ -41,6 +41,7 @@ public class CommercialService {
     private final com.gym.fitness.module.finance.service.FinanceReportService financeReports;
     private final com.gym.fitness.common.util.VenueMutationLock venueLock;
     private final AccessGrantRepository accessGrants;
+    private final com.gym.fitness.module.coupon.service.CouponService couponService;
     private final com.gym.fitness.module.notice.service.NotificationService notifications;
 
     /** 门禁二维码有效期：够走到前台，不够被截图后复用。 */
@@ -74,7 +75,7 @@ public class CommercialService {
      * 避免会员在请求里篡改金额。其余链路与前台开卡完全一致（订单、权益、价值账户、流水、合同、收据）。
      */
     @Transactional
-    public OrderResponse createSelfServiceSale(Long memberId, Long productId, String idempotencyKey) {
+    public OrderResponse createSelfServiceSale(Long memberId, Long productId, String idempotencyKey, Long memberCouponId) {
         SaleRequest request = new SaleRequest();
         request.setMemberId(memberId);
         request.setProductId(productId);
@@ -82,6 +83,7 @@ public class CommercialService {
         request.setPaidAmount(null);
         request.setRemark("会员自助购买（未接入真实支付）");
         request.setIdempotencyKey(idempotencyKey);
+        request.setMemberCouponId(memberCouponId);
         return createSale(request);
     }
 
@@ -174,14 +176,36 @@ public class CommercialService {
         if (!"ACTIVE".equals(product.getStatus())) {
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "商品已下架");
         }
-        BigDecimal paid = request.getPaidAmount() == null ? product.getPrice() : request.getPaidAmount();
-        if (paid.compareTo(product.getPrice()) > 0) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "实收金额不能高于商品标价");
+        long priceCents = com.gym.fitness.module.finance.service.Money.cents(product.getPrice());
+        Long couponId = request.getMemberCouponId();
+        BigDecimal paid;
+        long discountCents = 0L;
+        if (couponId == null) {
+            paid = request.getPaidAmount() == null ? product.getPrice() : request.getPaidAmount();
+            if (paid.compareTo(product.getPrice()) > 0) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "实收金额不能高于商品标价");
+            }
+        } else {
+            // 用券时实收金额一律由服务端按分计算，不接受前端传值
+            Long computed = couponService.evaluateUsable(couponId, member.getId(), member.getVenueId(), priceCents);
+            if (computed == null) {
+                throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "优惠券不可用："
+                        + couponService.unusableReason(couponId, member.getId(), member.getVenueId(), priceCents));
+            }
+            discountCents = computed;
+            paid = com.gym.fitness.module.finance.service.Money.yuan(priceCents - discountCents);
+            if (com.gym.fitness.module.finance.service.Money.cents(paid) < 1) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "优惠后金额过低，无法开卡");
+            }
         }
         SalesOrderEntity order = paidOrder("NEW", member, product, paid, request.getPaymentMethod(), request.getRemark());
         order.setIdempotencyKey(request.getIdempotencyKey());
         order.setRequestFingerprint(fingerprint);
+        order.setMemberCouponId(couponId);
+        order.setDiscountCents(discountCents);
         orders.saveAndFlush(order);
+        // 订单落库后再把券标记为已用：同一事务，任一步失败都会一起回滚
+        if (couponId != null) couponService.markUsed(couponId, order.getId(), discountCents);
         MemberEntitlementEntity entitlement = issueEntitlement(member, product, order);
         values.issue(entitlement, order, product.getProductType());
         recordOperation(entitlement, "ISSUE", null, "ACTIVE", paid, "销售开卡");
@@ -626,7 +650,8 @@ public class CommercialService {
             return new OrderResponse(item.getId(), item.getOrderNo(), item.getOrderType(), item.getMemberId(),
                     member.getMemberNo(), member.getRealName(), item.getProductId(), product.getName(), item.getVenueId(),
                     item.getOriginalAmount(), item.getPaidAmount(), item.getRefundedAmount(), item.getPaymentMethod(),
-                    item.getStatus(), item.getRemark(), item.getPaidAt(), item.getCreatedAt());
+                    item.getStatus(), item.getRemark(), item.getPaidAt(), item.getCreatedAt(),
+                    item.getMemberCouponId(), item.getDiscountCents());
         }).toList();
     }
 
