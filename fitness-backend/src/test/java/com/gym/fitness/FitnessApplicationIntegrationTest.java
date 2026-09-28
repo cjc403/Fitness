@@ -1472,6 +1472,32 @@ class FitnessApplicationIntegrationTest {
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("容纳")));
     }
 
+
+    @Test
+    @Order(27)
+    void creatableRolesComeFromTheBackendAndRespectTheHierarchy() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        String manager = login("manager", "MANAGER", "店长");
+        JsonNode adminRoles = mapper.readTree(mvc.perform(get("/api/v1/admin/accounts/roles")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        boolean hasSales = false, hasManager = false;
+        for (JsonNode r : adminRoles) {
+            if ("SALES".equals(r.path("code").asText())) hasSales = true;
+            if ("MANAGER".equals(r.path("code").asText())) hasManager = true;
+        }
+        org.assertj.core.api.Assertions.assertThat(hasSales).as("超管应能创建会籍顾问").isTrue();
+        org.assertj.core.api.Assertions.assertThat(hasManager).as("超管应能创建店长").isTrue();
+
+        JsonNode managerRoles = mapper.readTree(mvc.perform(get("/api/v1/admin/accounts/roles")
+                        .header("Authorization", bearer(manager)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        boolean managerSeesSales = false;
+        for (JsonNode r : managerRoles) if ("SALES".equals(r.path("code").asText())) managerSeesSales = true;
+        org.assertj.core.api.Assertions.assertThat(managerSeesSales).as("店长不应能创建会籍顾问").isFalse();
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }

@@ -17,7 +17,8 @@ public class EmployeeAccountUpdateRequest {
     @Email @Size(max = 100)
     private String email;
 
-    @NotBlank @Pattern(regexp = "SUPER_ADMIN|MANAGER|COACH|RECEPTION|SALES")
+    /** 角色白名单只在 AccountService.STAFF_ROLES / MANAGER_CREATABLE_ROLES 维护，避免多处重复导致不一致。 */
+    @NotBlank
     private String roleCode;
 
     private Long venueId;

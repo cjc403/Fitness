@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/accounts")
@@ -16,6 +17,9 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController {
     private final AccountService service;
 
+    @GetMapping("/roles")
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public Result<List<AccountService.RoleOption>> roles() { return Result.success(service.creatableRoles()); }
     @GetMapping("/employees")
     public Result<PageResult<EmployeeAccountResponse>> employees(
             @RequestParam(required = false) String keyword,

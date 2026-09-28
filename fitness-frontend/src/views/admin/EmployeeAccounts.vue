@@ -4,7 +4,7 @@
     <el-card shadow="never">
       <div class="filters">
         <el-input v-model="filters.keyword" clearable placeholder="账号、姓名或手机号" @keyup.enter="search"><template #append><el-button :icon="Search" @click="search" /></template></el-input>
-        <el-select v-model="filters.roleCode" clearable placeholder="全部角色" @change="search"><el-option v-for="item in roleOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select>
+        <el-select v-model="filters.roleCode" clearable placeholder="全部角色" @change="search"><el-option v-for="item in roleOptions" :key="item.code" :label="item.name" :value="item.code" /></el-select>
         <el-select v-model="filters.status" clearable placeholder="全部状态" @change="search"><el-option label="正常" value="ACTIVE" /><el-option label="已停用" value="DISABLED" /></el-select>
       </div>
       <el-table v-loading="loading" :data="accounts" stripe>
@@ -30,7 +30,7 @@
       <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="90px" class="dialog-form">
         <el-form-item label="登录账号" prop="username"><el-input v-model="createForm.username" :disabled="!!editing" placeholder="以字母开头，至少4位" /></el-form-item>
         <el-form-item label="姓名" prop="realName"><el-input v-model="createForm.realName" /></el-form-item>
-        <el-form-item label="角色" prop="roleCode"><el-select v-model="createForm.roleCode" style="width:100%"><el-option v-for="item in roleOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+        <el-form-item label="角色" prop="roleCode"><el-select v-model="createForm.roleCode" style="width:100%"><el-option v-for="item in roleOptions" :key="item.code" :label="item.name" :value="item.code" /></el-select></el-form-item>
         <el-form-item v-if="isSuperAdmin" label="所属场馆" prop="venueId"><el-select v-model="createForm.venueId" style="width:100%"><el-option v-for="venue in venues" :key="venue.id" :label="venue.name" :value="venue.id" /></el-select></el-form-item>
         <el-form-item label="手机号" prop="phone"><el-input v-model="createForm.phone" maxlength="11" /></el-form-item>
         <el-form-item label="邮箱" prop="email"><el-input v-model="createForm.email" /></el-form-item>
@@ -51,14 +51,14 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { createEmployee, listEmployees, resetEmployeePassword, updateEmployee, updateEmployeeStatus, type EmployeeAccount, type EmployeeAccountRequest } from '@/api/modules/account'
+import { createEmployee, listCreatableRoles, listEmployees, resetEmployeePassword, updateEmployee, updateEmployeeStatus, type EmployeeAccount, type EmployeeAccountRequest, type RoleOption } from '@/api/modules/account'
 import { listVenues, type Venue } from '@/api/modules/venue'
 import { useAuthStore } from '@/store/modules/auth'
 
 const auth = useAuthStore(); const isSuperAdmin = computed(() => auth.userInfo?.role === 'SUPER_ADMIN'); const currentUserId = computed(() => auth.userInfo?.id)
-const roleOptions = computed(() => isSuperAdmin.value ? [
-  {label:'总部管理员',value:'SUPER_ADMIN'},{label:'店长',value:'MANAGER'},{label:'教练',value:'COACH'},{label:'前台',value:'RECEPTION'}
-] : [{label:'教练',value:'COACH'},{label:'前台',value:'RECEPTION'}])
+// 角色选项由后端 /accounts/roles 给出：加角色时只改后端白名单，界面自动跟上
+const roleOptions = ref<RoleOption[]>([])
+const loadRoleOptions = async () => { try { roleOptions.value = (await listCreatableRoles()).data } catch { roleOptions.value = [] } }
 const accounts=ref<EmployeeAccount[]>([]); const venues=ref<Venue[]>([]); const loading=ref(false); const saving=ref(false); const page=ref(1); const size=ref(10); const total=ref(0)
 const filters=reactive({keyword:'',roleCode:'',status:''}); const createVisible=ref(false); const resetVisible=ref(false); const createFormRef=ref<FormInstance>(); const resetFormRef=ref<FormInstance>(); const resetting=ref<EmployeeAccount>()
 const editing=ref<EmployeeAccount>()
@@ -75,6 +75,7 @@ const openReset=(row:EmployeeAccount)=>{resetting.value=row;resetForm.newPasswor
 const submitReset=async()=>{if(!resetting.value||!resetFormRef.value||!(await resetFormRef.value.validate().catch(()=>false)))return;saving.value=true;try{await resetEmployeePassword(resetting.value.id,resetForm.newPassword);ElMessage.success('密码已重置');resetVisible.value=false;await load()}finally{saving.value=false}}
 const toggleStatus=async(row:EmployeeAccount)=>{const status=row.status==='ACTIVE'?'DISABLED':'ACTIVE';await ElMessageBox.confirm(`确定${status==='ACTIVE'?'启用':'停用'}账号 ${row.username} 吗？`,'账号状态',{type:'warning'});await updateEmployeeStatus(row.id,status);ElMessage.success('账号状态已更新');await load()}
 const formatTime=(v?:string)=>v?new Date(v).toLocaleString('zh-CN'):'从未登录'
+loadRoleOptions()
 onMounted(async()=>{if(isSuperAdmin.value){const r=await listVenues();venues.value=r.data.filter(v=>v.status==='ACTIVE')}await load()})
 </script>
 

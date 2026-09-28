@@ -38,6 +38,9 @@ export interface MemberRegistrationRequest {
 
 export interface VenueOption { code: string; name: string }
 
+/** 当前登录人可创建的角色（由后端给出，避免前后端各维护一份）。 */
+export interface RoleOption { code: string; name: string }
+export const listCreatableRoles = () => request.get<RoleOption[]>('/v1/admin/accounts/roles')
 export const listEmployees = (params: { keyword?: string; roleCode?: string; status?: string; venueId?: number; page: number; size: number }) =>
   request.get<PageResult<EmployeeAccount>>('/v1/admin/accounts/employees', { params })
 export const createEmployee = (data: EmployeeAccountRequest) => request.post<EmployeeAccount>('/v1/admin/accounts/employees', data)

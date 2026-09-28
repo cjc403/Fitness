@@ -208,6 +208,19 @@ public class AccountService {
         return users.save(user);
     }
 
+    /** 可创建的角色选项（前端下拉由后端给出，避免两边各写一份白名单而脱节）。 */
+    public record RoleOption(String code, String name) {
+    }
+
+    public List<RoleOption> creatableRoles() {
+        String current = com.gym.fitness.common.util.SecurityUtil.getCurrentUserRole();
+        List<String> codes = "SUPER_ADMIN".equals(current) ? STAFF_ROLES
+                : "MANAGER".equals(current) ? MANAGER_CREATABLE_ROLES : List.of();
+        return codes.stream()
+                .map(code -> new RoleOption(code, com.gym.fitness.security.RolePermissionCatalog.roleName(code)))
+                .toList();
+    }
+
     private void validateRoleCanBeCreated(String roleCode) {
         if (!STAFF_ROLES.contains(roleCode)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的员工角色");
