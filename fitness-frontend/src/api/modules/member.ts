@@ -32,6 +32,9 @@ export interface MemberRequest {
   venueId?: number | null
   status?: string
   blacklistFlag?: boolean
+  /** 归属：专属教练与会籍顾问（用于顾问工作台与业绩归属）。 */
+  coachId?: number | null
+  salesUserId?: number | null
 }
 
 export interface PageResult<T> {

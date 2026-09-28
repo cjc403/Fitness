@@ -6,7 +6,7 @@ export const ROLE_HOME: Record<string, string> = {
   RECEPTION: '/members',
   COACH: '/coach-workbench',
   MEMBER: '/member-home',
-  SALES: '/members'
+  SALES: '/advisor-workbench'
 }
 
 export const ROLE_NAMES: Record<string, string> = {

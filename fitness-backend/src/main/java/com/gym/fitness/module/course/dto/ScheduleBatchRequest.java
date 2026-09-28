@@ -23,6 +23,8 @@ public class ScheduleBatchRequest {
     private Long coachId;
     @NotBlank private String coachName;
     private Long venueId;
+    /** 上课教室（可选，整批使用同一间）。 */
+    private Long roomId;
     /** 1=周一 … 7=周日，可多选。 */
     @NotEmpty private List<Integer> weekdays;
     @NotNull private LocalTime startTime;

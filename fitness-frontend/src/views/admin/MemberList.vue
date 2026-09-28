@@ -94,6 +94,13 @@
         <el-form-item label="黑名单">
           <el-switch v-model="form.blacklistFlag" active-text="是" inactive-text="否" />
         </el-form-item>
+        <el-form-item label="专属教练">
+          <el-select v-model="form.coachId" clearable filterable placeholder="不指定" style="width:100%"><el-option v-for="c in coaches" :key="c.userId" :label="c.realName" :value="c.userId" /></el-select>
+        </el-form-item>
+        <el-form-item label="会籍顾问">
+          <el-select v-model="form.salesUserId" clearable filterable placeholder="不指定" style="width:100%"><el-option v-for="a in advisors" :key="a.userId" :label="a.realName" :value="a.userId" /></el-select>
+          <div class="form-hint">指派后，该会员会出现在对应顾问/教练的工作台里，用于跟进与业绩归属</div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -129,6 +136,7 @@ import {
   type Member,
   type MemberRequest
 } from '@/api/modules/member'
+import { listAdvisors, type AdvisorRef } from '@/api/modules/advisor'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -151,6 +159,8 @@ const emptyForm = (): MemberRequest => ({
   memberNo: '', realName: '', phone: '', email: '', gender: '', birthday: '', address: '', blacklistFlag: false
 })
 const form = reactive<MemberRequest>(emptyForm())
+const advisors=ref<AdvisorRef[]>([]),coaches=ref<AdvisorRef[]>([])
+const loadAssignees=async()=>{try{const [a,c]=await Promise.all([listAdvisors('SALES'),listAdvisors('COACH')]);advisors.value=a.data;coaches.value=c.data}catch{}}
 const rules: FormRules = {
   memberNo: [{ required: true, message: '请输入会员编号', trigger: 'blur' }],
   realName: [{ required: true, message: '请输入会员姓名', trigger: 'blur' }],
@@ -260,6 +270,7 @@ const statusText = (status: string) => ({ ACTIVE: '正常', PAUSED: '已暂停' 
 const statusType = (status: string) => status === 'ACTIVE' ? 'success' : status === 'PAUSED' ? 'warning' : 'info'
 
 onMounted(loadMembers)
+loadAssignees()
 </script>
 
 <style scoped>
@@ -270,4 +281,4 @@ onMounted(loadMembers)
 .search-bar { display: flex; max-width: 420px; margin-bottom: 16px; }
 .pagination { display: flex; justify-content: flex-end; margin-top: 18px; }
 .account-cell{display:flex;align-items:center;gap:8px}.muted{color:#a0a8b6}.account-form{margin-top:20px}
-</style>
+.form-hint{margin-top:5px;color:#9aa5b8;font-size:12px}</style>

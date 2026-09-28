@@ -1409,6 +1409,69 @@ class FitnessApplicationIntegrationTest {
     }
 
 
+
+    // ------------------------------------------------ 教室资源与顾问归属
+
+    @Test
+    @Order(26)
+    void roomCannotBeDoubleBookedAndRespectsCapacity() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        long venueId = firstVenueId(admin);
+        long roomId = mapper.readTree(mvc.perform(post("/api/v1/admin/rooms")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"测试操课房A\",\"capacity\":20,\"status\":\"ACTIVE\",\"venueId\":" + venueId + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        long courseId = newCourse(admin, "教室冲突测试课", "GROUP", venueId);
+        long coach = coachUserId();
+        java.time.LocalDateTime base = java.time.LocalDateTime.now().plusDays(11)
+                .withHour(10).withMinute(0).withSecond(0).withNano(0);
+
+        String first = "{\"courseId\":" + courseId + ",\"coachId\":" + coach + ",\"coachName\":\"首席教练\","
+                + "\"roomId\":" + roomId + ",\"scheduledStartTime\":\"" + base
+                + "\",\"scheduledEndTime\":\"" + base.plusHours(1) + "\"}";
+        mvc.perform(post("/api/v1/admin/schedules").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content(first))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.roomId").value(roomId));
+
+        // 同一教室重叠时段（10:30~11:30）必须被拒，并指出是哪间教室被占用
+        java.time.LocalDateTime overlap = base.plusMinutes(30);
+        mvc.perform(post("/api/v1/admin/schedules").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"courseId\":" + courseId + ",\"coachId\":" + coach + ",\"coachName\":\"首席教练\","
+                                + "\"roomId\":" + roomId + ",\"scheduledStartTime\":\"" + overlap
+                                + "\",\"scheduledEndTime\":\"" + overlap.plusHours(1) + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(2600))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("教室")));
+
+        // 首尾相接不算占用
+        mvc.perform(post("/api/v1/admin/schedules").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"courseId\":" + courseId + ",\"coachId\":" + coach + ",\"coachName\":\"首席教练\","
+                                + "\"roomId\":" + roomId + ",\"scheduledStartTime\":\"" + base.plusHours(1)
+                                + "\",\"scheduledEndTime\":\"" + base.plusHours(2) + "\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 容量不足要被拦下（教室 20 人，课程容量 50 人）
+        long bigCourse = mapper.readTree(mvc.perform(post("/api/v1/admin/courses")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"大容量团课\",\"type\":\"GROUP\",\"venueId\":" + venueId
+                                + ",\"durationMinutes\":60,\"maxCapacity\":50,\"fee\":10}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        mvc.perform(post("/api/v1/admin/schedules").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"courseId\":" + bigCourse + ",\"coachId\":" + coach + ",\"coachName\":\"首席教练\","
+                                + "\"roomId\":" + roomId + ",\"scheduledStartTime\":\"" + base.plusDays(1)
+                                + "\",\"scheduledEndTime\":\"" + base.plusDays(1).plusHours(1) + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(2600))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("容纳")));
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }

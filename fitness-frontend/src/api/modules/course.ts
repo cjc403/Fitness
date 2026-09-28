@@ -7,13 +7,14 @@ export interface Course {
 export interface Schedule {
   id: number; courseId: number; course: Course; coachId?: number | null; coachName: string; venueId: number
   scheduledStartTime: string; scheduledEndTime: string; maxStudents: number; enrolledCount: number; status: string
+  roomId?: number | null; room?: { id: number; name: string; capacity?: number } | null
 }
 export type CourseRequest = Omit<Course, 'id'>
 export interface ScheduleRequest {
-  courseId: number; coachName: string; venueId?: number; scheduledStartTime: string; scheduledEndTime: string; maxStudents?: number
+  courseId: number; coachName: string; venueId?: number; roomId?: number; scheduledStartTime: string; scheduledEndTime: string; maxStudents?: number
 }
 export interface ScheduleUpdateRequest {
-  courseId: number; coachName: string; coachId?: number; scheduledStartTime: string; scheduledEndTime: string; maxStudents?: number
+  courseId: number; coachName: string; coachId?: number; roomId?: number; scheduledStartTime: string; scheduledEndTime: string; maxStudents?: number
 }
 export const listCourses = () => request.get<Course[]>('/v1/admin/courses')
 export interface CoachOption {
@@ -26,7 +27,7 @@ export const deleteCourse = (id: number) => request.delete<void>(`/v1/admin/cour
 export const listSchedules = (params?: { from?: string; to?: string }) => request.get<Schedule[]>('/v1/admin/schedules', { params })
 export const createSchedule = (data: ScheduleRequest) => request.post<Schedule>('/v1/admin/schedules', data)
 export interface ScheduleBatchRequest {
-  courseId: number; coachId?: number; coachName: string; venueId?: number
+  courseId: number; coachId?: number; coachName: string; venueId?: number; roomId?: number
   weekdays: number[]; startTime: string; endTime: string
   fromDate: string; toDate: string; maxStudents?: number; dryRun?: boolean
 }

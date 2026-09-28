@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SalesOrderRepository extends JpaRepository<SalesOrderEntity, Long> {
+    /** 某人开的单（顾问业绩）。 */
+    List<SalesOrderEntity> findByOperatorIdOrderByIdDesc(Long operatorId);
     List<SalesOrderEntity> findAllByOrderByCreatedAtDesc();
     List<SalesOrderEntity> findByVenueIdOrderByCreatedAtDesc(Long venueId);
     List<SalesOrderEntity> findByMemberIdOrderByCreatedAtDesc(Long memberId);

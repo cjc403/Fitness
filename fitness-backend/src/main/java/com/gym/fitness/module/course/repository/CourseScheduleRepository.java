@@ -26,6 +26,20 @@ public interface CourseScheduleRepository extends JpaRepository<CourseScheduleEn
     @Query("select s from CourseScheduleEntity s where s.id = :id")
     Optional<CourseScheduleEntity> findByIdForUpdate(@Param("id") Long id);
 
+    long countByRoomId(Long roomId);
+
+    List<CourseScheduleEntity> findByRoomIdAndScheduledStartTimeBetweenOrderByScheduledStartTimeAsc(
+            Long roomId, LocalDateTime from, LocalDateTime to);
+
+    /** 同一教室在同一时段的其它排课（冲突检测；excludeId 传 0 表示新建）。 */
+    @Query("select s from CourseScheduleEntity s where s.roomId = :roomId and s.id <> :excludeId "
+            + "and s.status <> 'CANCELLED' and s.scheduledStartTime < :end and s.scheduledEndTime > :start "
+            + "order by s.scheduledStartTime asc")
+    List<CourseScheduleEntity> findRoomOverlaps(@Param("roomId") Long roomId,
+                                                @Param("start") LocalDateTime start,
+                                                @Param("end") LocalDateTime end,
+                                                @Param("excludeId") Long excludeId);
+
     /**
      * 同一教练在同一时间段内的其它排课（用于冲突检测）。
      * 重叠判定：已有排课.start &lt; 新排课.end 且 已有排课.end &gt; 新排课.start。

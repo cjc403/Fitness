@@ -4,12 +4,17 @@ import com.gym.fitness.module.member.entity.MemberEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
+    /** 归属某位会籍顾问的会员（顾问工作台）。 */
+    List<MemberEntity> findBySalesUserIdOrderByIdDesc(Long salesUserId);
+    /** 归属某位教练的会员。 */
+    List<MemberEntity> findByCoachIdOrderByIdDesc(Long coachId);
 
     boolean existsByMemberNoIgnoreCase(String memberNo);
 

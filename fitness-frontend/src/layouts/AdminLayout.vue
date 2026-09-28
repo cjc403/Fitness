@@ -59,11 +59,13 @@ const menuItems = [
   { path: '/bookings', label: '预约与签到', icon: Tickets, permission: 'BOOKING_READ' },
   { path: '/venues', label: '场馆管理', icon: OfficeBuilding, permission: 'VENUE_READ' },
   { path: '/coach-workbench', label: '教练工作台', icon: Odometer, permission: 'COACH_WORKBENCH' },
+  { path: '/advisor-workbench', label: '会籍工作台', icon: User, permission: 'MEMBER_READ', roles: ['SALES'] },
   { path: '/member-home', label: '会员中心', icon: User, permission: 'MEMBER_SELF_SERVICE' }
 ]
 const visibleMenus = computed(() => {
   const permissions = userInfo.value?.permissions || []
-  return menuItems.filter(item => permissions.includes(item.permission))
+  const role = userInfo.value?.role
+  return menuItems.filter(item => permissions.includes(item.permission) && (!item.roles || (role && item.roles.includes(role))))
 })
 const roleName = computed(() => userInfo.value?.roleName || ROLE_NAMES[userInfo.value?.role || ''] || '系统用户')
 const canUseAssistant = computed(() => userInfo.value?.permissions?.includes('ASSISTANT_USE'))

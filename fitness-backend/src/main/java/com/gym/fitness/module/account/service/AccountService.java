@@ -29,7 +29,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AccountService {
-    private static final List<String> STAFF_ROLES = List.of("SUPER_ADMIN", "MANAGER", "COACH", "RECEPTION");
+    private static final List<String> STAFF_ROLES = List.of("SUPER_ADMIN", "MANAGER", "COACH", "RECEPTION", "SALES");
     private static final List<String> MANAGER_CREATABLE_ROLES = List.of("COACH", "RECEPTION");
 
     private final SysUserRepository users;

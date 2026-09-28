@@ -17,7 +17,7 @@ public class EmployeeAccountUpdateRequest {
     @Email @Size(max = 100)
     private String email;
 
-    @NotBlank @Pattern(regexp = "SUPER_ADMIN|MANAGER|COACH|RECEPTION")
+    @NotBlank @Pattern(regexp = "SUPER_ADMIN|MANAGER|COACH|RECEPTION|SALES")
     private String roleCode;
 
     private Long venueId;

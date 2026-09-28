@@ -82,6 +82,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: '会员中心', requiresAuth: true, permissions: ['MEMBER_SELF_SERVICE'] }
       },
       {
+        path: 'advisor-workbench',
+        name: 'AdvisorWorkbench',
+        component: () => import('@/views/advisor/AdvisorWorkbench.vue'),
+        meta: { title: '会籍工作台', requiresAuth: true, permissions: ['MEMBER_READ'], roles: ['SALES'] }
+      },
+      {
         path: 'access-denied',
         name: 'AccessDenied',
         component: () => import('@/views/AccessDenied.vue'),

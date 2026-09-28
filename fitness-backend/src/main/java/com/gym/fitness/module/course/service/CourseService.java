@@ -48,6 +48,7 @@ public class CourseService {
     private final PrivateLessonRepository privateLessonRepository;
     private final SysUserRepository sysUserRepository;
     private final NotificationService notificationService;
+    private final com.gym.fitness.module.course.repository.RoomRepository roomRepository;
 
     /**
      * 排课表单用的教练选项：只有绑定到真实教练账号，教练工作台才能按 coachId 查到这条排课。
@@ -145,7 +146,11 @@ public class CourseService {
         LocalDateTime previousStart = schedule.getScheduledStartTime();
         assertCoachAvailable(request.getCoachId(), request.getScheduledStartTime(),
                 request.getScheduledEndTime(), id);
+        assertRoomAvailable(request.getRoomId(), schedule.getVenueId(), request.getScheduledStartTime(),
+                request.getScheduledEndTime(),
+                request.getMaxStudents() == null ? schedule.getMaxStudents() : request.getMaxStudents(), id);
         schedule.setCourseId(course.getId());
+        schedule.setRoomId(request.getRoomId());
         schedule.setVenueId(course.getVenueId());
         schedule.setCoachId(request.getCoachId());
         schedule.setCoachName(request.getCoachName().trim());
@@ -225,8 +230,13 @@ public class CourseService {
         }
         assertCoachAvailable(request.getCoachId(), request.getScheduledStartTime(),
                 request.getScheduledEndTime(), null);
+        // 容量校验必须用"生效值"：请求不传时后端会回落到课程容量，直接传 null 会漏掉容量检查
+        int effectiveSeats = request.getMaxStudents() == null ? course.getMaxCapacity() : request.getMaxStudents();
+        assertRoomAvailable(request.getRoomId(), venueId, request.getScheduledStartTime(),
+                request.getScheduledEndTime(), effectiveSeats, null);
         CourseScheduleEntity entity = new CourseScheduleEntity();
         entity.setCourseId(course.getId());
+        entity.setRoomId(request.getRoomId());
         entity.setCoachId(request.getCoachId());
         entity.setCoachName(request.getCoachName().trim());
         entity.setVenueId(venueId);
@@ -257,6 +267,47 @@ public class CourseService {
                 .map(CourseEntity::getName).orElse("课程");
         return "该教练 " + SCHEDULE_TIME.format(first.getScheduledStartTime()) + "~"
                 + SCHEDULE_TIME.format(first.getScheduledEndTime()) + " 已有排课《" + courseName + "》";
+    }
+
+    /** 校验教室可用（归属门店、启用、容量足够）；未指定教室则直接通过。 */
+    private String assertRoomUsable(Long roomId, Long venueId, Integer maxStudents) {
+        if (roomId == null) return null;
+        var room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "教室不存在"));
+        if (!room.getVenueId().equals(venueId)) {
+            throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "教室必须与排课门店一致");
+        }
+        if (!"ACTIVE".equals(room.getStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "该教室已停用，不能排课");
+        }
+        if (room.getCapacity() != null && room.getCapacity() > 0 && maxStudents != null
+                && maxStudents > room.getCapacity()) {
+            throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED,
+                    "教室「" + room.getName() + "」最多容纳 " + room.getCapacity() + " 人，小于本课容量 " + maxStudents);
+        }
+        return room.getName();
+    }
+
+    /** 同一教室在同一时段是否已被占用（返回原因，无冲突返回 null）。 */
+    private String roomConflictReason(Long roomId, LocalDateTime start, LocalDateTime end, Long excludeId) {
+        if (roomId == null) return null;
+        List<CourseScheduleEntity> clashes = scheduleRepository.findRoomOverlaps(
+                roomId, start, end, excludeId == null ? 0L : excludeId);
+        if (clashes.isEmpty()) return null;
+        CourseScheduleEntity first = clashes.get(0);
+        String courseName = courseRepository.findById(first.getCourseId()).map(CourseEntity::getName).orElse("课程");
+        String roomName = roomRepository.findById(roomId).map(r -> r.getName()).orElse("教室");
+        return "教室「" + roomName + "」在 " + SCHEDULE_TIME.format(first.getScheduledStartTime()) + "~"
+                + SCHEDULE_TIME.format(first.getScheduledEndTime()) + " 已被《" + courseName + "》占用";
+    }
+
+    private void assertRoomAvailable(Long roomId, Long venueId, LocalDateTime start, LocalDateTime end,
+                                     Integer maxStudents, Long excludeId) {
+        assertRoomUsable(roomId, venueId, maxStudents);
+        String reason = roomConflictReason(roomId, start, end, excludeId);
+        if (reason != null) {
+            throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, reason + "，同一教室同一时段不能重复排课");
+        }
     }
 
     private void assertCoachAvailable(Long coachId, LocalDateTime start, LocalDateTime end, Long excludeId) {
@@ -290,6 +341,7 @@ public class CourseService {
         List<Integer> weekdays = request.getWeekdays().stream().distinct().sorted().toList();
         boolean dryRun = Boolean.TRUE.equals(request.getDryRun());
         int maxStudents = request.getMaxStudents() == null ? course.getMaxCapacity() : request.getMaxStudents();
+        assertRoomUsable(request.getRoomId(), venueId, maxStudents);
         LocalDateTime now = LocalDateTime.now();
         List<ScheduleBatchResult.Slot> created = new ArrayList<>();
         List<ScheduleBatchResult.Slot> skipped = new ArrayList<>();
@@ -304,6 +356,7 @@ public class CourseService {
                 continue;
             }
             String conflict = coachConflictReason(request.getCoachId(), start, end, null);
+            if (conflict == null) conflict = roomConflictReason(request.getRoomId(), start, end, null);
             if (conflict != null) {
                 skipped.add(new ScheduleBatchResult.Slot(label, conflict));
                 continue;
@@ -311,6 +364,7 @@ public class CourseService {
             if (!dryRun) {
                 CourseScheduleEntity entity = new CourseScheduleEntity();
                 entity.setCourseId(course.getId());
+                entity.setRoomId(request.getRoomId());
                 entity.setCoachId(request.getCoachId());
                 entity.setCoachName(request.getCoachName().trim());
                 entity.setVenueId(venueId);

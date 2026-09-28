@@ -17,6 +17,12 @@ public class CourseScheduleEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "course_id", insertable = false, updatable = false)
     private CourseEntity course;
+    /** 上课教室；历史排课为空表示未指定。 */
+    @Column(name = "room_id")
+    private Long roomId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "room_id", insertable = false, updatable = false)
+    private RoomEntity room;
     @Column(name = "coach_id")
     private Long coachId;
     @Column(name = "coach_name", length = 50)
