@@ -24,4 +24,6 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
     long countByScheduleIdAndStatus(Long scheduleId, String status);
     long countByScheduleId(Long scheduleId);
     Optional<BookingEntity> findFirstByScheduleIdAndStatusOrderByWaitlistPositionAscBookedAtAsc(Long scheduleId, String status);
+    /** 已结束却仍未核销的预约数（全局，供启动自检；不涉及登录上下文）。 */
+    long countByStatusInAndSchedule_ScheduledEndTimeBefore(List<String> statuses, java.time.LocalDateTime before);
 }

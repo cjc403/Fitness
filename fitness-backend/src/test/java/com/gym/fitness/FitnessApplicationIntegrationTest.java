@@ -1368,6 +1368,11 @@ class FitnessApplicationIntegrationTest {
         booking.setBookedAt(java.time.LocalDateTime.now().minusDays(4));
         long bookingId = bookingRepo.save(booking).getId();
 
+        // 启动自检用的全局计数查询（同时验证 Spring Data 派生方法名可解析）
+        org.assertj.core.api.Assertions.assertThat(bookingRepo.countByStatusInAndSchedule_ScheduledEndTimeBefore(
+                        java.util.List.of("BOOKED", "WAITLISTED"), java.time.LocalDateTime.now()))
+                .as("过期未核销计数应 >= 1").isGreaterThanOrEqualTo(1);
+
         // 系统管理员应当能看到这条过期记录
         JsonNode overdue = mapper.readTree(mvc.perform(get("/api/v1/admin/bookings/overdue")
                         .header("Authorization", bearer(admin)))
