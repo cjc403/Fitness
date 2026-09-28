@@ -14,6 +14,14 @@ public final class FinanceDtos {
     public record PayRequest(@NotNull BigDecimal amount,@NotBlank @Size(max=30) String channel,@NotBlank @Size(max=100) String externalReference,@NotNull LocalDateTime occurredAt,@NotBlank @Size(max=1000) String note){}
     public record Funding(Long orderId,String orderNo,BigDecimal unusedAmount){}
     public record Quote(Long entitlementId,String verificationStatus,String productType,BigDecimal refundableAmount,Integer remainingUses,Integer remainingServiceDays,long version,List<String> blockedReasons,Long activeRefundId,List<Funding> funding){}
+
+    /** 挡住退款的一条未完成预约（或待签私教课）；cancellable=true 表示可以一键取消。 */
+    public record Blocker(String type,Long bookingId,Long lessonId,String label,String detail,boolean cancellable){}
+
+    /** 一键取消的结果：cancelled 已取消、skipped 需人工处理、remainingBlocks 是处理完仍存在的阻断原因。 */
+    public record ClearBlockers(List<Item> cancelled,List<Item> skipped,List<String> remainingBlocks){
+        public record Item(String label,String detail){}
+    }
     public record Allocation(Long orderId,String orderNo,BigDecimal amount){}
     public record Audit(String action,String reason,LocalDateTime occurredAt){}
     public record Refund(Long id,String refundNo,Long entitlementId,String entitlementNo,Long memberId,String memberName,Long venueId,String status,BigDecimal amount,String reason,Long requestedBy,LocalDateTime requestedAt,Long approvedBy,LocalDateTime approvedAt,LocalDateTime paidAt,String decisionReason,List<Allocation> allocations,List<Audit> audit){}

@@ -30,6 +30,8 @@ class FitnessApplicationIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
     @Autowired JwtTokenProvider tokenProvider;
+    @Autowired com.gym.fitness.module.course.repository.CourseScheduleRepository scheduleRepo;
+    @Autowired com.gym.fitness.module.booking.repository.BookingRepository bookingRepo;
 
     @Test
     @Order(1)
@@ -1330,6 +1332,69 @@ class FitnessApplicationIntegrationTest {
                 .andExpect(jsonPath("$.data.reviewCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
     }
 
+
+    // ------------------------------------------------ 过期预约一键核销（超管）
+
+    @Test
+    @Order(24)
+    void superAdminCanResolveOverdueBookingsInOneClick() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile")
+                        .header("Authorization", bearer(login("member", "MEMBER", "会员"))))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        long venueId = firstVenueId(admin);
+        long courseId = newCourse(admin, "过期核销测试团课", "GROUP", venueId);
+
+        // 建课接口带 @FutureOrPresent，造不出"已结束"的排课，所以这条排课与预约直接落库
+        var schedule = new com.gym.fitness.module.course.entity.CourseScheduleEntity();
+        schedule.setCourseId(courseId);
+        schedule.setCoachId(coachUserId());
+        schedule.setCoachName("首席教练");
+        schedule.setVenueId(venueId);
+        java.time.LocalDateTime past = java.time.LocalDateTime.now().minusDays(3)
+                .withHour(10).withMinute(0).withSecond(0).withNano(0);
+        schedule.setScheduledStartTime(past);
+        schedule.setScheduledEndTime(past.plusHours(1));
+        schedule.setMaxStudents(10);
+        schedule.setEnrolledCount(0);
+        schedule.setStatus("SCHEDULED");
+        long scheduleId = scheduleRepo.save(schedule).getId();
+
+        var booking = new com.gym.fitness.module.booking.entity.BookingEntity();
+        booking.setScheduleId(scheduleId);
+        booking.setMemberId(memberId);
+        booking.setStatus("BOOKED");
+        booking.setBookedAt(java.time.LocalDateTime.now().minusDays(4));
+        long bookingId = bookingRepo.save(booking).getId();
+
+        // 系统管理员应当能看到这条过期记录
+        JsonNode overdue = mapper.readTree(mvc.perform(get("/api/v1/admin/bookings/overdue")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        boolean found = false;
+        for (JsonNode o : overdue.path("data")) if (o.path("id").asLong() == bookingId) found = true;
+        org.assertj.core.api.Assertions.assertThat(found).as("超管应能查到过期未核销预约").isTrue();
+
+        // 一键核销
+        mvc.perform(post("/api/v1/admin/bookings/overdue/resolve").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.noShow.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        // 该预约已记为爽约
+        org.assertj.core.api.Assertions.assertThat(bookingRepo.findById(bookingId).orElseThrow().getStatus())
+                .as("过期预约应被核销为爽约").isEqualTo("NO_SHOW");
+        // 再查清单时它已不在其中
+        JsonNode again = mapper.readTree(mvc.perform(get("/api/v1/admin/bookings/overdue")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        boolean still = false;
+        for (JsonNode o : again.path("data")) if (o.path("id").asLong() == bookingId) still = true;
+        org.assertj.core.api.Assertions.assertThat(still).isFalse();
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }
@@ -1362,6 +1427,121 @@ class FitnessApplicationIntegrationTest {
                 + "\"weekdays\":[1,2,3,4,5,6,7],\"startTime\":\"19:00\",\"endTime\":\"20:00\","
                 + "\"fromDate\":\"" + from + "\",\"toDate\":\"" + to + "\",\"maxStudents\":10,"
                 + "\"dryRun\":" + dryRun + "}";
+    }
+
+
+    // ------------------------------------------------ 退款前"一键取消未完成预约"
+
+    @Test
+    @Order(23)
+    void memberCanClearRefundBlockersInOneClickButNotWithinTwoHours() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        String member = login("member", "MEMBER", "会员");
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile").header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        long venueId = firstVenueId(admin);
+
+        // 权益：只为把退款阻断项挂到某个权益上（阻断判断按会员，不按权益）
+        long productId = mapper.readTree(mvc.perform(post("/api/v1/commercial/products")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"一键取消测试月卡\",\"category\":\"CARD\",\"productType\":\"MONTH_CARD\","
+                                + "\"validityDays\":30,\"price\":300.00,\"accessAllowed\":true,"
+                                + "\"venueId\":" + venueId + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        mvc.perform(post("/api/v1/commercial/orders").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":" + memberId + ",\"productId\":" + productId
+                                + ",\"paymentMethod\":\"CASH\",\"idempotencyKey\":\"it-clear-blockers-1\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        long entitlementId = mapper.readTree(mvc.perform(get("/api/v1/commercial/entitlements")
+                        .param("memberId", String.valueOf(memberId)).header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").get(0).path("id").asLong();
+
+        long courseId = newCourse(admin, "一键取消测试团课", "GROUP", venueId);
+        long coachUserId = coachUserId();
+
+        // A) 开课时间充裕的预约：应可一键取消
+        java.time.LocalDateTime far = java.time.LocalDateTime.now().plusDays(6)
+                .withHour(10).withMinute(0).withSecond(0).withNano(0);
+        long farSchedule = mapper.readTree(mvc.perform(post("/api/v1/admin/schedules")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachUserId, "首席教练", far, far.plusHours(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        long farBooking = mapper.readTree(mvc.perform(post("/api/v1/admin/bookings")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":" + memberId + ",\"scheduleId\":" + farSchedule + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+
+        // B) 开课前 2 小时内的预约：会员无权自助取消，必须如实报告"需人工处理"
+        java.time.LocalDateTime soon = java.time.LocalDateTime.now().plusMinutes(45)
+                .withSecond(0).withNano(0);
+        long soonSchedule = mapper.readTree(mvc.perform(post("/api/v1/admin/schedules")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachUserId, "首席教练", soon, soon.plusHours(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        mvc.perform(post("/api/v1/admin/bookings")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":" + memberId + ",\"scheduleId\":" + soonSchedule + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 阻断清单：一项可取消、一项不可取消
+        JsonNode blockers = mapper.readTree(mvc.perform(get("/api/v1/finance/me/refunds/blockers")
+                        .param("entitlementId", String.valueOf(entitlementId))
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        long cancellable = 0;
+        boolean soonBlocked = false;
+        for (JsonNode b : blockers.path("data")) {
+            if (b.path("cancellable").asBoolean()) cancellable++;
+            if (b.path("label").asText().contains("一键取消测试团课")
+                    && b.path("detail").asText().contains("2 小时")) soonBlocked = true;
+        }
+        org.assertj.core.api.Assertions.assertThat(cancellable).isGreaterThanOrEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(soonBlocked).as("开课前 2 小时内应被标为需人工处理").isTrue();
+
+        // 一键取消
+        mvc.perform(post("/api/v1/finance/me/refunds/clear-blockers")
+                        .param("entitlementId", String.valueOf(entitlementId))
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.cancelled.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.skipped.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        // 远期的已取消、2 小时内的仍然保留（不绕过业务规则）
+        JsonNode bookingsAfter = mapper.readTree(mvc.perform(get("/api/v1/member/bookings")
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data");
+        String farStatus = null, soonStatus = null;
+        for (JsonNode b : bookingsAfter) {
+            if (b.path("scheduleId").asLong() == farSchedule) farStatus = b.path("status").asText();
+            if (b.path("scheduleId").asLong() == soonSchedule) soonStatus = b.path("status").asText();
+        }
+        org.assertj.core.api.Assertions.assertThat(farStatus).isEqualTo("CANCELLED");
+        org.assertj.core.api.Assertions.assertThat(soonStatus).as("2 小时内的预约不能被一键取消绕过").isNotNull();
+
+        // 再次取阻断清单：远期那条不再出现
+        boolean farStillBlocking = false;
+        JsonNode again = mapper.readTree(mvc.perform(get("/api/v1/finance/me/refunds/blockers")
+                        .param("entitlementId", String.valueOf(entitlementId))
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        for (JsonNode b : again.path("data")) {
+            if (b.path("bookingId").asLong() == farBooking) farStillBlocking = true;
+        }
+        org.assertj.core.api.Assertions.assertThat(farStillBlocking).as("已取消的预约不应再出现在阻断清单").isFalse();
     }
 
     private String login(String username, String role, String roleName) throws Exception {

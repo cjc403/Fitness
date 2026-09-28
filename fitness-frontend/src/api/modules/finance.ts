@@ -33,6 +33,26 @@ export const createRefund = (data: { entitlementId: number; version: number; rea
 export const listRefunds = () => request.get<Refund[]>('/v1/finance/refunds')
 export const listMyRefunds = () => request.get<MemberRefund[]>('/v1/finance/me/refunds')
 export const getMyEntitlementQuote = (id: number) => request.get<EntitlementQuote>(`/v1/finance/me/entitlements/${id}/quote`)
+/** 挡住退款的一条未完成预约（或待签私教课）。cancellable=true 表示可以一键取消。 */
+export interface RefundBlocker {
+  type: 'BOOKING' | 'LESSON'
+  bookingId?: number | null
+  lessonId?: number | null
+  label: string
+  detail: string
+  cancellable: boolean
+}
+export interface ClearBlockersItem { label: string; detail: string }
+/** 一键取消的结果：已取消 / 需人工处理 / 处理完仍存在的阻断原因。 */
+export interface ClearBlockersResult {
+  cancelled: ClearBlockersItem[]
+  skipped: ClearBlockersItem[]
+  remainingBlocks: string[]
+}
+export const getMyRefundBlockers = (entitlementId: number) =>
+  request.get<RefundBlocker[]>('/v1/finance/me/refunds/blockers', { params: { entitlementId } })
+export const clearMyRefundBlockers = (entitlementId: number) =>
+  request.post<ClearBlockersResult>('/v1/finance/me/refunds/clear-blockers', null, { params: { entitlementId } })
 export const createMyRefund = (data: { entitlementId: number; version: number; reason: string; idempotencyKey: string }) => request.post<Refund>('/v1/finance/me/refunds', data)
 export const cancelMyRefund = (id: number, reason: string) => request.post<Refund>(`/v1/finance/me/refunds/${id}/cancel`, { reason })
 export const approveRefund = (id: number, reason: string) => request.post<Refund>(`/v1/finance/refunds/${id}/approve`, { reason })

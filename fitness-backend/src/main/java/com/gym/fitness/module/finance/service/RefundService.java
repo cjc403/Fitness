@@ -14,12 +14,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.security.MessageDigest;
 import java.util.*;
 import static com.gym.fitness.module.finance.service.EntitlementValueService.*;
 
 @Service @RequiredArgsConstructor @Transactional
 public class RefundService {
+    /** 阻断项标签里的时间格式。 */
+    private static final java.time.format.DateTimeFormatter BLOCK_TIME = java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm");
     private final EntitlementValueService values;
     private final RefundApplicationRepository refunds;
     private final RefundAllocationRepository allocations;
@@ -35,6 +38,7 @@ public class RefundService {
     private final SysUserRepository users;
     private final EntityManager em;
     private final com.gym.fitness.module.notice.service.NotificationService notifications;
+    private final com.gym.fitness.module.booking.service.BookingService bookingService;
     public Quote quote(Long id){var e=values.lock(id);values.refreshTime(e);return values.quoteLocked(e,serviceBlocks(e));}
     private List<String> serviceBlocks(MemberEntitlementEntity e){
         var blocks=new ArrayList<String>();if(e.getReservedUses()>0||lessons.findByMemberIdOrderByReservedAtDesc(e.getMemberId()).stream().anyMatch(l->Set.of("RESERVED","PENDING").contains(l.getStatus())))blocks.add("会员有预占课次或待签课，请先处理");
@@ -94,6 +98,47 @@ public class RefundService {
         var e=entitlements.findById(entitlementId).orElseThrow(()->fail("权益不存在"));
         if(!Objects.equals(e.getMemberId(),currentMemberId()))throw fail("只能对自己名下的权益申请退款");
         return e;
+    }
+    /** 列出挡住退款的未完成预约与待签课，并标出哪些能一键自助取消。 */
+    @Transactional(readOnly=true)
+    public List<Blocker> memberBlockers(Long entitlementId){var e=ownEntitlement(entitlementId);return blockers(e,now());}
+    private List<Blocker> blockers(MemberEntitlementEntity e,LocalDateTime at){
+        List<Blocker> out=new ArrayList<>();LocalDateTime cutoff=at.plusHours(2);
+        for(var b:bookings.findByMemberIdOrderByBookedAtDesc(e.getMemberId())){
+            String st=b.getStatus();var s=b.getSchedule();
+            boolean blocking=Set.of("BOOKED","WAITLISTED").contains(st)||("ATTENDED".equals(st)&&s!=null&&s.getScheduledEndTime().isAfter(at));
+            if(!blocking)continue;
+            boolean open=Set.of("BOOKED","WAITLISTED").contains(st);
+            // 已结束却仍是“已预约”的历史记录：既不是 2 小时规则，也不是会员能自助取消的，必须分开说明
+            boolean past=s!=null&&s.getScheduledStartTime().isBefore(at),inTime=s!=null&&s.getScheduledStartTime().isAfter(cutoff);
+            String course=s==null||s.getCourse()==null?"预约":"《"+s.getCourse().getName()+"》";
+            String label=course+(s==null?"":" "+BLOCK_TIME.format(s.getScheduledStartTime()));
+            String detail=!open?"已签到且课程未结束，无法取消":past?"课程已结束但未签到，需前台核销或标记爽约后即可退款":inTime?"开课时间充裕，可直接自助取消":"开课前 2 小时内，需联系前台或店长办理";
+            out.add(new Blocker("BOOKING",b.getId(),null,label,detail,open&&inTime&&!past));
+        }
+        // RESERVED 的私教课随所属预约一起取消并释放，所以这里只单列“已提交待签课”（会员无权取消）
+        for(var l:lessons.findByMemberIdOrderByReservedAtDesc(e.getMemberId())){
+            if(!"PENDING".equals(l.getStatus()))continue;
+            out.add(new Blocker("LESSON",l.getBookingId(),l.getId(),"私教课 · 已提交待签课","教练已提交授课，需本人签课或由门店冲正",false));
+        }
+        return out;
+    }
+    /**
+     * 一键取消可自助取消的阻断项，让会员满足退款前置条件。
+     *
+     * <p>刻意<b>不加 @Transactional</b>：每条取消都在它自己的事务里执行（cancelForCurrentMember 本身是 @Transactional），
+     * 这样某一条因业务规则失败（例如开课前 2 小时内不能自助取消）只影响它自己。
+     * 若这里也开事务，内层抛出的异常会把事务标记为 rollback-only，整批都会失败。</p>
+     */
+    public ClearBlockers memberClearBlockers(Long entitlementId){
+        var e=ownEntitlement(entitlementId);
+        List<ClearBlockers.Item> cancelled=new ArrayList<>(),skipped=new ArrayList<>();
+        for(var b:blockers(e,now())){
+            if(!"BOOKING".equals(b.type())||!b.cancellable()){skipped.add(new ClearBlockers.Item(b.label(),b.detail()));continue;}
+            try{bookingService.cancelForCurrentMember(b.bookingId());cancelled.add(new ClearBlockers.Item(b.label(),"已取消，预占次数已释放"));}
+            catch(RuntimeException ex){skipped.add(new ClearBlockers.Item(b.label(),ex.getMessage()));}
+        }
+        return new ClearBlockers(cancelled,skipped,serviceBlocks(entitlements.findById(e.getId()).orElse(e)));
     }
     /** 会员自助报价：退回金额仍由服务端按价值账余额核定，会员无法指定金额。 */
     public Quote memberQuote(Long entitlementId){return quote(ownEntitlement(entitlementId).getId());}

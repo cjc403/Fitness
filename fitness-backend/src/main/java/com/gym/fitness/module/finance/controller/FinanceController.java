@@ -29,6 +29,10 @@ public class FinanceController {
     public Result<Refund> myRequest(@Valid @RequestBody RefundRequest r){return Result.success(refunds.memberRequest(r));}
     @PostMapping("/me/refunds/{id}/cancel") @PreAuthorize("hasAuthority('MEMBER_SELF_SERVICE')")
     public Result<Refund> myCancel(@PathVariable Long id,@Valid @RequestBody DecisionRequest r){return Result.success(refunds.memberCancel(id,r.reason()));}
+    @GetMapping("/me/refunds/blockers") @PreAuthorize("hasAuthority('MEMBER_SELF_SERVICE')")
+    public Result<List<Blocker>> myBlockers(@RequestParam Long entitlementId){return Result.success(refunds.memberBlockers(entitlementId));}
+    @PostMapping("/me/refunds/clear-blockers") @PreAuthorize("hasAuthority('MEMBER_SELF_SERVICE')")
+    public Result<ClearBlockers> myClearBlockers(@RequestParam Long entitlementId){return Result.success(refunds.memberClearBlockers(entitlementId));}
     @PostMapping("/refunds/{id}/approve") @PreAuthorize("hasAuthority('REFUND_APPROVE')")
     public Result<Refund> approve(@PathVariable Long id,@Valid @RequestBody DecisionRequest r){return Result.success(refunds.approve(id,r.reason()));}
     @PostMapping("/refunds/{id}/reject") @PreAuthorize("hasAuthority('REFUND_APPROVE')")
