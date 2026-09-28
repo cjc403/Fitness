@@ -1398,7 +1398,16 @@ class FitnessApplicationIntegrationTest {
         boolean still = false;
         for (JsonNode o : again.path("data")) if (o.path("id").asLong() == bookingId) still = true;
         org.assertj.core.api.Assertions.assertThat(still).isFalse();
+
+        // 被记爽约的会员应当收到站内通知（此前预约类事件完全没有通知）
+        String memberToken = login("member", "MEMBER", "会员");
+        JsonNode notices = mapper.readTree(mvc.perform(get("/api/v1/notifications").header("Authorization", bearer(memberToken)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        boolean noshowNotified = false;
+        for (JsonNode n : notices) if (n.path("title").asText().contains("爽约")) noshowNotified = true;
+        org.assertj.core.api.Assertions.assertThat(noshowNotified).as("爽约应通知会员").isTrue();
     }
+
 
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();

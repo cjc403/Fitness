@@ -26,8 +26,17 @@ public class BookingService {
     private final com.gym.fitness.module.training.service.TrainingService training;
     private final com.gym.fitness.common.util.VenueMutationLock venueLock;
     private final com.gym.fitness.module.finance.service.EntitlementValueService values;
+    private final com.gym.fitness.module.notice.service.NotificationService notifications;
 
     @Transactional(readOnly = true)
+    private String courseName(CourseScheduleEntity schedule) {
+        return schedule == null || schedule.getCourse() == null ? "课程" : schedule.getCourse().getName();
+    }
+
+    private Long venueIdOf(BookingEntity booking) {
+        return booking.getSchedule() == null ? null : booking.getSchedule().getVenueId();
+    }
+
     public List<BookingEntity> list() {
         return SecurityUtil.isSuperAdmin()
                 ? bookingRepository.findAllByOrderByBookedAtDesc()
@@ -166,6 +175,10 @@ public class BookingService {
         if (!List.of("BOOKED", "WAITLISTED").contains(entity.getStatus()))
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "已签到、已请假或爽约的记录不能直接取消");
         training.release(entity.getId(), reason == null || reason.isBlank() ? "取消预约" : reason);
+        notifications.notifyMember(entity.getMemberId(), venueIdOf(entity), "BOOKING",
+                "预约已取消",
+                "《" + courseName(entity.getSchedule()) + "》的预约已取消，原因：" + (reason == null || reason.isBlank() ? "未填写" : reason),
+                "BOOKING", entity.getId());
         String oldStatus = entity.getStatus();
         entity.setStatus("CANCELLED");
         entity.setCancelledAt(LocalDateTime.now());
@@ -208,6 +221,10 @@ public class BookingService {
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "课程开始前不能标记爽约");
         }
         entity.setStatus("NO_SHOW");
+        notifications.notifyMember(entity.getMemberId(), entity.getSchedule().getVenueId(), "BOOKING",
+                "课程未到店，已记录爽约",
+                "《" + courseName(entity.getSchedule()) + "》未签到，已记录爽约；课包预占已释放、未扣次数。",
+                "BOOKING", entity.getId());
         training.release(id, "爽约记录，释放预占，不自动扣课");
         entity.setNoShowPenaltyPoints(Math.max(1, entity.getNoShowPenaltyPoints() == null ? 1 : entity.getNoShowPenaltyPoints() + 1));
         return bookingRepository.save(entity);
@@ -228,6 +245,11 @@ public class BookingService {
                     bookingRepository.save(next);
                     schedule.setEnrolledCount(schedule.getEnrolledCount() + 1);
                     scheduleRepository.save(schedule);
+                    // 候补转正必须通知会员：否则他不知道已补上位，没来就会被记爽约
+                    notifications.notifyMember(next.getMemberId(), schedule.getVenueId(), "BOOKING",
+                            "候补已转为正式预约",
+                            "《" + courseName(schedule) + "》有人取消，你已从候补自动转为正式预约，请按时到店（开课前 2 小时内不可自助取消）。",
+                            "BOOKING", next.getId());
         }
     }
 

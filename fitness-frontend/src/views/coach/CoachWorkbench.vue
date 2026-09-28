@@ -29,6 +29,15 @@
     </el-collapse>
     <el-empty v-if="!loading&&!schedules.length" description="当前没有分配给你的排课" />
     <p class="muted">上方服务产值与提成为已确认私教消课累计金额；团课和历史未关联预约不计入实际私教结算。</p>
+    <div class="section-head"><div><h2>我的评分</h2><p>会员对我所授课程的评价（只有已签到的课能评价）</p></div><el-tag v-if="reviewSummary" effect="plain">{{ reviewSummary.reviewCount }} 条</el-tag></div>
+    <el-card v-if="reviewSummary && reviewSummary.reviewCount" shadow="never" class="review-card">
+      <div class="review-overview">
+        <div class="review-score"><strong>{{ reviewSummary.averageRating ?? '—' }}</strong><span>平均分 / 5</span><el-rate :model-value="Number(reviewSummary.averageRating || 0)" disabled /></div>
+        <ul class="review-dist"><li v-for="star in [5,4,3,2,1]" :key="star"><span>{{ star }} 星</span><div class="dist-bar"><i :style="{width: distPercent(star)}"/></div><small>{{ reviewSummary.distribution[star] || 0 }}</small></li></ul>
+      </div>
+      <ul class="recent-reviews"><li v-for="r in reviewSummary.recent" :key="r.id"><div class="recent-head"><strong>{{ r.courseName || '课程' }}</strong><el-rate :model-value="r.rating" disabled /></div><p v-if="r.content">{{ r.content }}</p><small>{{ r.memberName || '会员' }} · {{ reviewDate(r.createdAt) }}<template v-if="r.tags"> · {{ r.tags }}</template></small></li></ul>
+    </el-card>
+    <el-empty v-else description="还没有收到评价（会员只有在签到的课后才能评价）" :image-size="60" />
     <TrainingPanel @changed="load" />
   </div>
 </template>
@@ -41,6 +50,7 @@ import { getCoachWorkbench, type CoachSchedule, type CoachStudentBooking } from 
 import { checkIn, markNoShow } from '@/api/modules/booking'
 import { useAuthStore } from '@/store/modules/auth'
 import TrainingPanel from '@/components/TrainingPanel.vue'
+import { getCoachReviewSummary, type RatingSummary } from '@/api/modules/review'
 
 const authStore = useAuthStore()
 const userInfo = computed(() => authStore.userInfo)
@@ -48,13 +58,17 @@ const loading = ref(false)
 const schedules = ref<CoachSchedule[]>([])
 const expanded = ref<number[]>([])
 const summary = ref({ todaySchedules: 0, upcomingSchedules: 0, bookedStudents: 0, attendedStudents: 0, completedSessions:0, deliveredHours:0, serviceRevenue:0, estimatedCommission:0 })
+const reviewSummary = ref<RatingSummary>()
 
+const reviewDate=(v?:string)=>v?new Date(v).toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'}):'—';const distPercent=(star:number)=>{const total=reviewSummary.value?.reviewCount||0;const n=reviewSummary.value?.distribution?.[star]||0;return total?Math.round(n/total*100)+'%':'0%'}
 const load = async () => {
   loading.value = true
   try {
     const response = await getCoachWorkbench()
     summary.value = response.data.summary
     schedules.value = response.data.schedules
+    // 评分接口与工作台分别失败时互不影响
+    try { reviewSummary.value = (await getCoachReviewSummary()).data } catch { reviewSummary.value = undefined }
     if (!expanded.value.length && schedules.value.length) expanded.value = [schedules.value[0].id]
   } finally { loading.value = false }
 }
@@ -79,6 +93,6 @@ onMounted(load)
 </script>
 
 <style scoped>
-.coach-page{max-width:1200px;margin:0 auto}.page-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}.page-title>div>span{color:#3474ff;font-size:11px;font-weight:800;letter-spacing:1.8px}.page-title h1{margin:7px 0;color:#172033;font-size:29px}.page-title p,.section-head p{margin:0;color:#8792a5}.stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.stats-grid article{display:flex;align-items:center;gap:12px;padding:18px;border:1px solid #e7ecf4;border-radius:17px;background:#fff}.icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:13px;font-size:19px}.icon.blue{background:#eaf1ff;color:#2e70ff}.icon.green{background:#e6f8f2;color:#1eb88a}.icon.orange{background:#fff0e6;color:#f27b31}.icon.purple{background:#f2eafd;color:#8c5be0}.stats-grid span,.stats-grid strong{display:block}.stats-grid span{color:#8792a5;font-size:11px}.stats-grid strong{margin-top:4px;color:#172033;font-size:21px}.section-head{display:flex;align-items:center;justify-content:space-between;margin:28px 0 14px}.section-head h2{margin:0 0 5px;color:#1b263b}.section-head p{font-size:12px}.schedule-list{border:0}.schedule-list :deep(.el-collapse-item){margin-bottom:13px;border:1px solid #e7ecf4;border-radius:16px;background:#fff;overflow:hidden}.schedule-list :deep(.el-collapse-item__header){height:auto;padding:16px 20px;border:0}.schedule-list :deep(.el-collapse-item__wrap){border:0}.schedule-list :deep(.el-collapse-item__content){padding:0 20px 18px}.schedule-title{display:flex;align-items:center;width:100%;gap:14px}.date-box{display:grid;place-items:center;flex:none;width:52px;height:52px;border-radius:13px;background:#edf3ff;color:#2868f5}.date-box strong,.date-box small,.schedule-title>div:nth-child(2)>strong,.schedule-title>div:nth-child(2)>small{display:block}.date-box strong{font-size:19px;line-height:1}.date-box small{margin-top:3px;font-size:10px}.schedule-title>div:nth-child(2)>small{margin-top:5px;color:#8792a5}.schedule-meta{display:flex;align-items:center;gap:15px;margin-left:auto;margin-right:16px;color:#6f7c92}.student-table{border-top:1px solid #edf0f5}.student{display:flex;align-items:center;gap:10px}.student>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eaf1ff;color:#2868f5;font-weight:800}.student strong,.student small{display:block}.student small{margin-top:3px;color:#8b96a8}.muted{color:#b4bbc7}@media(max-width:1150px){.stats-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.page-title{align-items:flex-end}.page-title p{display:none}.stats-grid{grid-template-columns:1fr 1fr}.schedule-meta span{display:none}}
+.coach-page{max-width:1200px;margin:0 auto}.page-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}.page-title>div>span{color:#3474ff;font-size:11px;font-weight:800;letter-spacing:1.8px}.page-title h1{margin:7px 0;color:#172033;font-size:29px}.page-title p,.section-head p{margin:0;color:#8792a5}.stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.stats-grid article{display:flex;align-items:center;gap:12px;padding:18px;border:1px solid #e7ecf4;border-radius:17px;background:#fff}.icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:13px;font-size:19px}.icon.blue{background:#eaf1ff;color:#2e70ff}.icon.green{background:#e6f8f2;color:#1eb88a}.icon.orange{background:#fff0e6;color:#f27b31}.icon.purple{background:#f2eafd;color:#8c5be0}.stats-grid span,.stats-grid strong{display:block}.stats-grid span{color:#8792a5;font-size:11px}.stats-grid strong{margin-top:4px;color:#172033;font-size:21px}.section-head{display:flex;align-items:center;justify-content:space-between;margin:28px 0 14px}.section-head h2{margin:0 0 5px;color:#1b263b}.section-head p{font-size:12px}.schedule-list{border:0}.schedule-list :deep(.el-collapse-item){margin-bottom:13px;border:1px solid #e7ecf4;border-radius:16px;background:#fff;overflow:hidden}.schedule-list :deep(.el-collapse-item__header){height:auto;padding:16px 20px;border:0}.schedule-list :deep(.el-collapse-item__wrap){border:0}.schedule-list :deep(.el-collapse-item__content){padding:0 20px 18px}.schedule-title{display:flex;align-items:center;width:100%;gap:14px}.date-box{display:grid;place-items:center;flex:none;width:52px;height:52px;border-radius:13px;background:#edf3ff;color:#2868f5}.date-box strong,.date-box small,.schedule-title>div:nth-child(2)>strong,.schedule-title>div:nth-child(2)>small{display:block}.date-box strong{font-size:19px;line-height:1}.date-box small{margin-top:3px;font-size:10px}.schedule-title>div:nth-child(2)>small{margin-top:5px;color:#8792a5}.schedule-meta{display:flex;align-items:center;gap:15px;margin-left:auto;margin-right:16px;color:#6f7c92}.student-table{border-top:1px solid #edf0f5}.student{display:flex;align-items:center;gap:10px}.student>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eaf1ff;color:#2868f5;font-weight:800}.student strong,.student small{display:block}.student small{margin-top:3px;color:#8b96a8}.muted{color:#b4bbc7}@media(max-width:115.review-card{margin-bottom:24px;border-radius:16px}.review-overview{display:flex;align-items:center;gap:36px;padding-bottom:16px;border-bottom:1px solid #eef1f6}.review-score{text-align:center}.review-score strong{display:block;font-size:32px;color:#172033}.review-score span{display:block;margin:4px 0 6px;color:#8792a5;font-size:12px}.review-dist{flex:1;list-style:none;margin:0;padding:0}.review-dist li{display:flex;align-items:center;gap:10px;padding:3px 0;color:#6f7c92;font-size:12px}.review-dist li>span{width:34px}.dist-bar{flex:1;height:7px;border-radius:4px;background:#eef2f9;overflow:hidden}.dist-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#f7b955,#f38335)}.review-dist small{width:26px;text-align:right}.recent-reviews{list-style:none;margin:14px 0 0;padding:0}.recent-reviews li{padding:10px 0;border-bottom:1px dashed #eef1f6}.recent-reviews li:last-child{border-bottom:0}.recent-head{display:flex;align-items:center;justify-content:space-between}.recent-head strong{color:#243249}.recent-reviews p{margin:6px 0 3px;color:#5f6d85;font-size:13px}.recent-reviews small{color:#9aa5b8;font-size:12px}0px){.stats-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.page-title{align-items:flex-end}.page-title p{display:none}.stats-grid{grid-template-columns:1fr 1fr}.schedule-meta span{display:none}}
 @media(min-width:1151px){.stats-grid{grid-template-columns:repeat(4,1fr)}}
 </style>
