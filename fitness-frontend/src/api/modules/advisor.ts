@@ -12,6 +12,7 @@ export interface AdvisorSummary {
 export interface AdvisorMember {
   memberId: number; memberNo?: string; realName?: string; phone?: string; status?: string
   lastFollowAt?: string; lastFollowContent?: string; nextFollowAt?: string; due: boolean
+  riskScore?: number; riskLevel?: 'HIGH' | 'MEDIUM' | 'LOW'
 }
 export interface AdvisorWorkbench { advisorName?: string; summary: AdvisorSummary; members: AdvisorMember[] }
 

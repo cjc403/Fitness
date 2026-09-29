@@ -28,7 +28,8 @@ public final class AdvisorDtos {
     /** 我的会员一行：档案 + 归属 + 最近跟进 + 是否待跟进。 */
     public record AdvisorMember(Long memberId, String memberNo, String realName, String phone, String status,
                                 LocalDateTime lastFollowAt, String lastFollowContent,
-                                LocalDateTime nextFollowAt, boolean due) {
+                                LocalDateTime nextFollowAt, boolean due,
+                                Integer riskScore, String riskLevel) {
     }
 
     public record AdvisorWorkbench(String advisorName, AdvisorSummary summary, List<AdvisorMember> members) {

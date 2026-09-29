@@ -1646,6 +1646,55 @@ class FitnessApplicationIntegrationTest {
         org.assertj.core.api.Assertions.assertThat(second).contains("已发过跳过");
     }
 
+
+    // ------------------------------------------------ 推荐 2：经营分析
+
+    @Test
+    @Order(30)
+    void analyticsOverviewIsCoherentAndRiskListIsScoped() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        JsonNode ov = mapper.readTree(mvc.perform(get("/api/v1/admin/analytics/overview")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        long total = ov.path("totalMembers").asLong();
+        long parts = ov.path("activeMembers").asLong() + ov.path("silentMembers").asLong() + ov.path("churnedMembers").asLong();
+        org.assertj.core.api.Assertions.assertThat(total).as("应有会员数据").isGreaterThan(0);
+        org.assertj.core.api.Assertions.assertThat(parts).as("活跃+沉默+流失应等于会员总数").isEqualTo(total);
+        org.assertj.core.api.Assertions.assertThat(ov.path("highRiskMembers").asLong())
+                .as("高风险数不应超过总数").isLessThanOrEqualTo(total);
+
+        mvc.perform(get("/api/v1/admin/analytics/coaches").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        JsonNode all = mapper.readTree(mvc.perform(get("/api/v1/admin/analytics/members")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(all.path("members").size()).isGreaterThan(0);
+        long highCount = 0;
+        for (JsonNode m : all.path("members")) {
+            int score = m.path("riskScore").asInt();
+            org.assertj.core.api.Assertions.assertThat(score).isBetween(0, 100);
+            org.assertj.core.api.Assertions.assertThat(m.path("reason").asText()).isNotBlank();
+            if ("HIGH".equals(m.path("riskLevel").asText())) highCount++;
+        }
+        org.assertj.core.api.Assertions.assertThat(highCount)
+                .as("高风险计数应与列表一致").isEqualTo(all.path("highRisk").asLong());
+
+        // 只看高风险时，返回的每一行都必须是高风险
+        JsonNode only = mapper.readTree(mvc.perform(get("/api/v1/admin/analytics/members").param("riskOnly", "true")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        for (JsonNode m : only.path("members")) {
+            org.assertj.core.api.Assertions.assertThat(m.path("riskLevel").asText()).isEqualTo("HIGH");
+        }
+
+        // 越权：前台没有经营分析权限（注解级拦截 → HTTP 403；服务层拦截才是 200+1003）
+        mvc.perform(get("/api/v1/admin/analytics/overview")
+                        .header("Authorization", bearer(login("reception", "RECEPTION", "前台"))))
+                .andExpect(status().isForbidden());
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }

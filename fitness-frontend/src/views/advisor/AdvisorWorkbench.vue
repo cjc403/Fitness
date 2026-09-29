@@ -16,6 +16,7 @@
       <el-table v-loading="loading" :data="data.members">
         <el-table-column label="会员" min-width="170"><template #default="{row}"><div class="member-cell"><strong>{{ row.realName }}</strong><small>{{ row.memberNo }} · {{ row.phone || '未填手机' }}</small></div></template></el-table-column>
         <el-table-column label="状态" width="110"><template #default="{row}"><el-tag :type="row.status==='ACTIVE'?'success':'info'">{{ statusText(row.status) }}</el-tag></template></el-table-column>
+        <el-table-column label="风险" width="130"><template #default="{row}"><el-tag v-if="row.riskLevel" :type="row.riskLevel==='HIGH'?'danger':row.riskLevel==='MEDIUM'?'warning':'success'" size="small">{{ riskText(row.riskLevel) }} {{ row.riskScore }}</el-tag><span v-else class="muted">—</span></template></el-table-column>
         <el-table-column label="最近跟进" min-width="240"><template #default="{row}"><template v-if="row.lastFollowAt"><small class="muted">{{ dateText(row.lastFollowAt) }}</small><div>{{ row.lastFollowContent }}</div></template><span v-else class="muted">还没有跟进记录</span></template></el-table-column>
         <el-table-column label="下次跟进" width="150"><template #default="{row}"><template v-if="row.nextFollowAt"><el-tag :type="row.due?'danger':'info'" size="small">{{ row.due?'已到期':'已约定' }}</el-tag><small class="muted">{{ dateText(row.nextFollowAt) }}</small></template><span v-else class="muted">—</span></template></el-table-column>
         <el-table-column label="操作" width="150" fixed="right"><template #default="{row}"><el-button link type="primary" @click="openFollow(row)">记跟进</el-button><el-button link @click="openHistory(row)">跟进记录</el-button></template></el-table-column>
@@ -57,6 +58,7 @@ const followForm = reactive({ followType: 'CALL', content: '', nextFollowAt: und
 const money = (v?: number) => (Number(v || 0)).toFixed(2)
 const dateText = (v?: string) => v ? new Date(v).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
 const statusText = (v?: string) => ({ ACTIVE: '正常', PAUSED: '暂停', EXPIRED: '已过期', BLACKLIST: '黑名单' }[v || ''] || v || '—')
+const riskText = (v: string) => ({ HIGH: '高风险', MEDIUM: '中风险', LOW: '低风险' }[v] || v)
 const typeText = (v: string) => ({ CALL: '电话', WECHAT: '微信', VISIT: '到店', OTHER: '其它' }[v] || v)
 
 const load = async () => {

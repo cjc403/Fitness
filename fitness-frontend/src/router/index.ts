@@ -40,6 +40,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: '经营看板', requiresAuth: true, permissions: ['DASHBOARD_READ'] }
       },
       {
+        path: 'analytics',
+        name: 'Analytics',
+        component: () => import('@/views/admin/Analytics.vue'),
+        meta: { title: '经营分析', requiresAuth: true, permissions: ['DASHBOARD_READ'] }
+      },
+      {
         path: 'members',
         name: 'Members',
         component: () => import('@/views/admin/MemberList.vue'),

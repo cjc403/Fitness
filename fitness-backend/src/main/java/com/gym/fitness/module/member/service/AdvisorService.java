@@ -35,6 +35,8 @@ public class AdvisorService {
     private final MemberFollowUpRepository followUps;
     private final SysUserRepository users;
     private final SalesOrderRepository orders;
+    private final com.gym.fitness.module.booking.repository.BookingRepository bookings;
+    private final com.gym.fitness.module.commercial.repository.MemberEntitlementRepository entitlements;
 
     // ---------------------------------------------------------------- 归属
 
@@ -108,6 +110,24 @@ public class AdvisorService {
             followCount.merge(f.getMemberId(), 1L, Long::sum);
         }
 
+        // 流失风险分：与经营分析同一口径（规则化，可解释）
+        java.util.Map<Long, java.time.LocalDate> lastVisit = new java.util.HashMap<>();
+        java.util.Map<Long, Long> visits60 = new java.util.HashMap<>();
+        java.time.LocalDate today0 = LocalDate.now();
+        if (!myIds.isEmpty()) {
+            for (var b : bookings.findAllByOrderByBookedAtDesc()) {
+                if (!myIds.contains(b.getMemberId()) || !"ATTENDED".equals(b.getStatus()) || b.getSchedule() == null) continue;
+                var at = b.getSchedule().getScheduledStartTime();
+                if (at == null) continue;
+                lastVisit.merge(b.getMemberId(), at.toLocalDate(), (a, c) -> c.isAfter(a) ? c : a);
+                if (!at.toLocalDate().isBefore(today0.minusDays(60))) visits60.merge(b.getMemberId(), 1L, Long::sum);
+            }
+        }
+        java.util.Set<Long> activeEnt = new java.util.HashSet<>();
+        for (var e : entitlements.findAllByOrderByIdDesc()) {
+            if (myIds.contains(e.getMemberId()) && "ACTIVE".equals(e.getStatus())) activeEnt.add(e.getMemberId());
+        }
+
         List<AdvisorMember> rows = new ArrayList<>();
         long due = 0;
         for (MemberEntity m : mine) {
@@ -115,12 +135,16 @@ public class AdvisorService {
             LocalDateTime next = last == null ? null : last.getNextFollowAt();
             boolean isDue = next != null && !next.isAfter(now);
             if (isDue) due++;
+            var risk = com.gym.fitness.module.analytics.service.RiskScoring.score(
+                    lastVisit.get(m.getId()), m.getCreatedAt() == null ? null : m.getCreatedAt().toLocalDate(),
+                    visits60.getOrDefault(m.getId(), 0L), activeEnt.contains(m.getId()), today0);
             rows.add(new AdvisorMember(m.getId(), m.getMemberNo(), m.getRealName(), m.getPhone(), m.getStatus(),
                     last == null ? null : last.getCreatedAt(),
                     last == null ? null : last.getContent(),
-                    next, isDue));
+                    next, isDue, risk.value(), risk.level()));
         }
         rows.sort(Comparator.comparing(AdvisorMember::due).reversed()
+                .thenComparing(AdvisorMember::riskScore, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(AdvisorMember::lastFollowAt, Comparator.nullsFirst(Comparator.naturalOrder())));
 
         long newThisMonth = mine.stream()

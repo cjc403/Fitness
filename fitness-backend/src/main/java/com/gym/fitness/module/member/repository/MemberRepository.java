@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
+    /** 本门店会员（经营分析与报表用）。 */
+    List<MemberEntity> findByVenueIdOrderByIdDesc(Long venueId);
+
     /** 归属某位会籍顾问的会员（顾问工作台）。 */
     List<MemberEntity> findBySalesUserIdOrderByIdDesc(Long salesUserId);
     /** 归属某位教练的会员。 */
