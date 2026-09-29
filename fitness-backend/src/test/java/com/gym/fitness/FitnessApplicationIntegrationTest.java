@@ -931,7 +931,10 @@ class FitnessApplicationIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
                 .path("data").path("id").asLong();
-        java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(5).withNano(0);
+        // 固定到一个绝不会和演示数据/其它用例撞车的时段（凌晨 03:17），
+        // 否则这个用例会随演示数据里的长期排课而随机失败（教练时段冲突 2600）
+        java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(5)
+                .withHour(3).withMinute(17).withSecond(0).withNano(0);
         long scheduleId = mapper.readTree(mvc.perform(post("/api/v1/admin/schedules")
                         .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"courseId\":" + privateCourseId + ",\"coachName\":\"占位姓名\","
