@@ -95,5 +95,14 @@ fitness:
     # 权益到期提前提醒天数（7/3/1 天各提醒一次）
     expiry-reminder-days: 7
     overdue-cron: "0 10 7 * * *"
+  # 消息通道：provider=MOCK 表示模拟发送，只记录投递、不会真的发出去
+  messages:
+    sms:
+      enabled: true
+      provider: MOCK
+    email:
+      enabled: true
+      provider: MOCK
+      from: no-reply@fitchain.local
     cleanup-cron: "0 30 3 * * *"
     reminder-cron: "0 0 9 * * *"

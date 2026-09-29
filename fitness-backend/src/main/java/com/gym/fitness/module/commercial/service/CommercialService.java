@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CommercialService {
     private final MembershipProductRepository products;
+    private final com.gym.fitness.module.commercial.repository.ProductVenueRepository productVenues;
     private final SalesOrderRepository orders;
     private final MemberEntitlementRepository entitlements;
     private final EntitlementOperationRepository operations;
@@ -41,6 +42,7 @@ public class CommercialService {
     private final com.gym.fitness.module.finance.service.FinanceReportService financeReports;
     private final com.gym.fitness.common.util.VenueMutationLock venueLock;
     private final AccessGrantRepository accessGrants;
+    private final CrossVenueService crossVenue;
     private final com.gym.fitness.module.coupon.service.CouponService couponService;
     private final com.gym.fitness.module.notice.service.NotificationService notifications;
 
@@ -62,11 +64,16 @@ public class CommercialService {
         Long memberVenueId = requireVenue();
         Map<Long, String> venueNames = venues.findAll().stream()
                 .collect(Collectors.toMap(venue -> venue.getId(), venue -> venue.getName()));
+        // 一次取出所有商品的适用门店，避免逐条查询
+        Map<Long, List<Long>> scopes = productVenues.findAll().stream()
+                .collect(Collectors.groupingBy(ProductVenueEntity::getProductId,
+                        Collectors.mapping(ProductVenueEntity::getVenueId, Collectors.toList())));
         return products.findByStatusOrderByIdDesc("ACTIVE").stream()
                 .map(item -> new MemberProductView(item.getId(), item.getName(), item.getProductType(),
                         item.getDescription(), item.getValidityDays(), item.getTotalUses(), item.getPrice(),
                         item.getVenueId(), venueNames.get(item.getVenueId()),
-                        memberVenueId.equals(item.getVenueId())))
+                        memberVenueId.equals(item.getVenueId())
+                                || scopes.getOrDefault(item.getId(), List.of()).contains(memberVenueId)))
                 .toList();
     }
 
@@ -167,7 +174,11 @@ public class CommercialService {
         }
         values.assertBookableMember(member.getId());
         MembershipProductEntity product = accessibleProduct(request.getProductId());
-        if (!member.getVenueId().equals(product.getVenueId())) {
+        // 跨店通用：商品可以声明"适用门店"，会员所属门店在其中之一即可购买；
+        // 未声明适用门店时维持原规则（仅限商品所属门店）。
+        boolean sameVenue = member.getVenueId().equals(product.getVenueId());
+        boolean coveredVenue = crossVenue.declaredScope(product.getId()).contains(member.getVenueId());
+        if (!sameVenue && !coveredVenue) {
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "会员与商品必须属于同一场馆");
         }
         if (!"ACTIVE".equals(member.getStatus()) || Boolean.TRUE.equals(member.getBlacklistFlag())) {
@@ -409,9 +420,16 @@ public class CommercialService {
         // 只认短时效一次性令牌；此前那种"永久会员令牌"不再可用。
         AccessGrantEntity grant = accessGrants.findByTokenForUpdate(token).orElse(null);
         MemberEntity member = grant == null ? null : members.findById(grant.getMemberId()).orElse(null);
-        Long scanVenue = grant == null ? requireVenue() : grant.getVenueId();
-        if (!isSuperAdmin() && !scanVenue.equals(requireVenue())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "不能核销其他场馆的会员");
+        Long operatorVenue = requireVenue();
+        Long scanVenue = grant == null ? operatorVenue : grant.getVenueId();
+        if (!isSuperAdmin() && !scanVenue.equals(operatorVenue)) {
+            // 跨店通用：会员持有覆盖本门店的有效权益时，可在本门店核销入场（入场记录记在本门店）
+            boolean covered = member != null
+                    && crossVenue.memberCanAccessVenue(member.getId(), member.getVenueId(), operatorVenue);
+            if (!covered) {
+                throw new BusinessException(ErrorCode.FORBIDDEN, "不能核销其他场馆的会员");
+            }
+            scanVenue = operatorVenue;
         }
         venueLock.acquire(scanVenue);
         AccessRecordEntity record = new AccessRecordEntity();
@@ -566,7 +584,10 @@ public class CommercialService {
         item.setMemberId(member.getId());
         item.setProductId(product.getId());
         item.setSourceOrderId(order.getId());
-        item.setVenueId(member.getVenueId());
+        // 权益归属"销售门店"（钱是这家收的，退款也回到这家）；
+        // 适用门店快照在开卡时定格，之后改商品不影响已售出的卡。
+        item.setVenueId(product.getVenueId());
+        item.setVenueScope(crossVenue.snapshotScope(product));
         item.setValidFrom(com.gym.fitness.module.finance.service.EntitlementValueService.today());
         item.setValidUntil(com.gym.fitness.module.finance.service.EntitlementValueService.today().plusDays(product.getValidityDays() - 1L));
         item.setTotalUses(product.getTotalUses());

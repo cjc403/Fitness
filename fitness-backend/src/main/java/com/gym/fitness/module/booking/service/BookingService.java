@@ -27,6 +27,7 @@ public class BookingService {
     private final com.gym.fitness.common.util.VenueMutationLock venueLock;
     private final com.gym.fitness.module.finance.service.EntitlementValueService values;
     private final com.gym.fitness.module.notice.service.NotificationService notifications;
+    private final com.gym.fitness.module.commercial.service.CrossVenueService crossVenue;
 
     @Transactional(readOnly = true)
     private String courseName(CourseScheduleEntity schedule) {
@@ -55,7 +56,9 @@ public class BookingService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
         assertAccessibleVenue(member.getVenueId());
         assertAccessibleVenue(schedule.getVenueId());
-        if (!member.getVenueId().equals(schedule.getVenueId())) {
+        // 跨店通用：会员所属门店，或持有覆盖该排课门店的有效权益，都可以预约
+        if (!member.getVenueId().equals(schedule.getVenueId())
+                && !crossVenue.memberCanAccessVenue(member.getId(), member.getVenueId(), schedule.getVenueId())) {
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "会员与排课必须属于同一场馆");
         }
         if (!"SCHEDULED".equals(schedule.getStatus()) || schedule.getScheduledStartTime().isBefore(LocalDateTime.now()))
@@ -126,7 +129,9 @@ public class BookingService {
         values.assertBookableMember(member.getId());
         CourseScheduleEntity schedule = scheduleRepository.findByIdForUpdate(scheduleId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
-        if (!member.getVenueId().equals(schedule.getVenueId()) || !"SCHEDULED".equals(schedule.getStatus())
+        boolean venueOk = member.getVenueId().equals(schedule.getVenueId())
+                || crossVenue.memberCanAccessVenue(member.getId(), member.getVenueId(), schedule.getVenueId());
+        if (!venueOk || !"SCHEDULED".equals(schedule.getStatus())
                 || schedule.getScheduledStartTime().isBefore(LocalDateTime.now())) {
             throw new BusinessException(ErrorCode.SCHEDULE_NOT_BOOKABLE);
         }

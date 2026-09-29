@@ -1695,6 +1695,166 @@ class FitnessApplicationIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+
+    // ------------------------------------------------ 推荐 6：消息通道与投递
+
+    @Test
+    @Order(31)
+    void messageChannelsDispatchAndMaskRecipients() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        String member = login("member", "MEMBER", "会员");
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile").header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        // 演示会员默认没有手机号/邮箱，先补齐，确保通道真的有收件人（否则会正确地记为"已跳过"）
+        String phone = "13800001234", email = "member@fitchain.local";
+        JsonNode profile = mapper.readTree(mvc.perform(get("/api/v1/admin/members/" + memberId)
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        mvc.perform(put("/api/v1/admin/members/" + memberId).header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberNo":"%s","realName":"%s","phone":"%s","email":"%s","status":"%s"}
+                                """.formatted(profile.path("memberNo").asText(), profile.path("realName").asText(),
+                                phone, email, profile.path("status").asText())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        JsonNode channels = mapper.readTree(mvc.perform(get("/api/v1/admin/messages/channels")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(channels.size()).as("应有短信与邮件两个外部通道").isEqualTo(2);
+        for (JsonNode c : channels) {
+            org.assertj.core.api.Assertions.assertThat(c.path("mock").asBoolean())
+                    .as("默认必须是模拟通道，避免误发真实短信").isTrue();
+        }
+
+        // 发两个通道
+        JsonNode sent = mapper.readTree(mvc.perform(post("/api/v1/admin/messages/send")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"channels":["SMS","EMAIL"],"category":"MEMBERSHIP",
+                                 "subject":"测试通知","content":"这是一条投递验证消息"}
+                                """.formatted(memberId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(sent.size()).isEqualTo(2);
+        for (JsonNode d : sent) {
+            org.assertj.core.api.Assertions.assertThat(d.path("status").asText())
+                    .as("补齐联系方式后两个通道都应发送成功").isEqualTo("SENT");
+            org.assertj.core.api.Assertions.assertThat(d.path("recipientMasked").asText()).contains("***");
+            org.assertj.core.api.Assertions.assertThat(d.path("recipientMasked").asText())
+                    .as("投递记录里绝不能出现完整手机号").doesNotContain(phone);
+        }
+
+        // 只发一个通道
+        JsonNode smsOnly = mapper.readTree(mvc.perform(post("/api/v1/admin/messages/send")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"channels":["SMS"],"category":"BOOKING",
+                                 "subject":"单通道","content":"只走短信"}
+                                """.formatted(memberId)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(smsOnly.size()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(smsOnly.get(0).path("channel").asText()).isEqualTo("SMS");
+
+        // 投递记录可查
+        JsonNode deliveries = mapper.readTree(mvc.perform(get("/api/v1/admin/messages/deliveries")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(deliveries.size()).isGreaterThanOrEqualTo(3);
+
+        // 越权：教练没有发送权限（注解级拦截 → 403）
+        mvc.perform(post("/api/v1/admin/messages/send")
+                        .header("Authorization", bearer(login("coach", "COACH", "教练")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"category":"MEMBERSHIP","subject":"越权","content":"x"}
+                                """.formatted(memberId)))
+                .andExpect(status().isForbidden());
+    }
+
+
+    // ------------------------------------------------ 推荐 5：跨门店通用
+
+    @Test
+    @Order(32)
+    void crossVenueProductCanBeSoldAndUsedAtAnotherVenue() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        JsonNode venues = mapper.readTree(mvc.perform(get("/api/v1/admin/venues").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(venues.size()).as("演示数据需要两个门店").isGreaterThanOrEqualTo(2);
+        long sellerVenue = venues.get(0).path("id").asLong();
+        long buyerVenue = venues.get(1).path("id").asLong();
+
+        // 卖方门店建一个"跨店通用月卡"，并声明适用买方门店
+        long productId = mapper.readTree(mvc.perform(post("/api/v1/commercial/products")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"跨店通用月卡","category":"CARD","productType":"MONTH_CARD",
+                                 "validityDays":30,"price":299.00,"accessAllowed":true,"venueId":%d}
+                                """.formatted(sellerVenue)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        mvc.perform(put("/api/v1/commercial/products/" + productId + "/venue-scope")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"venueIds":[%d]}
+                                """.formatted(buyerVenue)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data[0]").value(buyerVenue));
+
+        // 买方门店的会员
+        long buyerMemberId = mapper.readTree(mvc.perform(post("/api/v1/admin/members")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberNo":"XV%06d","realName":"跨店会员","phone":"13700002222","venueId":%d}
+                                """.formatted(System.nanoTime() % 1000000, buyerVenue)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+
+        // 跨店售卡：此前会被"会员与商品必须属于同一场馆"拒绝
+        mvc.perform(post("/api/v1/commercial/orders")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"productId":%d,"paymentMethod":"CASH","idempotencyKey":"it-cross-venue-1"}
+                                """.formatted(buyerMemberId, productId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 卖方门店的团课排课，买方会员应能预约（此前会被"会员与排课必须属于同一场馆"拒绝）
+        long courseId = newCourse(admin, "跨店通用测试团课", "GROUP", sellerVenue);
+        java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(13)
+                .withHour(14).withMinute(0).withSecond(0).withNano(0);
+        long scheduleId = mapper.readTree(mvc.perform(post("/api/v1/admin/schedules")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachUserId(), "首席教练", start, start.plusHours(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        mvc.perform(post("/api/v1/admin/bookings")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"scheduleId":%d}
+                                """.formatted(buyerMemberId, scheduleId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 反向回归：没有跨店权益的另一个买方门店会员，仍然约不到卖方门店的课
+        long plainMemberId = mapper.readTree(mvc.perform(post("/api/v1/admin/members")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberNo":"XV%06d","realName":"普通会员","phone":"13700003333","venueId":%d}
+                                """.formatted(System.nanoTime() % 1000000, buyerVenue)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        mvc.perform(post("/api/v1/admin/bookings")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"scheduleId":%d}
+                                """.formatted(plainMemberId, scheduleId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(2600))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("同一场馆")));
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }

@@ -29,3 +29,7 @@ export const scanAccess=(token:string,direction='IN')=>request.post<AccessRecord
 export const listAccessRecords=()=>request.get<AccessRecord[]>('/v1/commercial/access/records')
 export const getMyEntitlements=()=>request.get<Entitlement[]>('/v1/commercial/me/entitlements')
 export const getMyAccessCode=()=>request.get<AccessCode>('/v1/commercial/me/access-code')
+
+/** 跨店通用：商品声明的适用门店（不含销售门店本身；空 = 仅限本店）。 */
+export const getProductVenueScope=(id:number)=>request.get<number[]>(`/v1/commercial/products/${id}/venue-scope`)
+export const setProductVenueScope=(id:number,venueIds:number[])=>request.put<number[]>(`/v1/commercial/products/${id}/venue-scope`,{venueIds})

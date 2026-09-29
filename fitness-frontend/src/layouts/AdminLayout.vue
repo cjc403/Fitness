@@ -53,6 +53,7 @@ const userInfo = computed(() => authStore.userInfo)
 const menuItems = [
   { path: '/dashboard', label: '经营看板', icon: Odometer, permission: 'DASHBOARD_READ' },
   { path: '/analytics', label: '经营分析', icon: TrendCharts, permission: 'DASHBOARD_READ' },
+  { path: '/messages', label: '消息与渠道', icon: Bell, permission: 'MEMBER_READ' },
   { path: '/accounts', label: '员工账号', icon: UserFilled, permission: 'ACCOUNT_MANAGE' },
   { path: '/members', label: '会员管理', icon: User, permission: 'MEMBER_READ' },
   { path: '/commercial', label: '会籍与商业', icon: CreditCard, permission: 'PRODUCT_READ' },

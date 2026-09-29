@@ -15,11 +15,18 @@
           <article v-for="item in products" :key="item.id" class="product-card">
             <div><el-tag size="small" :type="item.category==='CARD'?'primary':'success'">{{ item.category==='CARD'?'会员卡':'课程包' }}</el-tag><el-tag size="small" :type="item.status==='ACTIVE'?'success':'info'">{{ item.status==='ACTIVE'?'销售中':'已下架' }}</el-tag></div>
             <h3>{{ item.name }}</h3><p>{{ item.description }}</p><small v-if="isSuperAdmin" class="venue-name">{{ venueName(item.venueId) }}</small><strong>¥{{ money(item.price) }}</strong>
-            <footer><span>{{ item.validityDays }} 天有效</span><span>{{ item.totalUses?`${item.totalUses} 次`:'不限次数' }}</span><el-button v-if="can('PRODUCT_WRITE')" link @click="toggleProductStatus(item)">{{ item.status==='ACTIVE'?'下架':'上架' }}</el-button><el-button v-if="can('PRODUCT_WRITE')" link @click="editProduct(item)">编辑</el-button></footer>
+            <footer><span>{{ item.validityDays }} 天有效</span><span>{{ item.totalUses?`${item.totalUses} 次`:'不限次数' }}</span><el-button v-if="can('PRODUCT_WRITE')" link @click="toggleProductStatus(item)">{{ item.status==='ACTIVE'?'下架':'上架' }}</el-button><el-button v-if="can('PRODUCT_WRITE')" link @click="openScope(item)">跨店适用</el-button><el-button v-if="can('PRODUCT_WRITE')" link @click="editProduct(item)">编辑</el-button></footer>
           </article>
         </div>
       </el-tab-pane>
 
+      <el-dialog v-model="scopeDialog" :title="`跨店适用：${scopeProduct?.name || ''}`" width="480px">
+        <p class="scope-hint">勾选后，这些门店的会员也能购买本商品（收款与开卡仍记在 <b>{{ scopeProduct ? venueName(scopeProduct.venueId) : '' }}</b>）；不勾选 = 仅限本店，与历史行为一致。退款与结算仍回到开卡门店。</p>
+        <el-select v-model="scopeForm" multiple filterable style="width:100%" placeholder="选择适用门店（可多选）">
+          <el-option v-for="v in venues.filter(x=>x.id!==scopeProduct?.venueId)" :key="v.id" :label="v.name" :value="v.id"/>
+        </el-select>
+        <template #footer><el-button @click="scopeDialog=false">取消</el-button><el-button type="primary" :loading="scopeSaving" @click="saveScope">保存</el-button></template>
+      </el-dialog>
       <el-tab-pane label="销售与开卡" name="sales">
         <div class="tab-head"><div><h2>销售订单</h2><p>完成收款后自动生成会员权益、合同和收据。</p></div><el-button v-if="can('SALE_WRITE')" type="primary" @click="saleVisible=true"><el-icon><Plus/></el-icon> 新销售开卡</el-button></div>
         <el-table :data="orders" class="data-card">
@@ -122,13 +129,14 @@ import RefundPanel from '@/components/RefundPanel.vue'
 import FinanceReportPanel from '@/components/FinanceReportPanel.vue'
 import { listMembers, type Member } from '@/api/modules/member'
 import { listVenues, type Venue } from '@/api/modules/venue'
-import { createProduct, createSale, deleteProduct, freezeEntitlement, getCommercialOverview, issueInvoice, listAccessRecords, listDocuments, listEntitlements, listOrders, listPayments, listProducts, renewEntitlement, scanAccess, transferEntitlement, unfreezeEntitlement, updateProduct, type AccessRecord, type BusinessDocument, type CommercialOverview, type Entitlement, type Order, type Payment, type Product } from '@/api/modules/commercial'
+import { createProduct, createSale, deleteProduct, freezeEntitlement, getCommercialOverview, issueInvoice, listAccessRecords, listDocuments, listEntitlements, listOrders, listPayments, listProducts, renewEntitlement, scanAccess, transferEntitlement, unfreezeEntitlement, updateProduct, type AccessRecord, type BusinessDocument, type CommercialOverview, type Entitlement, type Order, type Payment, type Product, getProductVenueScope, setProductVenueScope } from '@/api/modules/commercial'
 
 const auth=useAuthStore(); const can=(p:string)=>auth.userInfo?.permissions?.includes(p)
 const isSuperAdmin=computed(()=>auth.userInfo?.role==='SUPER_ADMIN')
 const loading=ref(false), activeTab=ref('products'), remindersOnly=ref(false)
 const overview=ref<CommercialOverview>({monthRevenue:0,monthOrders:0,activeEntitlements:0,expiringWithin30Days:0,todayEntries:0,generatedAt:''})
 const products=ref<Product[]>([]),orders=ref<Order[]>([]),entitlements=ref<Entitlement[]>([]),payments=ref<Payment[]>([]),documents=ref<BusinessDocument[]>([]),accessRecords=ref<AccessRecord[]>([]),members=ref<Member[]>([]),venues=ref<Venue[]>([])
+const scopeMap=ref<Record<number, number[]>>({}),scopeDialog=ref(false),scopeProduct=ref<Product|null>(null),scopeSaving=ref(false),scopeForm=ref<number[]>([])
 const saleSubmitting=ref(false)
 const productVisible=ref(false),saleVisible=ref(false),renewVisible=ref(false),transferVisible=ref(false),editingProduct=ref<Product>(),actionEntitlement=ref<Entitlement>(),transferMemberId=ref<number>()
 const productForm=reactive<any>({name:'',category:'CARD',productType:'MONTH_CARD',description:'',validityDays:30,totalUses:undefined,accessAllowed:true,price:399,status:'ACTIVE',venueId:auth.userInfo?.organizationId})
@@ -136,7 +144,7 @@ const saleForm=reactive<any>({memberId:undefined,productId:undefined,paymentMeth
 const renewForm=reactive<any>({additionalDays:30,additionalUses:0,amount:399,paymentMethod:'WECHAT'})
 const scanToken=ref(''),scanning=ref(false),scanResult=ref<AccessRecord>()
 const refundPanel=ref<{startFor:(id:number)=>Promise<void>}>()
-const activeProducts=computed(()=>{const member=members.value.find(m=>m.id===saleForm.memberId);return products.value.filter(p=>p.status==='ACTIVE'&&(!member||p.venueId===member.venueId))})
+const activeProducts=computed(()=>{const member=members.value.find(m=>m.id===saleForm.memberId);return products.value.filter(p=>p.status==='ACTIVE'&&(!member||p.venueId===member.venueId||(scopeMap.value[p.id]||[]).includes(member.venueId)))})
 const transferCandidates=computed(()=>members.value.filter(m=>m.id!==actionEntitlement.value?.memberId))
 
 // ---- 优惠券 ----
@@ -167,7 +175,12 @@ const saveCoupon=async()=>{
 const toggleCoupon=async(row:CouponTemplate)=>{couponSaving.value=true;try{await updateCouponTemplate(row.id,{...row,thresholdCents:row.thresholdCents,discountCents:row.discountCents,discountRate:row.discountRate,status:row.status==='ACTIVE'?'INACTIVE':'ACTIVE'} as any);await loadCoupons()}finally{couponSaving.value=false}}
 const openIssue=(row:CouponTemplate)=>{issueTemplateId.value=row.id;issueForm.memberIds=[];issueForm.quantityPerMember=1;issueDialog.value=true}
 const submitIssue=async()=>{if(!issueForm.memberIds.length)return ElMessage.warning('请选择会员');couponSaving.value=true;try{const r=await issueCoupon(issueTemplateId.value!,issueForm.memberIds,issueForm.quantityPerMember);ElMessage.success(`已发放 ${r.data.issued} 张`);issueDialog.value=false;await loadCoupons()}finally{couponSaving.value=false}}
-const loadAll=async()=>{loading.value=true;try{const jobs:any[]=[getCommercialOverview(),listProducts(),listOrders(),listEntitlements(),listMembers({page:1,size:100})];if(can('FINANCE_READ'))jobs.push(listPayments(),listDocuments());if(can('ACCESS_WRITE'))jobs.push(listAccessRecords());const [o,p,so,e,m,pay,doc,access]=await Promise.all(jobs);overview.value=o.data;products.value=p.data;orders.value=so.data;entitlements.value=e.data;members.value=m.data.items;if(pay)payments.value=pay.data;if(doc)documents.value=doc.data;if(access)accessRecords.value=access.data;if(isSuperAdmin.value)venues.value=(await listVenues()).data;await loadCoupons()}finally{loading.value=false}}
+const loadScopes=async()=>{try{const entries=await Promise.all(products.value.map(p=>getProductVenueScope(p.id)));const map:Record<number,number[]>={};products.value.forEach((p,i)=>{map[p.id]=entries[i].data||[]});scopeMap.value=map}catch{scopeMap.value={}}}
+const openScope=async(row:Product)=>{scopeProduct.value=row;scopeForm.value=(await getProductVenueScope(row.id)).data||[];scopeDialog.value=true}
+const saveScope=async()=>{if(!scopeProduct.value)return;scopeSaving.value=true;try{const r=await setProductVenueScope(scopeProduct.value.id,scopeForm.value);scopeMap.value={...scopeMap.value,[scopeProduct.value.id]:r.data};ElMessage.success('适用范围已更新');scopeDialog.value=false}finally{scopeSaving.value=false}}
+const loadAll=async()=>{
+  loading.value=true;try{const jobs:any[]=[getCommercialOverview(),listProducts(),listOrders(),listEntitlements(),listMembers({page:1,size:100})];if(can('FINANCE_READ'))jobs.push(listPayments(),listDocuments());if(can('ACCESS_WRITE'))jobs.push(listAccessRecords());const [o,p,so,e,m,pay,doc,access]=await Promise.all(jobs);overview.value=o.data;products.value=p.data
+  await loadScopes();orders.value=so.data;entitlements.value=e.data;members.value=m.data.items;if(pay)payments.value=pay.data;if(doc)documents.value=doc.data;if(access)accessRecords.value=access.data;if(isSuperAdmin.value)venues.value=(await listVenues()).data;await loadCoupons()}finally{loading.value=false}}
 const loadEntitlements=async()=>{entitlements.value=(await listEntitlements({remindersOnly:remindersOnly.value})).data}
 const openProduct=()=>{editingProduct.value=undefined;Object.assign(productForm,{name:'',category:'CARD',productType:'MONTH_CARD',description:'',validityDays:30,totalUses:undefined,accessAllowed:true,price:399,status:'ACTIVE',venueId:auth.userInfo?.organizationId||venues.value[0]?.id});productVisible.value=true}
 const editProduct=(p:Product)=>{editingProduct.value=p;Object.assign(productForm,p);productVisible.value=true}
@@ -231,4 +244,4 @@ onMounted(loadAll)
 .commercial{max-width:1500px;margin:0 auto}.page-head,.tab-head{display:flex;align-items:center;justify-content:space-between}.page-head>div>span{color:#3474ff;font-size:11px;font-weight:800;letter-spacing:1.8px}.page-head h1{margin:7px 0;color:#172033;font-size:29px}.page-head p,.tab-head p{margin:0;color:#8792a5}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:24px 0}.summary-grid article{padding:22px;border:1px solid #e5ebf4;border-radius:17px;background:#fff}.summary-grid small,.summary-grid strong,.summary-grid span{display:block}.summary-grid small{color:#8792a5}.summary-grid strong{margin:9px 0 5px;color:#172033;font-size:28px}.summary-grid span{color:#9aa4b5;font-size:12px}.summary-grid .warning strong{color:#e98728}.business-tabs{padding:8px 22px 25px;border:1px solid #e5ebf4;border-radius:18px;background:#fff}.business-tabs :deep(.el-tabs__header){margin-bottom:22px}.tab-head{margin-bottom:18px}.tab-head h2{margin:0 0 5px;color:#1c2940;font-size:20px}.tab-head p{font-size:12px}.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.product-card{padding:21px;border:1px solid #e5ebf4;border-radius:16px;background:linear-gradient(145deg,#fff,#f8faff)}.product-card>div{display:flex;gap:7px}.product-card h3{margin:17px 0 7px;color:#1a263b}.product-card p{height:38px;margin:0;color:#7e899d;font-size:12px;line-height:1.6}.product-card>strong{display:block;margin:16px 0;color:#2568f5;font-size:24px}.product-card footer{display:flex;align-items:center;gap:12px;padding-top:13px;border-top:1px solid #edf0f5;color:#8691a3;font-size:11px}.product-card footer .el-button{margin-left:auto}.data-card{border:1px solid #edf0f5;border-radius:13px;overflow:hidden}.data-card b,.data-card small{display:block}.data-card small{margin-top:4px;color:#939dad}.reminder{color:#e58325!important}.scan-panel{display:grid;grid-template-columns:1fr 1.2fr;align-items:center;gap:25px;margin-bottom:28px;padding:25px;border-radius:17px;background:linear-gradient(135deg,#152039,#254b86);color:#fff}.scan-panel span{color:#8cb2ff;font-size:10px;font-weight:800;letter-spacing:2px}.scan-panel h2{margin:7px 0}.scan-panel p{margin:0;color:#b9c6db;font-size:12px}.scan-result{grid-column:2;padding:12px;border-radius:10px}.scan-result strong,.scan-result span{display:block}.scan-result.approved{background:#def8eb;color:#18885e}.scan-result.denied{background:#ffe7e7;color:#c54949}@media(max-width:1050px){.summary-grid{grid-template-columns:repeat(2,1fr)}.product-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.product-grid,.summary-grid,.scan-panel{grid-template-columns:1fr}.scan-result{grid-column:1}.page-head p{display:none}}
 .product-card .venue-name{display:block;margin-top:9px;color:#71809a}
 .dialog-footer{display:flex;align-items:center}.dialog-footer .footer-right{display:flex;margin-left:auto}.form-hint{margin-top:2px;color:#96a1b3;font-size:12px;line-height:1.5}
-</style>
+.scope-hint{margin:0 0 12px;color:#5f6d85;font-size:13px;line-height:1.7}.scope-hint b{color:#243249}</style>

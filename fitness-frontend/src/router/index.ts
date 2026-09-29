@@ -46,6 +46,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: '经营分析', requiresAuth: true, permissions: ['DASHBOARD_READ'] }
       },
       {
+        path: 'messages',
+        name: 'Messages',
+        component: () => import('@/views/admin/Messages.vue'),
+        meta: { title: '消息与渠道', requiresAuth: true, permissions: ['MEMBER_READ'] }
+      },
+      {
         path: 'members',
         name: 'Members',
         component: () => import('@/views/admin/MemberList.vue'),

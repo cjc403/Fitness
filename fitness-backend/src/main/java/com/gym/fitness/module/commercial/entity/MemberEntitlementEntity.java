@@ -20,6 +20,11 @@ public class MemberEntitlementEntity {
     @Column(name = "product_id", nullable = false) private Long productId;
     @Column(name = "source_order_id", nullable = false) private Long sourceOrderId;
     @Column(name = "venue_id", nullable = false) private Long venueId;
+    /**
+     * 适用门店快照（逗号分隔的 venue id）：开卡时把"销售门店 + 商品声明的适用门店"写进来，
+     * 之后改商品不影响已售出的卡。空 = 仅限发卡门店（与历史数据一致）。
+     */
+    @Column(name = "venue_scope", length = 200) private String venueScope;
     @Column(name = "valid_from", nullable = false) private LocalDate validFrom;
     @Column(name = "valid_until", nullable = false) private LocalDate validUntil;
     @Column(name = "total_uses") private Integer totalUses;

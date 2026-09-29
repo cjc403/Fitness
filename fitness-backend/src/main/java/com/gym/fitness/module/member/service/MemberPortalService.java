@@ -30,6 +30,7 @@ public class MemberPortalService {
     private final MemberRepository memberRepository;
     private final CourseScheduleRepository scheduleRepository;
     private final BookingRepository bookingRepository;
+    private final com.gym.fitness.module.commercial.service.CrossVenueService crossVenue;
     private final BookingService bookingService;
     private final CommercialService commercialService;
 
@@ -66,8 +67,13 @@ public class MemberPortalService {
         Map<Long, String> bookingStatuses = ownBookings.stream()
                 .filter(booking -> !"CANCELLED".equals(booking.getStatus()))
                 .collect(Collectors.toMap(BookingEntity::getScheduleId, BookingEntity::getStatus, (first, ignored) -> first));
-        return scheduleRepository.findByVenueIdAndStatusAndScheduledStartTimeBetweenOrderByScheduledStartTimeAsc(
-                        member.getVenueId(), "SCHEDULED", now, now.plusDays(30)).stream()
+        // 跨店通用：除了本人所属门店，还包括持有有效权益覆盖的门店
+        java.util.Set<Long> venueIds = crossVenue.accessibleVenues(member.getId(), member.getVenueId());
+        return venueIds.stream()
+                .flatMap(venueId -> scheduleRepository
+                        .findByVenueIdAndStatusAndScheduledStartTimeBetweenOrderByScheduledStartTimeAsc(
+                                venueId, "SCHEDULED", now, now.plusDays(30)).stream())
+                .sorted(java.util.Comparator.comparing(CourseScheduleEntity::getScheduledStartTime))
                 .map(schedule -> toSchedule(schedule, bookingStatuses.get(schedule.getId())))
                 .toList();
     }
