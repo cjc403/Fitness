@@ -39,6 +39,7 @@
             <span v-else class="muted">未开通</span>
           </template>
         </el-table-column>
+        <el-table-column label="体测" width="110"><template #default="{row}"><el-button link type="primary" @click="openBody(row)">体测档案</el-button></template></el-table-column>
         <el-table-column v-if="canWrite" label="操作" width="330" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
@@ -117,10 +118,13 @@
       <template #footer><el-button @click="accountVisible=false">取消</el-button><el-button type="primary" :loading="saving" @click="submitAccount">确认</el-button></template>
     </el-dialog>
   </div>
+    <el-drawer v-model="bodyVisible" :title="`${bodyStudent?.member?.realName || bodyStudent?.realName || '会员'} 的体测档案`" size="72%">
+      <BodyMeasurePanel v-if="bodyStudent" :member-id="bodyMemberId" :member-name="bodyStudent?.member?.realName || bodyStudent?.realName" />
+    </el-drawer>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { hasPermission } from '@/utils/auth'
@@ -137,6 +141,7 @@ import {
   type MemberRequest
 } from '@/api/modules/member'
 import { listAdvisors, type AdvisorRef } from '@/api/modules/advisor'
+import BodyMeasurePanel from '@/components/BodyMeasurePanel.vue'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -160,6 +165,9 @@ const emptyForm = (): MemberRequest => ({
 })
 const form = reactive<MemberRequest>(emptyForm())
 const advisors=ref<AdvisorRef[]>([]),coaches=ref<AdvisorRef[]>([])
+const bodyVisible=ref(false),bodyStudent=ref<any>(null)
+const bodyMemberId=computed(()=>bodyStudent.value?.id)
+const openBody=(row:any)=>{bodyStudent.value=row;bodyVisible.value=true}
 const loadAssignees=async()=>{try{const [a,c]=await Promise.all([listAdvisors('SALES'),listAdvisors('COACH')]);advisors.value=a.data;coaches.value=c.data}catch{}}
 const rules: FormRules = {
   memberNo: [{ required: true, message: '请输入会员编号', trigger: 'blur' }],

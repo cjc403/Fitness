@@ -83,3 +83,17 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 运营自动化（定时任务）：整块可用 fitness.operations.enabled 关闭
+fitness:
+  operations:
+    enabled: true
+    # 过期未核销预约：默认只写日志提醒（首页也有提示）；设为 true 才会自动记爽约
+    auto-resolve-overdue: false
+    # 过期门禁令牌保留天数（便于排查，超出即清理）
+    token-retention-days: 1
+    # 权益到期提前提醒天数（7/3/1 天各提醒一次）
+    expiry-reminder-days: 7
+    overdue-cron: "0 10 7 * * *"
+    cleanup-cron: "0 30 3 * * *"
+    reminder-cron: "0 0 9 * * *"

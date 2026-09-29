@@ -56,6 +56,7 @@ const menuItems = [
   { path: '/members', label: '会员管理', icon: User, permission: 'MEMBER_READ' },
   { path: '/commercial', label: '会籍与商业', icon: CreditCard, permission: 'PRODUCT_READ' },
   { path: '/courses', label: '课程与排课', icon: Collection, permission: 'COURSE_READ' },
+  { path: '/schedule-week', label: '周课表', icon: Tickets, permission: 'COURSE_READ' },
   { path: '/bookings', label: '预约与签到', icon: Tickets, permission: 'BOOKING_READ' },
   { path: '/venues', label: '场馆管理', icon: OfficeBuilding, permission: 'VENUE_READ' },
   { path: '/coach-workbench', label: '教练工作台', icon: Odometer, permission: 'COACH_WORKBENCH' },

@@ -51,6 +51,15 @@ public class NotificationService {
                 .ifPresent(userId -> notifyUser(userId, memberId, venueId, category, title, body, refType, refId));
     }
 
+    /** 是否已给该会员发过某档提醒（用于定时提醒去重；会员没绑定账号时视为已发，避免反复重试）。 */
+    @Transactional(readOnly = true)
+    public boolean existsForMember(Long memberId, String refType, Long refId) {
+        if (memberId == null) return true;
+        return members.findById(memberId).map(MemberEntity::getUserId)
+                .map(userId -> notifications.existsByRecipientUserIdAndRefTypeAndRefId(userId, refType, refId))
+                .orElse(true);
+    }
+
     /** 批量发消息（例如一条排课改了，通知所有已预约的会员）。 */
     @Transactional
     public void notifyMembers(Collection<Long> memberIds, Long venueId, String category, String title,

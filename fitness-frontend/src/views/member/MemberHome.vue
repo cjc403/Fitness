@@ -80,6 +80,12 @@
           <aside class="qr-card"><span>MEMBER QR PASS</span><h2>扫码入场</h2><img v-if="qrImage" :src="qrImage" alt="会员入场二维码"/><p>{{ accessCode?.memberName }} · {{ accessCode?.memberNo }}</p><small class="qr-ttl">{{ accessSecondsLeft > 0 ? `二维码 ${accessSecondsLeft} 秒后自动刷新` : '二维码已过期，正在刷新…' }}</small><small>一次性二维码：被扫过或超时即失效，截图无法重复入场。次卡核验通过后自动扣减 1 次。</small></aside>
         </div>
       </el-tab-pane>
+      <el-tab-pane label="体测档案" name="body">
+        <section>
+          <div class="section-head"><div><h2>体测与训练档案</h2><p>记录体重、体脂、围度与静息心率，设定训练目标并查看变化趋势。</p></div></div>
+          <BodyMeasurePanel />
+        </section>
+      </el-tab-pane>
       <el-tab-pane :label="`我的优惠券 (${coupons.length})`" name="coupons">
         <section>
           <div class="section-head"><div><h2>我的优惠券</h2><p>购买会籍时可抵扣；一张券只能用一次，退款按折后实付计算。</p></div></div>
@@ -177,6 +183,7 @@ import { getMyAccessCode, getMyEntitlements, type AccessCode, type Entitlement }
 import { cancelMyRefund, createMyRefund, getMyEntitlementQuote, listMyRefunds, type EntitlementQuote, type MemberRefund, getMyRefundBlockers, clearMyRefundBlockers, type RefundBlocker, type ClearBlockersResult } from '@/api/modules/finance'
 import { getNotificationSummary, listNotifications, markAllNotificationsRead, markNotificationRead, type NotificationItem } from '@/api/modules/notification'
 import { listMyCoupons, quoteMyCoupon, type CouponQuoteOption, type MemberCoupon } from '@/api/modules/coupon'
+import BodyMeasurePanel from '@/components/BodyMeasurePanel.vue'
 import { listMyReviews, listPendingReviews, submitReview, type CourseReview, type PendingReview } from '@/api/modules/review'
 import { formatMoney, refundIntent } from '@/utils/financeUi.mjs'
 

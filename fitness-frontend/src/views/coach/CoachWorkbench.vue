@@ -22,7 +22,7 @@
           <el-table-column label="学员" min-width="160"><template #default="{row}"><div class="student"><span>{{ row.realName.slice(0,1) }}</span><div><strong>{{ row.realName }}</strong><small>{{ row.memberNo }}</small></div></div></template></el-table-column>
           <el-table-column prop="phone" label="手机号" min-width="140" />
           <el-table-column label="状态" width="110"><template #default="{row}"><el-tag :type="studentStatusType(row.status)">{{ studentStatusText(row.status) }}</el-tag></template></el-table-column>
-          <el-table-column label="操作" width="170"><template #default="{row}"><el-button v-if="row.status==='BOOKED'" link type="success" @click="checkStudent(row)">签到</el-button><el-button v-if="row.status==='BOOKED'&&new Date(schedule.startTime)<new Date()" link type="warning" @click="noShow(row)">爽约</el-button><span v-if="row.status!=='BOOKED'" class="muted">—</span></template></el-table-column>
+          <el-table-column label="操作" width="170"><template #default="{row}"><el-button link type="primary" @click="openBody(row)">体测</el-button><el-button v-if="row.status==='BOOKED'" link type="success" @click="checkStudent(row)">签到</el-button><el-button v-if="row.status==='BOOKED'&&new Date(schedule.startTime)<new Date()" link type="warning" @click="noShow(row)">爽约</el-button><span v-if="row.status!=='BOOKED'" class="muted">—</span></template></el-table-column>
         </el-table>
         <el-empty v-if="!schedule.students.length" description="本场课程暂无预约学员" :image-size="60" />
       </el-collapse-item>
@@ -40,6 +40,9 @@
     <el-empty v-else description="还没有收到评价（会员只有在签到的课后才能评价）" :image-size="60" />
     <TrainingPanel @changed="load" />
   </div>
+    <el-drawer v-model="bodyVisible" :title="`${bodyStudent?.member?.realName || bodyStudent?.realName || '会员'} 的体测档案`" size="72%">
+      <BodyMeasurePanel v-if="bodyStudent" :member-id="bodyMemberId" :member-name="bodyStudent?.member?.realName || bodyStudent?.realName" />
+    </el-drawer>
 </template>
 
 <script setup lang="ts">
@@ -50,6 +53,7 @@ import { getCoachWorkbench, type CoachSchedule, type CoachStudentBooking } from 
 import { checkIn, markNoShow } from '@/api/modules/booking'
 import { useAuthStore } from '@/store/modules/auth'
 import TrainingPanel from '@/components/TrainingPanel.vue'
+import BodyMeasurePanel from '@/components/BodyMeasurePanel.vue'
 import { getCoachReviewSummary, type RatingSummary } from '@/api/modules/review'
 
 const authStore = useAuthStore()
@@ -59,6 +63,9 @@ const schedules = ref<CoachSchedule[]>([])
 const expanded = ref<number[]>([])
 const summary = ref({ todaySchedules: 0, upcomingSchedules: 0, bookedStudents: 0, attendedStudents: 0, completedSessions:0, deliveredHours:0, serviceRevenue:0, estimatedCommission:0 })
 const reviewSummary = ref<RatingSummary>()
+const bodyVisible = ref(false), bodyStudent = ref<any>(null)
+const bodyMemberId = computed(() => bodyStudent.value?.memberId || bodyStudent.value?.member?.id)
+const openBody = (row: any) => { bodyStudent.value = row; bodyVisible.value = true }
 
 const reviewDate=(v?:string)=>v?new Date(v).toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'}):'—';const distPercent=(star:number)=>{const total=reviewSummary.value?.reviewCount||0;const n=reviewSummary.value?.distribution?.[star]||0;return total?Math.round(n/total*100)+'%':'0%'}
 const load = async () => {

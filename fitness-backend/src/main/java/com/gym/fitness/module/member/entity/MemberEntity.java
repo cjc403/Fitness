@@ -57,6 +57,11 @@ public class MemberEntity {
 
     @Column(name = "coach_id")
     private Long coachId;
+    /** 训练目标：FAT_LOSS 减脂 | MUSCLE_GAIN 增肌 | POSTURE 体态 | ENDURANCE 体能；null = 未设置。 */
+    @Column(name = "training_goal", length = 20)
+    private String trainingGoal;
+    @Column(name = "training_goal_note", length = 200)
+    private String trainingGoalNote;
 
     @Column(name = "venue_id", nullable = false)
     private Long venueId;

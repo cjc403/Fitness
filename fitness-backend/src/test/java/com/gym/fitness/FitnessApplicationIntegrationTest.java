@@ -32,6 +32,7 @@ class FitnessApplicationIntegrationTest {
     @Autowired JwtTokenProvider tokenProvider;
     @Autowired com.gym.fitness.module.course.repository.CourseScheduleRepository scheduleRepo;
     @Autowired com.gym.fitness.module.booking.repository.BookingRepository bookingRepo;
+    @Autowired com.gym.fitness.module.operations.service.OperationsService operationsService;
 
     @Test
     @Order(1)
@@ -1496,6 +1497,153 @@ class FitnessApplicationIntegrationTest {
         boolean managerSeesSales = false;
         for (JsonNode r : managerRoles) if ("SALES".equals(r.path("code").asText())) managerSeesSales = true;
         org.assertj.core.api.Assertions.assertThat(managerSeesSales).as("店长不应能创建会籍顾问").isFalse();
+    }
+
+
+    // ------------------------------------------------ 推荐 1：体测与训练档案
+
+    @Test
+    @Order(28)
+    void bodyMeasurementsUpsertValidateAndRespectScope() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        String member = login("member", "MEMBER", "会员");
+        String coach = login("coach", "COACH", "教练");
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile").header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        String today = java.time.LocalDate.now().toString();
+        String earlier = java.time.LocalDate.now().minusDays(10).toString();
+
+        // 会员自助录入
+        mvc.perform(post("/api/v1/member/body-measurements").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"measuredOn\":\"" + today + "\",\"weightKg\":80.50,\"bodyFatRate\":22.5,"
+                                + "\"waistCm\":85.0,\"restingHeartRate\":68,\"note\":\"初始测量\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 同一天重复提交视为修正：不会出现两条
+        mvc.perform(post("/api/v1/member/body-measurements").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"measuredOn\":\"" + today + "\",\"weightKg\":79.80}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        mvc.perform(get("/api/v1/member/body-measurements").header("Authorization", bearer(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recordCount").value(1))
+                .andExpect(jsonPath("$.data.records[0].weightKg").value(79.80))
+                .andExpect(jsonPath("$.data.records.length()").value(1));
+
+        // 数值范围与日期校验
+        mvc.perform(post("/api/v1/member/body-measurements").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"measuredOn\":\"" + today + "\",\"weightKg\":500}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1001));
+        mvc.perform(post("/api/v1/member/body-measurements").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"measuredOn\":\"" + java.time.LocalDate.now().plusDays(3) + "\",\"weightKg\":80}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1001));
+        mvc.perform(post("/api/v1/member/body-measurements").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"measuredOn\":\"" + today + "\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1001));
+
+        // 训练目标：合法与非法
+        mvc.perform(put("/api/v1/member/training-goal").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"trainingGoal\":\"FAT_LOSS\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.trainingGoal").value("FAT_LOSS"));
+        mvc.perform(put("/api/v1/member/training-goal").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"trainingGoal\":\"NOT_A_GOAL\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1001));
+
+        // 回填一条更早的记录 → 首末对比里应出现"体重"
+        mvc.perform(post("/api/v1/member/body-measurements").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"measuredOn\":\"" + earlier + "\",\"weightKg\":83.00}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        JsonNode trend = mapper.readTree(mvc.perform(get("/api/v1/member/body-measurements").header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(trend.path("recordCount").asLong()).isEqualTo(2);
+        boolean weightChange = false;
+        for (JsonNode c : trend.path("changes")) {
+            if ("体重".equals(c.path("metric").asText()) && c.path("from").decimalValue().doubleValue() == 83.00
+                    && c.path("to").decimalValue().doubleValue() == 79.80) weightChange = true;
+        }
+        org.assertj.core.api.Assertions.assertThat(weightChange).as("首末对比应算出体重 83.00 → 79.80").isTrue();
+
+        // 店长/总部可代录
+        mvc.perform(post("/api/v1/admin/members/" + memberId + "/body-measurements")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"measuredOn\":\"" + java.time.LocalDate.now().minusDays(5) + "\",\"muscleKg\":32.40}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 该会员默认就归属这位教练，允许查看
+        mvc.perform(get("/api/v1/admin/members/" + memberId + "/body-measurements")
+                        .header("Authorization", bearer(coach)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 越权：把专属教练改成别人后，原教练就不能再看该会员的体测
+        long otherUserId = mapper.readTree(mvc.perform(get("/api/v1/admin/accounts/employees")
+                        .param("keyword", "manager").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("items").get(0).path("id").asLong();
+        JsonNode target = mapper.readTree(mvc.perform(get("/api/v1/admin/members/" + memberId)
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        mvc.perform(put("/api/v1/admin/members/" + memberId).header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberNo":"%s","realName":"%s","phone":"%s","status":"%s","coachId":%d}
+                                """.formatted(target.path("memberNo").asText(), target.path("realName").asText(),
+                                target.path("phone").asText(), target.path("status").asText(), otherUserId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        mvc.perform(get("/api/v1/admin/members/" + memberId + "/body-measurements")
+                        .header("Authorization", bearer(coach)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1003));
+    }
+
+
+    // ------------------------------------------------ 推荐 4：运营自动化 + 体测删除
+
+    @Test
+    @Order(29)
+    void operationsJobsRunSafelyAndMeasurementDeleteWorks() throws Exception {
+        String member = login("member", "MEMBER", "会员");
+        JsonNode before = mapper.readTree(mvc.perform(get("/api/v1/member/body-measurements")
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        long countBefore = before.path("recordCount").asLong();
+
+        String newDay = java.time.LocalDate.now().minusDays(20).toString();
+        long measurementId = mapper.readTree(mvc.perform(post("/api/v1/member/body-measurements")
+                        .header("Authorization", bearer(member)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"measuredOn":"%s","weightKg":81.20}
+                                """.formatted(newDay)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        mvc.perform(get("/api/v1/member/body-measurements").header("Authorization", bearer(member)))
+                .andExpect(jsonPath("$.data.recordCount").value(countBefore + 1));
+
+        mvc.perform(delete("/api/v1/member/body-measurements/" + measurementId)
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        mvc.perform(get("/api/v1/member/body-measurements").header("Authorization", bearer(member)))
+                .andExpect(jsonPath("$.data.recordCount").value(countBefore));
+        // 已删除的记录不能再删
+        mvc.perform(delete("/api/v1/member/body-measurements/" + measurementId)
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1004));
+
+        // 运维任务：三个入口都能安全执行且可重复执行（含派生删除的事务要求）
+        org.assertj.core.api.Assertions.assertThat(operationsService.handleOverdueBookings()).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(operationsService.handleOverdueBookings()).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(operationsService.cleanupExpiredGrants()).contains("清理过期门禁令牌");
+        org.assertj.core.api.Assertions.assertThat(operationsService.cleanupExpiredGrants()).contains("清理过期门禁令牌");
+        String first = operationsService.remindExpiringEntitlements();
+        String second = operationsService.remindExpiringEntitlements();
+        org.assertj.core.api.Assertions.assertThat(first).contains("权益到期提醒");
+        org.assertj.core.api.Assertions.assertThat(second).contains("已发过跳过");
     }
 
     private long coachUserId() throws Exception {

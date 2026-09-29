@@ -64,6 +64,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: '课程与排课', requiresAuth: true, permissions: ['COURSE_READ'] }
       },
       {
+        path: 'schedule-week',
+        name: 'ScheduleWeek',
+        component: () => import('@/views/admin/ScheduleWeek.vue'),
+        meta: { title: '周课表', requiresAuth: true, permissions: ['COURSE_READ'] }
+      },
+      {
         path: 'bookings',
         name: 'Bookings',
         component: () => import('@/views/admin/BookingList.vue'),

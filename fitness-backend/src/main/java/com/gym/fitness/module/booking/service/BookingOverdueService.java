@@ -22,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookingOverdueService {
     private final BookingService bookingService;
+    private final com.gym.fitness.module.booking.repository.BookingRepository bookingRepository;
 
     public record OverdueItem(Long id, String memberName, String memberNo, String courseName,
                               String coachName, LocalDateTime startTime, String status) {
@@ -32,11 +33,23 @@ public class BookingOverdueService {
         }
     }
 
-    /** 已结束但仍未核销的预约（供界面预览要处理哪些）。 */
+    /** 已结束但仍未核销的预约（按当前登录人的门店范围，供界面预览）。 */
     public List<OverdueItem> overdue() {
+        return mapItems(bookingService.list());
+    }
+
+    /**
+     * 同上，但**不受登录上下文限制**、覆盖全部门店——定时任务里没有登录用户，
+     * 走 {@link #overdue()} 会因为拿不到当前门店而抛"未授权"。
+     */
+    public List<OverdueItem> overdueAll() {
+        return mapItems(bookingRepository.findAllByOrderByBookedAtDesc());
+    }
+
+    private List<OverdueItem> mapItems(List<BookingEntity> source) {
         LocalDateTime now = LocalDateTime.now();
         List<OverdueItem> out = new ArrayList<>();
-        for (BookingEntity b : bookingService.list()) {
+        for (BookingEntity b : source) {
             if (!isOverdue(b, now)) continue;
             var s = b.getSchedule();
             out.add(new OverdueItem(b.getId(),
@@ -58,8 +71,17 @@ public class BookingOverdueService {
      * rollback-only，整批都会一起失败（这一点与退款侧的一键取消同理）。</p>
      */
     public OverdueResult resolve() {
+        return resolveOf(overdue());
+    }
+
+    /** 定时任务用：全部门店。 */
+    public OverdueResult resolveAll() {
+        return resolveOf(overdueAll());
+    }
+
+    private OverdueResult resolveOf(List<OverdueItem> items) {
         List<OverdueResult.Item> noShow = new ArrayList<>(), cancelled = new ArrayList<>(), skipped = new ArrayList<>();
-        for (OverdueItem item : overdue()) {
+        for (OverdueItem item : items) {
             String label = label(item);
             try {
                 if ("BOOKED".equals(item.status())) {
