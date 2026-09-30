@@ -134,7 +134,12 @@ router.beforeEach((to, _from, next) => {
     } else {
       const required = to.meta.permissions as string[] | undefined
       const permissions = getUserInfo()?.permissions || []
-      if (required?.length && !required.some(permission => permissions.includes(permission))) {
+      // meta.roles 也要校验：此前只查 permissions，导致声明了 roles:['SALES'] 的页面
+      // 仍可被店长/前台用 URL 直接打开（菜单隐藏 ≠ 进不去）
+      const requiredRoles = to.meta.roles as string[] | undefined
+      const currentRole = getUserInfo()?.role
+      const roleBlocked = !!requiredRoles?.length && (!currentRole || !requiredRoles.includes(currentRole))
+      if (roleBlocked || (required?.length && !required.some(permission => permissions.includes(permission)))) {
         next({ path: '/access-denied', replace: true })
       } else {
         next()

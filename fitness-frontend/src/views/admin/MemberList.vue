@@ -164,6 +164,30 @@ const emptyForm = (): MemberRequest => ({
   memberNo: '', realName: '', phone: '', email: '', gender: '', birthday: '', address: '', blacklistFlag: false
 })
 const form = reactive<MemberRequest>(emptyForm())
+
+/**
+ * 打开编辑时整表回填。
+ *
+ * 后端 updateMember 是「无条件覆盖」式保存（MemberService.applyRequest 逐个 set），
+ * **表单里少一个字段，保存时就会把该字段清空**。此前这里手工挑字段，漏了
+ * coachId/salesUserId/status/idCard，导致「编辑一次会员 → 归属被清空、状态被重置成 ACTIVE」。
+ * 以后后端 MemberRequest 新增字段，这个函数必须同步补。
+ */
+const formFromMember = (m: Member): MemberRequest => ({
+  memberNo: m.memberNo,
+  realName: m.realName,
+  phone: m.phone || '',
+  email: m.email || '',
+  idCard: m.idCard || '',
+  gender: m.gender || '',
+  birthday: m.birthday || '',
+  address: m.address || '',
+  venueId: m.venueId ?? null,
+  status: m.status || 'ACTIVE',
+  blacklistFlag: !!m.blacklistFlag,
+  coachId: m.coachId ?? null,
+  salesUserId: m.salesUserId ?? null,
+})
 const advisors=ref<AdvisorRef[]>([]),coaches=ref<AdvisorRef[]>([])
 const bodyVisible=ref(false),bodyStudent=ref<any>(null)
 const bodyMemberId=computed(()=>bodyStudent.value?.id)
@@ -210,16 +234,7 @@ const openCreate = () => {
 }
 
 const openEdit = (member: Member) => {
-  Object.assign(form, {
-    memberNo: member.memberNo,
-    realName: member.realName,
-    phone: member.phone,
-    email: member.email || '',
-    gender: member.gender || '',
-    birthday: member.birthday || '',
-    address: member.address || '',
-    blacklistFlag: member.blacklistFlag
-  })
+  Object.assign(form, formFromMember(member))
   editingId.value = member.id
   dialogVisible.value = true
 }

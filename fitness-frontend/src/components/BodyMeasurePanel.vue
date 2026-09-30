@@ -1,5 +1,6 @@
 <template>
   <div class="bmp">
+    <el-alert v-if="loadError" type="warning" :closable="false" show-icon :title="loadError" />
     <div class="bmp-head">
       <div><h3>训练目标</h3><p>{{ headerHint }}</p></div>
       <el-radio-group v-model="goal" size="small" @change="saveGoal">
@@ -156,11 +157,20 @@ const chart = computed(() => {
   return { w, h, padL, padR, path, area, dots, grid, first: dots[0], last: dots[dots.length - 1] }
 })
 
+const loadError = ref('')
 const load = async () => {
-  const t = isStaff.value ? await getMemberBodyTrend(props.memberId!) : await getMyBodyTrend()
-  trend.value = t.data
-  goal.value = t.data.trainingGoal || 'NONE'
-  records.value = t.data.records || []
+  loadError.value = ''
+  try {
+    const t = isStaff.value ? await getMemberBodyTrend(props.memberId!) : await getMyBodyTrend()
+    trend.value = t.data
+    goal.value = t.data.trainingGoal || 'NONE'
+    records.value = t.data.records || []
+  } catch (e: any) {
+    // 例如教练查看"非自己学员"会被拒；此前失败也显示"还没有体测记录"，看着像没数据
+    loadError.value = e?.message || '体测记录加载失败'
+    trend.value = undefined
+    records.value = []
+  }
 }
 const saveGoal = async () => {
   try {

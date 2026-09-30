@@ -91,8 +91,9 @@ class FitnessApplicationIntegrationTest {
         mvc.perform(get("/api/v1/admin/venues").header("Authorization", bearer(reception)))
                 .andExpect(status().isForbidden());
 
+        // 会员不应持有 COURSE_READ：管理端课程接口必须拒绝（会员看课程走 /api/v1/member/*）
         mvc.perform(get("/api/v1/admin/courses").header("Authorization", bearer(member)))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/admin/bookings").header("Authorization", bearer(member)))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/api/v1/admin/assistant/chat")
@@ -1599,10 +1600,9 @@ class FitnessApplicationIntegrationTest {
                                 """.formatted(target.path("memberNo").asText(), target.path("realName").asText(),
                                 target.path("phone").asText(), target.path("status").asText(), otherUserId)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
-        mvc.perform(get("/api/v1/admin/members/" + memberId + "/body-measurements")
-                        .header("Authorization", bearer(coach)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(1003));
+        // 说明：教练的可见范围已放宽为「归属自己的学员 或 自己排课上的学员」，
+        // 因此换个专属教练就看不到这条断言不再成立；越权的负向用例改由
+        // coachCanRecordMeasurementsForStudentsOnOwnSchedules 覆盖（用与教练毫无交集的会员）。
     }
 
 
@@ -1856,6 +1856,143 @@ class FitnessApplicationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(2600))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("同一场馆")));
+    }
+
+
+    // ------------------------------------------------ 体检修复的回归用例（2026-09-30）
+
+    @Test
+    @Order(40)
+    void rolePermissionsMatchTheirPortals() throws Exception {
+        String member = login("member", "MEMBER", "会员");
+        String coach = login("coach", "COACH", "教练");
+
+        // 会员不该能进管理端课程/排课（此前 MEMBER 多一个 COURSE_READ，会员端菜单会露出管理页面且进去就 403）
+        mvc.perform(get("/api/v1/admin/courses").header("Authorization", bearer(member)))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/admin/schedules").header("Authorization", bearer(member)))
+                .andExpect(status().isForbidden());
+        // 会员自己的课表接口仍然可用
+        mvc.perform(get("/api/v1/member/schedules").header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 教练只能看自己的评分（店长视图 /admin/reviews/summary 不再对教练开放）
+        mvc.perform(get("/api/v1/coach/reviews/summary").header("Authorization", bearer(coach)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        mvc.perform(get("/api/v1/admin/reviews/summary").header("Authorization", bearer(coach)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Order(41)
+    void crossVenueScopeAndMessagesRespectVenueBoundaries() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        JsonNode venues = mapper.readTree(mvc.perform(get("/api/v1/admin/venues").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        long venueA = venues.get(0).path("id").asLong();
+        long venueB = venues.get(1).path("id").asLong();
+
+        // 建一个属于 B 店的商品；A 店（总部）的店长不能读/改它的跨店适用范围（此前缺商品归属校验）
+        long productId = mapper.readTree(mvc.perform(post("/api/v1/commercial/products")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"滨江门店专属卡","category":"CARD","productType":"MONTH_CARD",
+                                 "validityDays":30,"price":199.00,"accessAllowed":true,"venueId":%d}
+                                """.formatted(venueB)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        String managerA = login("manager", "MANAGER", "店长");
+        mvc.perform(get("/api/v1/commercial/products/" + productId + "/venue-scope")
+                        .header("Authorization", bearer(managerA)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
+        mvc.perform(put("/api/v1/commercial/products/" + productId + "/venue-scope")
+                        .header("Authorization", bearer(managerA)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"venueIds\":[" + venueA + "]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
+        // 超管可以
+        mvc.perform(get("/api/v1/commercial/products/" + productId + "/venue-scope")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 给 B 店会员发消息：A 店前台/店长不能发（此前不校验会员门店）
+        long memberB = mapper.readTree(mvc.perform(post("/api/v1/admin/members")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberNo":"MSG%06d","realName":"他店会员","phone":"13700004444","venueId":%d}
+                                """.formatted(System.nanoTime() % 1000000, venueB)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        mvc.perform(post("/api/v1/admin/messages/send")
+                        .header("Authorization", bearer(login("reception", "RECEPTION", "前台")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"category":"MEMBERSHIP","subject":"越店消息","content":"不应发出"}
+                                """.formatted(memberB)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
+        // 超管仍然可以发
+        mvc.perform(post("/api/v1/admin/messages/send")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"category":"MEMBERSHIP","subject":"正常消息","content":"总部发出"}
+                                """.formatted(memberB)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    @Order(42)
+    void coachCanRecordMeasurementsForStudentsOnOwnSchedules() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        String coach = login("coach", "COACH", "教练");
+        long coachId = mapper.readTree(loginResponse("coach", "password"))
+                .path("data").path("userInfo").path("id").asLong();
+        long venueId = firstVenueId(admin);
+
+        // 造一个"只在某教练排课上有预约"的学员（不设为该教练的专属学员）
+        long learnerId = mapper.readTree(mvc.perform(post("/api/v1/admin/members")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberNo":"BM%06d","realName":"团课学员","phone":"13700005555","venueId":%d}
+                                """.formatted(System.nanoTime() % 1000000, venueId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        long courseId = newCourse(admin, "教练体测权限课", "GROUP", venueId);
+        java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(7)
+                .withHour(6).withMinute(5).withSecond(0).withNano(0);
+        long scheduleId = mapper.readTree(mvc.perform(post("/api/v1/admin/schedules")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content(scheduleBody(courseId, coachId, "首席教练", start, start.plusHours(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        mvc.perform(post("/api/v1/admin/bookings")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"scheduleId":%d}
+                                """.formatted(learnerId, scheduleId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // 教练可以给这位学员代录体测（此前只认 member.coach_id，必然 403）
+        mvc.perform(post("/api/v1/admin/members/" + learnerId + "/body-measurements")
+                        .header("Authorization", bearer(coach)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"measuredOn":"%s","weightKg":70.5}
+                                """.formatted(java.time.LocalDate.now().minusDays(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        mvc.perform(get("/api/v1/admin/members/" + learnerId + "/body-measurements")
+                        .header("Authorization", bearer(coach)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.recordCount").value(1));
+
+        // 不是自己学员的会员仍然看不了
+        long outsiderId = mapper.readTree(mvc.perform(post("/api/v1/admin/members")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberNo":"BM%06d","realName":"旁观会员","phone":"13700006666","venueId":%d}
+                                """.formatted(System.nanoTime() % 1000000, venueId)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        mvc.perform(get("/api/v1/admin/members/" + outsiderId + "/body-measurements")
+                        .header("Authorization", bearer(coach)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
     }
 
     private long coachUserId() throws Exception {

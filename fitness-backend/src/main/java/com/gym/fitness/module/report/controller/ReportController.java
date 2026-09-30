@@ -25,24 +25,9 @@ public class ReportController {
         return Result.success(reportService.dashboard());
     }
     
-    @Operation(summary = "场馆业绩统计")
-    @GetMapping("/venue-performance")
-    public Result<?> getVenuePerformance(@RequestParam Long venueId) {
-        return Result.success(reportService.dashboard());
-    }
-    
-    @Operation(summary = "教练工作量统计")
-    @GetMapping("/coach-workload")
-    public Result<?> getCoachWorkload(@RequestParam Long coachId) {
-        return Result.success(reportService.dashboard());
-    }
-    
-    @Operation(summary = "销售业绩统计")
-    @GetMapping("/sales-performance")
-    public Result<?> getSalesPerformance(@RequestParam Long salesId) {
-        return Result.success(reportService.dashboard());
-    }
-    
+    // 说明：原先的 venue-performance / coach-workload / sales-performance 三个接口
+    // 完全忽略入参、都返回同一个本店看板，会误导调用方，已删除（要用请按真实口径实现）。
+
     @Operation(summary = "出勤率统计")
     @GetMapping("/attendance-rate")
     public Result<?> getAttendanceRate() {

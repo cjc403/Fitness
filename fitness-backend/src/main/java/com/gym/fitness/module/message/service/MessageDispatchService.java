@@ -39,9 +39,13 @@ public class MessageDispatchService {
                 .toList();
     }
 
+    /** 投递记录：总部看全部，其余只看到本门店的（此前没做门店隔离）。 */
     @Transactional(readOnly = true)
     public List<DeliveryView> recent() {
-        return deliveries.findTop100ByOrderByIdDesc().stream().map(this::toView).toList();
+        List<MessageDeliveryEntity> rows = SecurityUtil.isSuperAdmin()
+                ? deliveries.findTop100ByOrderByIdDesc()
+                : deliveries.findTop100ByVenueIdOrderByIdDesc(currentVenue());
+        return rows.stream().map(this::toView).toList();
     }
 
     /** 手动给某个会员发消息（演示/通知用）。 */
@@ -49,6 +53,10 @@ public class MessageDispatchService {
     public List<DeliveryView> sendToMember(SendRequest request) {
         MemberEntity member = members.findById(request.getMemberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        // 门店隔离：不能给其它门店的会员发消息（此前漏了这道校验）
+        if (!SecurityUtil.isSuperAdmin() && !member.getVenueId().equals(currentVenue())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "不能给其他门店的会员发送消息");
+        }
         return dispatch(member, request.getCategory().trim().toUpperCase(), request.getSubject().trim(),
                 request.getContent().trim(), request.getChannels());
     }

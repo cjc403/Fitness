@@ -6,6 +6,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
+
+    /** 该会员是否在该教练的某条排课上有过预约（教练学员判定用）。 */
+    @org.springframework.data.jpa.repository.Query("select count(b) > 0 from BookingEntity b "
+            + "where b.memberId = :memberId and b.schedule.coachId = :coachId")
+    boolean existsByMemberIdAndScheduleCoachId(@org.springframework.data.repository.query.Param("memberId") Long memberId,
+                                              @org.springframework.data.repository.query.Param("coachId") Long coachId);
     @org.springframework.data.jpa.repository.Query("select b.schedule.venueId from BookingEntity b where b.id=:id")
     Optional<Long> findVenueId(@org.springframework.data.repository.query.Param("id") Long id);
     @org.springframework.data.jpa.repository.Query("select b.scheduleId from BookingEntity b where b.id=:id")

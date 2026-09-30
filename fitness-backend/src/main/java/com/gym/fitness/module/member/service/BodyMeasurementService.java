@@ -37,6 +37,7 @@ public class BodyMeasurementService {
     private final BodyMeasurementRepository measurements;
     private final MemberRepository members;
     private final SysUserRepository users;
+    private final com.gym.fitness.module.booking.repository.BookingRepository bookingRepository;
 
     // ---------------------------------------------------------------- 会员自助
 
@@ -190,8 +191,13 @@ public class BodyMeasurementService {
         if (SecurityUtil.isSuperAdmin()) return member;
         Long me = SecurityUtil.getCurrentUserId();
         if (SecurityUtil.hasRole("COACH")) {
-            if (!Objects.equals(member.getCoachId(), me)) {
-                throw new BusinessException(ErrorCode.FORBIDDEN, "只能查看归属自己的学员体测记录");
+            // 教练可以看"归属自己的学员"，也可以看"自己排课上的学员"——
+            // 教练工作台的学员来自排课预约，团课学员通常并没有把该教练设为专属教练，
+            // 此前只认 member.coach_id，导致工作台点「体测」必然被拒。
+            boolean isMyStudent = Objects.equals(member.getCoachId(), me)
+                    || bookingRepository.existsByMemberIdAndScheduleCoachId(member.getId(), me);
+            if (!isMyStudent) {
+                throw new BusinessException(ErrorCode.FORBIDDEN, "只能查看自己学员的体测记录");
             }
             return member;
         }

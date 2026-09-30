@@ -10,6 +10,7 @@
       </div>
     </div>
 
+    <el-alert v-if="loadError" type="error" :closable="false" show-icon :title="loadError" style="margin-bottom:16px" />
     <div class="metric-grid" v-loading="loading">
       <article><span>新增会员</span><strong>{{ overview?.newMembers ?? '—' }}</strong><small>区间内注册</small></article>
       <article><span>到店人次</span><strong>{{ overview?.totalAttendances ?? '—' }}</strong><small>区间内已签到</small></article>
@@ -72,15 +73,25 @@ const money = (v?: number | null) => (Number(v || 0)).toFixed(2)
 const riskText = (v: string) => ({ HIGH: '高风险', MEDIUM: '中风险', LOW: '低风险' }[v] || v)
 const params = computed(() => ({ from: range.value?.[0], to: range.value?.[1] }))
 
-const loadMembers = async () => { members.value = (await getMemberAnalytics(riskOnly.value)).data }
+const loadError = ref('')
+const loadMembers = async () => {
+  try { members.value = (await getMemberAnalytics(riskOnly.value)).data }
+  catch (e: any) { loadError.value = e?.message || '会员数据加载失败' }
+}
 const load = async () => {
   loading.value = true
+  loadError.value = ''
   try {
     const [o, c] = await Promise.all([getAnalyticsOverview(params.value), getCoachRanking(params.value)])
     overview.value = o.data
     coaches.value = c.data
+  } catch (e: any) {
+    // 任一接口失败时给出可读提示，避免整页空白让人以为"没有数据"
+    loadError.value = e?.message || '经营数据加载失败，请稍后重试'
+  } finally {
+    loading.value = false
     await loadMembers()
-  } finally { loading.value = false }
+  }
 }
 const quick = (n: number) => { range.value = [daysAgo(n - 1), fmt(new Date())]; load() }
 onMounted(load)

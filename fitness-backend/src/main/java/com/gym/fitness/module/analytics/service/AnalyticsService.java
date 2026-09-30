@@ -103,10 +103,12 @@ public class AnalyticsService {
         List<MemberEntity> scoped = scopedMembers();
         List<BookingEntity> scopedBookings = scopedBookings(scoped);
 
+        Set<Long> allowedCoaches = scopedCoachIds();
         Map<Long, Long> privateCount = new LinkedHashMap<>();
         Map<Long, BigDecimal> privateRevenue = new LinkedHashMap<>();
         for (PrivateLessonEntity l : lessons.findAll()) {
             if (l.getCoachId() == null || !"CONFIRMED".equals(l.getStatus())) continue;
+            if (allowedCoaches != null && !allowedCoaches.contains(l.getCoachId())) continue;
             if (!inRange(l.getConfirmedAt(), rangeStart, rangeEnd)) continue;
             privateCount.merge(l.getCoachId(), 1L, Long::sum);
             privateRevenue.merge(l.getCoachId(), l.getUnitPrice() == null ? BigDecimal.ZERO : l.getUnitPrice(),
@@ -121,6 +123,7 @@ public class AnalyticsService {
         }
         Map<Long, List<CourseReviewEntity>> reviewsByCoach = reviews.findAll().stream()
                 .filter(r -> r.getCoachId() != null)
+                .filter(r -> allowedCoaches == null || allowedCoaches.contains(r.getCoachId()))
                 .collect(Collectors.groupingBy(CourseReviewEntity::getCoachId));
 
         Set<Long> coachIds = new TreeSet<>();
@@ -184,6 +187,20 @@ public class AnalyticsService {
     }
 
     // ---------------------------------------------------------------- 内部
+
+    /**
+     * 当前登录人能看到的教练 id 集合（超管返回 null 表示不过滤）。
+     *
+     * <p>之前教练绩效直接用 lessons.findAll()/reviews.findAll()，店长会看到**其它门店**教练的私教产值与评分。</p>
+     */
+    private Set<Long> scopedCoachIds() {
+        if (SecurityUtil.isSuperAdmin()) return null;
+        Long venueId = requireVenue();
+        return users.findAll().stream()
+                .filter(u -> venueId.equals(u.getVenueId()))
+                .map(com.gym.fitness.module.auth.entity.SysUserEntity::getId)
+                .collect(Collectors.toSet());
+    }
 
     private List<MemberEntity> scopedMembers() {
         return SecurityUtil.isSuperAdmin() ? members.findAll() : members.findByVenueIdOrderByIdDesc(requireVenue());
