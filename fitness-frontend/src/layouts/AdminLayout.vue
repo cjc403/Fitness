@@ -40,6 +40,7 @@ import { ElMessage } from 'element-plus'
 import { ArrowDown, Bell, Collection, CreditCard, Expand, Fold, Odometer, OfficeBuilding, Tickets, TrendCharts, User, UserFilled } from '@element-plus/icons-vue'
 import AssistantPanel from '@/components/AssistantPanel.vue'
 import { ROLE_NAMES } from '@/utils/auth'
+import { isMenuVisible } from '@/utils/accessControl.mjs'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -67,8 +68,9 @@ const menuItems = [
 ]
 const visibleMenus = computed(() => {
   const permissions = userInfo.value?.permissions || []
+  // 与路由守卫同源（utils/accessControl.mjs），避免"菜单藏了但 URL 能进"
   const role = userInfo.value?.role
-  return menuItems.filter(item => permissions.includes(item.permission) && (!item.roles || (role && item.roles.includes(role))))
+  return menuItems.filter(item => isMenuVisible(item, role, permissions))
 })
 const roleName = computed(() => userInfo.value?.roleName || ROLE_NAMES[userInfo.value?.role || ''] || '系统用户')
 const canUseAssistant = computed(() => userInfo.value?.permissions?.includes('ASSISTANT_USE'))

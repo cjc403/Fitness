@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { getToken, getUserInfo } from '@/utils/storage'
 import { homeForRole } from '@/utils/auth'
+import { canAccessRoute } from '@/utils/accessControl.mjs'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -132,14 +133,10 @@ router.beforeEach((to, _from, next) => {
     } else if (!getUserInfo()?.mustChangePassword && to.path === '/change-password') {
       next({ path: homeForRole(getUserInfo()?.role), replace: true })
     } else {
-      const required = to.meta.permissions as string[] | undefined
-      const permissions = getUserInfo()?.permissions || []
-      // meta.roles 也要校验：此前只查 permissions，导致声明了 roles:['SALES'] 的页面
-      // 仍可被店长/前台用 URL 直接打开（菜单隐藏 ≠ 进不去）
-      const requiredRoles = to.meta.roles as string[] | undefined
-      const currentRole = getUserInfo()?.role
-      const roleBlocked = !!requiredRoles?.length && (!currentRole || !requiredRoles.includes(currentRole))
-      if (roleBlocked || (required?.length && !required.some(permission => permissions.includes(permission)))) {
+      // 准入判定与菜单、权限常量同源（见 utils/accessControl.mjs），
+      // 避免再出现"菜单藏了但 URL 能进"的口径不一致
+      const user = getUserInfo()
+      if (!canAccessRoute(to.meta, user?.role, user?.permissions)) {
         next({ path: '/access-denied', replace: true })
       } else {
         next()

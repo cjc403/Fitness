@@ -1995,6 +1995,116 @@ class FitnessApplicationIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
     }
 
+
+    // ------------------------------------------------ 会籍顾问端到端（上一轮唯一遗留）
+
+    @Test
+    @Order(43)
+    void advisorWorkbenchWorksEndToEndForSalesRole() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        long venueId = firstVenueId(admin);
+        String username = "advisor" + (System.nanoTime() % 1000000);
+        String initialPwd = "Advisor@2026!";
+        String newPwd = "Advisor01@2026!";
+
+        // ① 建会籍顾问账号：超管建号必须指定门店（漏了会报"请选择所属场馆"）
+        long advisorId = mapper.readTree(mvc.perform(post("/api/v1/admin/accounts/employees")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s","realName":"测试会籍顾问","roleCode":"SALES","venueId":%d}
+                                """.formatted(username, initialPwd, venueId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+
+        // ② 新建账号必须先改初始密码，否则其它接口一律返回 1105（上一轮就是卡在这里）
+        String firstToken = mapper.readTree(mvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, initialPwd)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("accessToken").asText();
+        // 未改初始密码前，其它接口由过滤器拦下：HTTP 403 + 业务码 1105（不是 200+1105，别搞混）
+        mvc.perform(get("/api/v1/admin/advisor/workbench").header("Authorization", bearer(firstToken)))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(1105));
+        mvc.perform(post("/api/v1/auth/change-password").header("Authorization", bearer(firstToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"currentPassword":"%s","newPassword":"%s"}
+                                """.formatted(initialPwd, newPwd)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        String advisor = mapper.readTree(mvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, newPwd)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("accessToken").asText();
+
+        // ③ 工作台初始为空；顾问能看商品（能卖卡），但看不到财务与退款（方案 A 的边界）
+        mvc.perform(get("/api/v1/admin/advisor/workbench").header("Authorization", bearer(advisor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.summary.myMembers").value(0))
+                .andExpect(jsonPath("$.data.summary.salesOrders").value(0));
+        mvc.perform(get("/api/v1/commercial/products").header("Authorization", bearer(advisor)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        mvc.perform(get("/api/v1/finance/refunds").header("Authorization", bearer(advisor)))
+                .andExpect(status().isForbidden());
+
+        // ④ 指派一个会员给他（会员编辑是"整表覆盖"式保存，归属字段要跟着一起传）
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile")
+                        .header("Authorization", bearer(login("member", "MEMBER", "会员"))))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        JsonNode target = mapper.readTree(mvc.perform(get("/api/v1/admin/members/" + memberId)
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        mvc.perform(put("/api/v1/admin/members/" + memberId).header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberNo":"%s","realName":"%s","phone":"%s","status":"%s","salesUserId":%d}
+                                """.formatted(target.path("memberNo").asText(), target.path("realName").asText(),
+                                target.path("phone").asText(), target.path("status").asText(), advisorId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // ⑤ 工作台能看到"我的会员"，并带上流失风险分（与经营分析同口径）
+        JsonNode wb = mapper.readTree(mvc.perform(get("/api/v1/admin/advisor/workbench")
+                        .header("Authorization", bearer(advisor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.summary.myMembers").value(1))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(wb.path("members").get(0).path("memberId").asLong())
+                .as("工作台第一行应当是刚指派的会员").isEqualTo(memberId);
+        org.assertj.core.api.Assertions.assertThat(wb.path("members").get(0).path("riskLevel").asText())
+                .as("应带上风险等级").isIn("HIGH", "MEDIUM", "LOW");
+
+        // ⑥ 记一次跟进：本周跟进数 +1，并出现在最近跟进里
+        mvc.perform(post("/api/v1/admin/members/" + memberId + "/follow-ups")
+                        .header("Authorization", bearer(advisor)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"followType":"CALL","content":"已电话沟通续费意向"}
+                                """))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        JsonNode wb2 = mapper.readTree(mvc.perform(get("/api/v1/admin/advisor/workbench")
+                        .header("Authorization", bearer(advisor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.summary.followUpsThisWeek").value(1))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(wb2.path("members").get(0).path("lastFollowContent").asText())
+                .as("最近跟进内容应可见").contains("续费意向");
+
+        // ⑦ 归属校验：前台既不是归属人也不是店长/总部，不能代记跟进
+        mvc.perform(post("/api/v1/admin/members/" + memberId + "/follow-ups")
+                        .header("Authorization", bearer(login("reception", "RECEPTION", "前台")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"followType":"CALL","content":"越权尝试"}
+                                """))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }

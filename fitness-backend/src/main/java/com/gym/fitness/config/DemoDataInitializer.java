@@ -50,6 +50,9 @@ public class DemoDataInitializer implements ApplicationRunner {
         roleMap.put("COACH", ensureRole("教练", "COACH"));
         roleMap.put("RECEPTION", ensureRole("前台", "RECEPTION"));
         roleMap.put("MEMBER", ensureRole("会员", "MEMBER"));
+        // 必须一起"确保"SALES 角色：早期建的库里没有这一行（V1 的种子之后才加了会籍顾问），
+        // 缺了它新建会籍顾问账号会报 1001「角色不存在」。
+        roleMap.put("SALES", ensureRole("会籍顾问", "SALES"));
         VenueEntity headquarters = venues.findAllByOrderByIdAsc().stream().findFirst()
                 .orElseGet(() -> venue("FitChain 旗舰中心", "HEADQUARTERS", "上海市浦东新区健身路88号", "021-88886666"));
         if (venues.count() == 1) venue("FitChain 滨江店", "BINJIANG", "上海市滨江大道126号", "021-66668888");
@@ -64,6 +67,8 @@ public class DemoDataInitializer implements ApplicationRunner {
                 roleMap.get("RECEPTION"), headquarters, false);
         SysUserEntity memberUser = ensureUser("member", "林晓雨", "member@fitchain.local",
                 roleMap.get("MEMBER"), headquarters, false);
+        ensureUser("advisor", "会籍顾问小周", "advisor@fitchain.local",
+                roleMap.get("SALES"), headquarters, false);
 
         if (members.count() == 0) seedMembers(headquarters.getId(), admin.getId(), coach.getId());
         linkDemoMember(memberUser.getId());

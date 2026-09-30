@@ -38,6 +38,17 @@ jobs:
       - name: 构建（含 vue-tsc 类型检查）
         working-directory: fitness-frontend
         run: npm run build
-      - name: 单元测试
+      - name: 单元测试（node --test tests/，新增测试文件自动纳入）
         working-directory: fitness-frontend
-        run: node --test tests/finance-ui.helpers.test.mjs tests/finance-runtime.test.mjs
+        run: npm test
+
+  deploy-scripts:
+    name: 部署脚本测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: python -m unittest discover
+        run: python -m unittest discover -s deploy/linux -p 'test_*.py' -v
