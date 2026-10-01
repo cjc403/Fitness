@@ -12,8 +12,19 @@
       <div class="sparkles" aria-hidden="true"><i v-for="n in 16" :key="n"></i></div>
       <div class="magic-circle" aria-hidden="true"></div>
       <div class="panel panel-a" aria-hidden="true"><span class="panel-ink"></span></div>
-      <div class="panel panel-b" aria-hidden="true"><span class="panel-ink"></span></div>
-      <div class="panel panel-c" aria-hidden="true"><span class="panel-ink"></span><span class="panel-rune"></span></div>
+
+      <!--
+        角色分镜格。
+        用法：把图片放到 fitness-frontend/public/hero-character.png（文件名固定）即可显示；
+        用 `npm run dev` 是立即生效，用打包产物（dist）需要重新 build 一次。
+        图片不存在或加载失败时这一格自动隐藏，页面照常可用 —— 不依赖任何外部软件或壁纸。
+        放进分镜格的意义：**任何背景的图**（截图/立绘/带白底）放进来都像"漫画的一格"，不用抠图。
+      -->
+      <div v-show="heroVisible" class="panel panel-hero" aria-hidden="true">
+        <img :src="heroSrc" alt="" @error="heroVisible = false"/>
+        <span class="panel-ink"></span>
+      </div>
+
       <div class="vertical-tag" aria-hidden="true">连锁运营</div>
 
       <header class="brand-head">
@@ -98,6 +109,10 @@ const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true'
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 const remember = ref(true)
+// 角色立绘：public/hero-character.png 存在就显示，不存在（或加载失败）自动隐藏。
+// 用动态绑定而不是写死 src="..."，否则构建时 Vue 会把它当模块导入、文件不存在就直接构建失败。
+const heroVisible = ref(true)
+const heroSrc = '/hero-character.png'
 const demoAccounts = [
   { label: '总部', username: 'admin' },
   { label: '店长', username: 'manager' },
@@ -216,33 +231,19 @@ const handleLogin = async () => {
   pointer-events: none;
 }
 
-.panel-a { top: 6%; right: 5%; width: 210px; height: 150px; transform: rotate(2.5deg);
+.panel-a { top: 6%; right: 6%; width: 188px; height: 122px; transform: rotate(2.5deg);
   background: radial-gradient(circle at 60% 40%, rgba(150, 210, 255, .5), rgba(12, 30, 56, .9) 62%); }
-.panel-b { bottom: 9%; right: 12%; width: 150px; height: 118px; transform: rotate(-3deg);
-  background: linear-gradient(150deg, #16325a, #0b1a30); }
-/* 第三块分镜：把魔法阵框进分镜格里，避免看起来像孤立的黑色方块 */
-.panel-c { top: 45%; right: 4%; width: 122px; height: 122px; transform: rotate(4deg);
-  background: radial-gradient(circle at 50% 50%, rgba(120, 185, 255, .38), #0c1a30 62%); }
+/* 角色分镜格：图片按 cover 裁进格子，任意背景都成立 */
+.panel-hero {
+  right: 5%; bottom: 7%; width: 268px; height: 404px; transform: rotate(1.5deg);
+  background: linear-gradient(170deg, #16325a, #0b1a30);
+}
+.panel-hero img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; }
+/* 网点压在角色上，增强"漫画分镜"感 */
+.panel-hero .panel-ink { opacity: .2; }
 
 .panel-ink { position: absolute; inset: 0; opacity: .5;
   background-image: radial-gradient(rgba(210, 236, 255, .8) 1.1px, transparent 1.6px); background-size: 5px 5px; }
-.panel-beam { position: absolute; inset: -30% -60%;
-  background: linear-gradient(115deg, transparent 42%, rgba(205, 235, 255, .45) 50%, transparent 58%); }
-/* 分镜里的魔法阵：同心圆 + 断续刻度 */
-.panel-rune {
-  position: absolute; inset: 16%; border-radius: 50%;
-  border: 1px dashed rgba(190, 228, 255, .6);
-  box-shadow: inset 0 0 18px rgba(140, 200, 255, .35);
-}
-.panel-rune::before {
-  content: ""; position: absolute; inset: 20%; border-radius: 50%;
-  border: 1px solid rgba(200, 234, 255, .45);
-}
-.panel-rune::after {
-  content: ""; position: absolute; inset: 38%; border-radius: 50%;
-  background: radial-gradient(circle, rgba(225, 245, 255, .85), rgba(150, 210, 255, .15) 70%, transparent);
-  box-shadow: 0 0 16px 4px rgba(150, 210, 255, .4);
-}
 
 /* ---------- 魔法阵 ---------- */
 .magic-circle {
@@ -374,7 +375,7 @@ const handleLogin = async () => {
 .demo-tip { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 12px; border-radius: 8px; background: #eef5ff; color: #4a6fa8; font-size: 12px; }
 .login-card footer { margin-top: 18px; text-align: center; color: #a9b4c6; font-size: 11px; }
 
-/* ---------- 动画 ---------- */
+/* 动画 ---------- */
 @keyframes wb-spin { to { transform: rotate(360deg); } }
 @keyframes wb-float {
   0%, 100% { opacity: .1; transform: translateY(0) scale(.9); }
