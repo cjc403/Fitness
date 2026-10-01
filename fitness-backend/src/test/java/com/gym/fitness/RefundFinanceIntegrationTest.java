@@ -275,7 +275,9 @@ class RefundFinanceIntegrationTest {
         assertEquals(0,quote().path("remainingServiceDays").asInt());assertEquals(3,periods.findByEntitlementIdOrderByIdAsc(entitlementId).get(0).getTotalDays());
     }
     @Test void timeConsumptionBelongsToEachActualServiceMonth()throws Exception {
-        termSale();LocalDate start=LocalDate.now().withDayOfMonth(1).minusDays(1);var p=periods.findByEntitlementIdOrderByIdAsc(entitlementId).get(0);p.setStartDate(start);p.setNextServiceDate(start);periods.save(p);
+        termSale();// 起始日取"上个月 1 号的前一天"：三天仍然跨越月份边界（用例本意），但**全部落在过去**。
+        // 原来取的是"本月 1 号前一天"，第三天会落在下个月 1–2 号之后——每月 1–2 号跑必红。
+        LocalDate start=LocalDate.now().withDayOfMonth(1).minusMonths(1).minusDays(1);var p=periods.findByEntitlementIdOrderByIdAsc(entitlementId).get(0);p.setStartDate(start);p.setNextServiceDate(start);periods.save(p);
         assertEquals(new BigDecimal("0.00"),quote().path("refundableAmount").decimalValue().setScale(2));var events=valueEvents.findByEntitlementIdOrderByIdAsc(entitlementId).stream().filter(v->"TIME_CONSUME".equals(v.getEventType())).toList();assertEquals(3,events.size());
         long[] expected={-333,-333,-334};for(int i=0;i<3;i++){assertEquals(expected[i],events.get(i).getDeltaCents());assertEquals(start.plusDays(i).atTime(23,59,59),events.get(i).getOccurredAt());assertEquals(start.plusDays(i).toString(),json.readTree(events.get(i).getDetailsJson()).path("serviceDate").asText());}
         assertEquals(0,funding.findByOrderId(orderId).orElseThrow().getRemainingCents());assertEquals(0,valueAccounts.findByEntitlementId(entitlementId).orElseThrow().getBalanceCents());assertEquals(0,events.get(2).getBalanceAfterCents());

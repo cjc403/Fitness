@@ -26,7 +26,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service @RequiredArgsConstructor
+// 由 Lombok 生成构造注入：跨店分摊记账（见 CrossVenueSettlementService）
 public class TrainingService {
+    private final com.gym.fitness.module.commercial.service.CrossVenueSettlementService crossVenueSettlement;
     private final PrivateLessonRepository lessons;
     private final CommissionRuleRepository rules;
     private final CoachSettlementRepository settlements;
@@ -115,6 +117,8 @@ public class TrainingService {
         var e=lockedCredit(l.getEntitlementId());
         if(!Objects.equals(e.getMemberId(),l.getMemberId())||e.getReservedUses()<1||e.getRemainingUses()==null||e.getRemainingUses()<1||!List.of("ACTIVE","EXPIRED").contains(e.getStatus()))throw failure("课包权益异常，请联系店长");
         l.setUnitPrice(values.consume(e,"LESSON:"+l.getId(),unitPrice(e)));
+        // 跨店服务分摊：卡是别店卖的、课在本店上的，记一笔供内部结算（只记账，不动钱）
+        crossVenueSettlement.recordLesson(l,e,l.getUnitPrice());
         l.setCommissionRate(rules.findByVenueIdAndCoachId(l.getVenueId(),l.getCoachId()).map(CommissionRuleEntity::getRate).orElse(new BigDecimal("40.00")));
         l.setCommissionAmount(l.getUnitPrice().multiply(l.getCommissionRate()).divide(new BigDecimal("100"),2,RoundingMode.HALF_UP));
         l.setStatus("CONFIRMED");l.setConfirmedAt(LocalDateTime.now());
@@ -135,7 +139,9 @@ public class TrainingService {
             e.setLessonUnitPrice(unitPrice(e).multiply(BigDecimal.valueOf(remaining)).add(l.getUnitPrice()).divide(BigDecimal.valueOf(remaining+1),2,RoundingMode.HALF_UP));
             e.setRemainingUses(remaining+1);if("USED_UP".equals(e.getStatus()))e.setStatus(e.getValidUntil().isBefore(LocalDate.now())?"EXPIRED":"ACTIVE");
         }
-        l.setStatus("REVERSED");l.setReversedAt(LocalDateTime.now());l.setNote(reason);entitlements.save(e);lessons.save(l);audit(l,"PT_REVERSE",reason);return response(l);
+        l.setStatus("REVERSED");l.setReversedAt(LocalDateTime.now());l.setNote(reason);
+        // 冲正后服务并未发生，把分摊记录一并撤销
+        crossVenueSettlement.voidLesson(l.getId());entitlements.save(e);lessons.save(l);audit(l,"PT_REVERSE",reason);return response(l);
     }
     @Transactional(readOnly=true)
     public List<LessonResponse> listLessons() {

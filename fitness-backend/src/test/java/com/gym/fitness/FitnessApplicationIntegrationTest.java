@@ -32,6 +32,7 @@ class FitnessApplicationIntegrationTest {
     @Autowired JwtTokenProvider tokenProvider;
     @Autowired com.gym.fitness.module.course.repository.CourseScheduleRepository scheduleRepo;
     @Autowired com.gym.fitness.module.booking.repository.BookingRepository bookingRepo;
+    @Autowired com.gym.fitness.module.commercial.repository.MemberEntitlementRepository entitlements;
     @Autowired com.gym.fitness.module.operations.service.OperationsService operationsService;
 
     @Test
@@ -2237,6 +2238,95 @@ class FitnessApplicationIntegrationTest {
                                 {"recipientUserId":%d,"content":"跨店消息不应发出"}
                                 """.formatted(otherStaffUserId)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
+    }
+
+
+    // ------------------------------------------------ 跨店服务分摊（V17）
+
+    @Autowired com.gym.fitness.module.commercial.service.CrossVenueSettlementService crossVenueSettlement;
+    @Autowired com.gym.fitness.module.commercial.repository.CrossVenueServiceRepository crossVenueServices;
+
+    @Test
+    @Order(45)
+    void crossVenueServiceIsRecordedForSettlementExactlyOnce() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        JsonNode venues = mapper.readTree(mvc.perform(get("/api/v1/admin/venues").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        long venueA = venues.get(0).path("id").asLong();
+        long venueB = venues.get(1).path("id").asLong();
+
+        // 造一张属于 A 店的卡，卖给 A 店会员 → 权益归属 A 店
+        long productId = mapper.readTree(mvc.perform(post("/api/v1/commercial/products")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"分摊验证课包","category":"PACKAGE","productType":"PRIVATE_PACKAGE",
+                                 "validityDays":60,"totalUses":5,"price":500.00,"accessAllowed":true,"venueId":%d}
+                                """.formatted(venueA)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile")
+                        .header("Authorization", bearer(login("member", "MEMBER", "会员"))))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        mapper.readTree(mvc.perform(post("/api/v1/commercial/orders")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"productId":%d,"paymentMethod":"CASH","idempotencyKey":"it-settle-1"}
+                                """.formatted(memberId, productId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        var entitlement = entitlements.findByMemberIdOrderByIdDesc(memberId).stream()
+                .filter(e -> e.getProductId().equals(productId)).findFirst().orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(entitlement.getVenueId())
+                .as("权益应归属发卡门店 A").isEqualTo(venueA);
+
+        long before = crossVenueServices.count();
+
+        // ① 同店服务：不记账（不需要分摊）
+        var sameVenueLesson = new com.gym.fitness.module.training.entity.PrivateLessonEntity();
+        sameVenueLesson.setId(900001L);
+        sameVenueLesson.setMemberId(memberId);
+        sameVenueLesson.setEntitlementId(entitlement.getId());
+        sameVenueLesson.setVenueId(venueA);
+        crossVenueSettlement.recordLesson(sameVenueLesson, entitlement, new java.math.BigDecimal("100.00"));
+        org.assertj.core.api.Assertions.assertThat(crossVenueServices.count())
+                .as("同店服务不该产生分摊").isEqualTo(before);
+
+        // ② 跨店服务：A 店收款、B 店上课 → 记一笔
+        var crossLesson = new com.gym.fitness.module.training.entity.PrivateLessonEntity();
+        crossLesson.setId(900002L);
+        crossLesson.setMemberId(memberId);
+        crossLesson.setEntitlementId(entitlement.getId());
+        crossLesson.setVenueId(venueB);
+        crossVenueSettlement.recordLesson(crossLesson, entitlement, new java.math.BigDecimal("100.00"));
+        org.assertj.core.api.Assertions.assertThat(crossVenueServices.count())
+                .as("跨店服务应记一笔").isEqualTo(before + 1);
+
+        // ③ 重复登记（例如重复确认）：唯一约束 + 先查后写，不能重复记账
+        crossVenueSettlement.recordLesson(crossLesson, entitlement, new java.math.BigDecimal("100.00"));
+        org.assertj.core.api.Assertions.assertThat(crossVenueServices.count())
+                .as("同一节课只能记一笔").isEqualTo(before + 1);
+
+        // ④ 汇总接口：能看到（A 店发卡 → B 店服务），金额为 100
+        JsonNode summary = mapper.readTree(mvc.perform(get("/api/v1/admin/finance/cross-venue-settlement")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(summary.path("totalCount").asLong()).isGreaterThanOrEqualTo(1);
+        boolean pairFound = false;
+        for (JsonNode row : summary.path("rows")) {
+            if (row.path("issuerVenueId").asLong() == venueA && row.path("servingVenueId").asLong() == venueB) {
+                pairFound = true;
+                org.assertj.core.api.Assertions.assertThat(row.path("amount").decimalValue())
+                        .isEqualByComparingTo(new java.math.BigDecimal("100.00"));
+            }
+        }
+        org.assertj.core.api.Assertions.assertThat(pairFound).as("汇总里应出现 A→B 的分摊").isTrue();
+
+        // ⑤ 冲正：服务没发生 → 分摊记录撤销
+        crossVenueSettlement.voidLesson(900002L);
+        org.assertj.core.api.Assertions.assertThat(crossVenueServices.count())
+                .as("冲正后分摊记录应被撤销").isEqualTo(before);
     }
 
     private long coachUserId() throws Exception {

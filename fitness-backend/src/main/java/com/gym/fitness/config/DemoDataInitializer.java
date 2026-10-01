@@ -63,6 +63,12 @@ public class DemoDataInitializer implements ApplicationRunner {
                 roleMap.get("MANAGER"), headquarters, false);
         SysUserEntity coach = ensureUser("coach", "Alex 教练", "coach@fitchain.local",
                 roleMap.get("COACH"), headquarters, true);
+        // 每个门店都要有教练账号：私教排课要求"教练账号门店 = 排课门店"，
+        // 滨江店没有教练账号时，该店的私教排课无人可绑。
+        VenueEntity binjiang = venues.findAllByOrderByIdAsc().stream()
+                .filter(v -> !v.getId().equals(headquarters.getId())).findFirst().orElse(headquarters);
+        ensureUser("coach_binjiang", "滨江店教练", "coach.binjiang@fitchain.local",
+                roleMap.get("COACH"), binjiang, true);
         ensureUser("reception", "前台小林", "reception@fitchain.local",
                 roleMap.get("RECEPTION"), headquarters, false);
         SysUserEntity memberUser = ensureUser("member", "林晓雨", "member@fitchain.local",
