@@ -1,0 +1,16 @@
+# 统一换行符：Flyway 按文件字节算 checksum，CRLF/LF 不同会被判为"迁移文件被改动"而拒绝启动。
+# 服务器上的 V1–V8 是 LF（与 git 里存储的一致），因此这里强制文本文件按 LF 检出。
+* text=auto
+*.sql text eol=lf
+*.java text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.xml text eol=lf
+*.json text eol=lf
+*.ts text eol=lf
+*.mjs text eol=lf
+*.vue text eol=lf
+*.css text eol=lf
+*.html text eol=lf
