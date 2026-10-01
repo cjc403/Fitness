@@ -61,3 +61,7 @@ export const cancelRefund = (id: number, reason: string) => request.post<Refund>
 export const registerRefundPayment = (id: number, data: { amount: number; channel: string; externalReference: string; occurredAt: string; note: string }) => request.post<Refund>(`/v1/finance/refunds/${id}/pay`, data)
 export const getFinanceReport = (params: { from: string; to: string }) => request.get<FinanceReport>('/v1/finance/report', { params })
 export const exportFinanceReport = (params: { from: string; to: string }) : Promise<Blob> => request.get<Blob, Blob>('/v1/finance/report/export', { params, responseType: 'blob' })
+
+/** 导出 Excel（.xlsx）：概要 / 渠道现金 / 流水明细 / 完整性差异 四张表，中文表头、打开即用。 */
+export const exportFinanceReportExcel = (params: { from: string; to: string }): Promise<Blob> =>
+  request.get<Blob, Blob>('/v1/finance/report/export.xlsx', { params, responseType: 'blob' })

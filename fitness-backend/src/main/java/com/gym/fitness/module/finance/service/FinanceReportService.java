@@ -39,6 +39,90 @@ public class FinanceReportService {
             .append(Csv.cell(reconciliationText(cash.integrity().get(p.getId())))).append('\n');
         return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
+
+    /**
+     * 导出 Excel（.xlsx）：概要 / 渠道现金 / 流水明细 / 完整性差异 四张表。
+     *
+     * <p>与页面展示**同源**（都走 report()），保证"导出看到的"和"界面看到的"完全一致；
+     * 中文表头 + 中文取值，列宽与表头样式都已设置，打开即可直接用，不需要手动拉列宽。</p>
+     */
+    public byte[] exportExcel(LocalDate from, LocalDate to) {
+        Report report = report(from, to);
+        Range range = range(from, to);
+        Cash cash = cash(range, null);
+        try (com.gym.fitness.common.export.XlsxBuilder xlsx = new com.gym.fitness.common.export.XlsxBuilder()) {
+            // ① 概要
+            xlsx.sheet("概要", "项目", "数值", "说明")
+                    .row("统计区间", report.from() + " 至 " + report.to(), "")
+                    .row("收款", report.receipts(), "区间内已支付流水合计")
+                    .row("退款", report.refunds(), "区间内已退款流水合计")
+                    .row("净现金", report.netCash(), "收款 - 退款")
+                    .row("未使用服务价值", report.unusedVerifiedValue(), "已核对权益的剩余价值")
+                    .row("待核对权益", report.unverifiedEntitlements(), "尚未核对资金归属的权益数量")
+                    .row("服务消耗", report.serviceConsumed(), "截至 " + report.valuationDate() + "（含只读预估，不写入账务）")
+                    .width(0, 18).width(1, 18).width(2, 46);
+
+            // ② 渠道现金
+            xlsx.sheet("渠道现金", "支付渠道", "收款", "退款", "净现金")
+                    .width(0, 16).width(1, 16).width(2, 16).width(3, 16);
+            for (Channel c : report.channels()) {
+                xlsx.row(channelText(c.channel()), c.receipts(), c.refunds(), c.netCash());
+            }
+            if (xlsx.isEmptySheet()) xlsx.row("（该区间没有收退款流水）", null, null, null);
+
+            // ③ 流水明细
+            xlsx.sheet("流水明细", "发生时间", "交易编号", "交易类型", "订单号", "金额(元)", "支付渠道", "支付流水号", "对账状态")
+                    .width(0, 20).width(1, 26).width(2, 12).width(3, 10)
+                    .width(4, 14).width(5, 12).width(6, 14).width(7, 14);
+            for (var p : cash.rows()) {
+                xlsx.row(p.getOccurredAt(), p.getTransactionNo(), typeText(p.getTransactionType()),
+                        p.getOrderId(), Money.yuan(Money.cents(p.getAmount())),
+                        channelText(p.getPaymentMethod()), p.getId(),
+                        reconciliationText(cash.integrity().get(p.getId())));
+            }
+            if (xlsx.isEmptySheet()) xlsx.row("（该区间没有流水）", null, null, null, null, null, null, null);
+
+            // ④ 完整性差异
+            xlsx.sheet("完整性差异", "差异类型", "对象", "账户余额", "事件余额", "说明")
+                    .width(0, 20).width(1, 30).width(2, 16).width(3, 16).width(4, 62);
+            for (Difference d : report.differences()) {
+                xlsx.row(differenceTypeText(d.type()), subjectText(d),
+                        d.accountBalance(), d.eventBalance(), d.message());
+            }
+            if (xlsx.isEmptySheet()) xlsx.row("当前范围内没有对账差异", "—", null, null, null);
+
+            return xlsx.toBytes();
+        }
+    }
+
+    /** 差异类型的中文说法（未收录的保留原码，避免误译）。 */
+    private static String differenceTypeText(String type) {
+        if (type == null) return "—";
+        return switch (type) {
+            case "ACCOUNT_CHAIN" -> "账户与事件链不一致";
+            case "MISSING_ACCOUNT" -> "权益缺少价值账户";
+            case "FUNDING_ACCOUNT" -> "资金来源与账户不一致";
+            case "PAID_REFUND" -> "已支付退款不一致";
+            default -> type;
+        };
+    }
+
+    /** 差异涉及的对象，写成"订单 #1 · 流水 #2"这种能直接看懂的形式。 */
+    private static String subjectText(Difference d) {
+        String subject = switch (d.subjectType() == null ? "" : d.subjectType()) {
+            case "ENTITLEMENT" -> "权益";
+            case "ORDER" -> "订单";
+            case "PAYMENT_TRANSACTION" -> "支付流水";
+            case "REFUND" -> "退款单";
+            default -> d.subjectType() == null ? "—" : d.subjectType();
+        };
+        StringBuilder sb = new StringBuilder(subject);
+        if (d.subjectId() != null) sb.append(" #").append(d.subjectId());
+        if (d.orderId() != null) sb.append(" · 订单 #").append(d.orderId());
+        if (d.paymentTransactionId() != null) sb.append(" · 流水 #").append(d.paymentTransactionId());
+        if (d.refundId() != null) sb.append(" · 退款单 #").append(d.refundId());
+        return sb.toString();
+    }
     public BigDecimal netCash(LocalDate from,LocalDate to){Cash cash=cash(range(from,to),null);return Money.yuan(cash.receipts()-cash.refunds());}
     private List<Difference> reconcile(Long venue,List<EntitlementValueAccountEntity> accountRows){List<SalesOrderEntity> orderRows=venue==null?orders.findAllByOrderByCreatedAtDesc():orders.findByVenueIdOrderByCreatedAtDesc(venue);List<Long> orderIds=orderRows.stream().map(SalesOrderEntity::getId).toList();List<PaymentTransactionEntity> historical=orderIds.isEmpty()?List.of():payments.findByOrderIdInOrderByOccurredAtDesc(orderIds).stream().filter(p->"SUCCESS".equals(p.getStatus())&&Set.of("PAYMENT","REFUND").contains(p.getTransactionType())).toList();Map<Long,List<PaymentTransactionEntity>> paymentByOrder=historical.stream().collect(Collectors.groupingBy(PaymentTransactionEntity::getOrderId));List<Difference> result=new ArrayList<>();for(var order:orderRows){long receipt=sum(paymentByOrder.get(order.getId()),"PAYMENT"),refund=sum(paymentByOrder.get(order.getId()),"REFUND");if(receipt!=Money.cents(order.getPaidAmount())||refund!=Money.cents(order.getRefundedAmount()))result.add(orderDifference(order.getId(),Money.cents(order.getPaidAmount())-Money.cents(order.getRefundedAmount()),receipt-refund,"订单金额与全部历史成功支付流水不一致"));}List<EntitlementFundingEntity> sourceRows=venue==null?funding.findAll():funding.findByVenueId(venue);Map<Long,Long> sourceBalance=sourceRows.stream().collect(Collectors.groupingBy(EntitlementFundingEntity::getEntitlementId,Collectors.summingLong(EntitlementFundingEntity::getRemainingCents)));for(var a:accountRows){long sources=sourceBalance.getOrDefault(a.getEntitlementId(),0L);if(sources!=a.getBalanceCents())result.add(diff("FUNDING_ACCOUNT",a.getEntitlementId(),a.getBalanceCents(),sources,"资金来源余额与价值账户余额不一致"));}List<RefundApplicationEntity> paid=(venue==null?refunds.findAllByOrderByIdDesc():refunds.findByVenueIdOrderByIdDesc(venue)).stream().filter(r->"PAID".equals(r.getStatus())).toList();if(paid.isEmpty())return result;List<RefundAllocationEntity> allocationRows=allocations.findByRefundIdIn(paid.stream().map(RefundApplicationEntity::getId).toList());Map<Long,List<RefundAllocationEntity>> allocationByRefund=allocationRows.stream().collect(Collectors.groupingBy(RefundAllocationEntity::getRefundId));Map<Long,EntitlementFundingEntity> sourceById=funding.findAllById(allocationRows.stream().map(RefundAllocationEntity::getFundingId).distinct().toList()).stream().collect(Collectors.toMap(EntitlementFundingEntity::getId,f->f));Map<Long,SalesOrderEntity> allocationOrders=orders.findAllById(allocationRows.stream().map(RefundAllocationEntity::getOrderId).distinct().toList()).stream().collect(Collectors.toMap(SalesOrderEntity::getId,o->o));Map<Long,PaymentTransactionEntity> paymentById=payments.findAllById(allocationRows.stream().map(RefundAllocationEntity::getPaymentTransactionId).filter(Objects::nonNull).distinct().toList()).stream().collect(Collectors.toMap(PaymentTransactionEntity::getId,p->p));for(var r:paid){List<RefundAllocationEntity> rows=allocationByRefund.getOrDefault(r.getId(),List.of());boolean bad=rows.isEmpty()||rows.stream().mapToLong(RefundAllocationEntity::getAmountCents).sum()!=r.getAmountCents();for(var a:rows){var f=sourceById.get(a.getFundingId());var o=allocationOrders.get(a.getOrderId());var p=a.getPaymentTransactionId()==null?null:paymentById.get(a.getPaymentTransactionId());if(f==null||o==null||p==null||!Objects.equals(f.getOrderId(),a.getOrderId())||!Objects.equals(f.getEntitlementId(),r.getEntitlementId())||!Objects.equals(f.getVenueId(),r.getVenueId())||!Objects.equals(o.getVenueId(),r.getVenueId())||!Objects.equals(p.getOrderId(),a.getOrderId())||!"SUCCESS".equals(p.getStatus())||!"REFUND".equals(p.getTransactionType())||Money.cents(p.getAmount())!=a.getAmountCents())bad=true;}if(bad)result.add(refundDifference(r.getId(),r.getAmountCents(),rows.stream().mapToLong(RefundAllocationEntity::getAmountCents).sum(),"已支付退款与分摊、订单、资金来源或退款流水不一致"));}return result;}
     private Cash cash(Range range,Integer limit) {

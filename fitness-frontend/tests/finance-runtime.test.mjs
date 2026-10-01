@@ -37,14 +37,14 @@ const csv = '\uFEFF"amount"\n"30.00"\n'
 const success = config => ({data:new Blob([csv],{type:'text/csv'}),status:200,statusText:'OK',headers:{'content-type':'text/csv'},config})
 const failure = (config,status,code=1001) => Promise.reject({config,response:{status,data:new Blob([JSON.stringify({code,message:'controlled failure'})],{type:'application/json'})}})
 
-test('CSV interceptor -> API -> component downloads actual bytes, including refreshed 401 replay', async()=>{
+test('Excel export: interceptor -> API -> component downloads actual bytes, including refreshed 401 replay', async()=>{
   for (const replay of [false,true]) {
     let attempts=0
     const r=runtime(config=>replay&&attempts++===0?failure(config,401):success(config))
-    const panel=execute('components/FinanceReportPanel.vue',r.deps,['exportCsv'])
+    const panel=execute('components/FinanceReportPanel.vue',r.deps,['exportExcel'])
     const original=URL.createObjectURL; const received=[]
     URL.createObjectURL=blob=>{assert.ok(blob instanceof Blob);received.push(blob);return 'blob:controlled'}
-    try {await panel.exportCsv()} finally {URL.createObjectURL=original}
+    try {await panel.exportExcel()} finally {URL.createObjectURL=original}
     assert.equal(r.downloads.length,1);assert.deepEqual(new Uint8Array(await received[0].arrayBuffer()),new TextEncoder().encode(csv))
     assert.equal(r.calls.length,replay?2:1)
     if(replay) assert.equal(r.calls[1].headers.Authorization,'Bearer new')
@@ -53,8 +53,8 @@ test('CSV interceptor -> API -> component downloads actual bytes, including refr
 test('JSON Blob business error never downloads; 403 remains throttled and repeated 401 ends session',async()=>{
   for(const mode of ['business',403,401]){
     const r=runtime(config=> mode==='business'?{...success(config),data:new Blob(['{"code":1001,"message":"business failure"}']),headers:{'content-type':'application/json'}}:failure(config,mode))
-    const panel=execute('components/FinanceReportPanel.vue',r.deps,['exportCsv'])
-    await panel.exportCsv();await panel.exportCsv()
+    const panel=execute('components/FinanceReportPanel.vue',r.deps,['exportExcel'])
+    await panel.exportExcel();await panel.exportExcel()
     assert.equal(r.downloads.length,0);assert.ok(r.messages.length>0)
     if(mode===403) assert.equal(r.messages.length,1)
     if(mode===401) assert.equal(r.auth.token,null)

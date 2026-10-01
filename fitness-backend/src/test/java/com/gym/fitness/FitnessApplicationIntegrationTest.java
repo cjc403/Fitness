@@ -2387,6 +2387,52 @@ class FitnessApplicationIntegrationTest {
                 .as("时间应为 yyyy-MM-dd HH:mm:ss").containsPattern("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}");
     }
 
+
+    // ------------------------------------------------ Excel 导出（四张表）
+
+    @Test
+    @Order(47)
+    void financeExcelExportHasFourChineseSheets() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        var response = mvc.perform(get("/api/v1/finance/report/export.xlsx")
+                        .param("from", java.time.LocalDate.now().minusDays(30).toString())
+                        .param("to", java.time.LocalDate.now().toString())
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        byte[] bytes = response.getContentAsByteArray();
+
+        // xlsx 本质是 zip，前两字节应为 PK
+        org.assertj.core.api.Assertions.assertThat(bytes.length).as("应产出非空 xlsx").isGreaterThan(1000);
+        org.assertj.core.api.Assertions.assertThat(bytes[0]).isEqualTo((byte) 'P');
+        org.assertj.core.api.Assertions.assertThat(bytes[1]).isEqualTo((byte) 'K');
+
+        // 用 POI 读回来验结构，确保 WPS/Excel 能正常打开（不是只产出字节就完事）
+        try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(new java.io.ByteArrayInputStream(bytes))) {
+            org.assertj.core.api.Assertions.assertThat(workbook.getNumberOfSheets()).as("应有四张表").isEqualTo(4);
+            org.assertj.core.api.Assertions.assertThat(workbook.getSheetName(0)).isEqualTo("概要");
+            org.assertj.core.api.Assertions.assertThat(workbook.getSheetName(1)).isEqualTo("渠道现金");
+            org.assertj.core.api.Assertions.assertThat(workbook.getSheetName(2)).isEqualTo("流水明细");
+            org.assertj.core.api.Assertions.assertThat(workbook.getSheetName(3)).isEqualTo("完整性差异");
+
+            // 流水明细的中文表头
+            var detail = workbook.getSheet("流水明细");
+            var header = detail.getRow(0);
+            org.assertj.core.api.Assertions.assertThat(header.getCell(0).getStringCellValue()).isEqualTo("发生时间");
+            org.assertj.core.api.Assertions.assertThat(header.getCell(2).getStringCellValue()).isEqualTo("交易类型");
+            org.assertj.core.api.Assertions.assertThat(header.getCell(4).getStringCellValue()).isEqualTo("金额(元)");
+            org.assertj.core.api.Assertions.assertThat(header.getCell(5).getStringCellValue()).isEqualTo("支付渠道");
+            org.assertj.core.api.Assertions.assertThat(header.getCell(7).getStringCellValue()).isEqualTo("对账状态");
+            // 该区间应有流水（演示数据里近 30 天有收款）
+            org.assertj.core.api.Assertions.assertThat(detail.getLastRowNum()).as("应有数据行").isGreaterThanOrEqualTo(1);
+
+            // 概要表写满 7 项指标
+            org.assertj.core.api.Assertions.assertThat(workbook.getSheet("概要").getLastRowNum()).isGreaterThanOrEqualTo(7);
+            // 渠道现金表头是中文
+            org.assertj.core.api.Assertions.assertThat(workbook.getSheet("渠道现金").getRow(0).getCell(3).getStringCellValue())
+                    .isEqualTo("净现金");
+        }
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }
