@@ -14,11 +14,11 @@
       <div class="panel panel-a" aria-hidden="true"><span class="panel-ink"></span></div>
 
       <!--
-        角色分镜格。
-        用法：把图片放到 fitness-frontend/public/hero-character.png（文件名固定）即可显示；
-        用 `npm run dev` 是立即生效，用打包产物（dist）需要重新 build 一次。
+        角色分镜格（当前放的是本项目生成的原创角色，可替换）。
+        换图：把图片命名成 fitness-frontend/public/hero-character.jpg 覆盖即可；
+        用 `npm run dev` 立即生效，用打包产物（dist）需重新 build 一次。
         图片不存在或加载失败时这一格自动隐藏，页面照常可用 —— 不依赖任何外部软件或壁纸。
-        放进分镜格的意义：**任何背景的图**（截图/立绘/带白底）放进来都像"漫画的一格"，不用抠图。
+        放进分镜格的意义：**任何背景的图**（截图/立绘/带白底）都像"漫画的一格"，不用抠图。
       -->
       <div v-show="heroVisible" class="panel panel-hero" aria-hidden="true">
         <img :src="heroSrc" alt="" @error="heroVisible = false"/>
@@ -109,10 +109,11 @@ const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true'
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 const remember = ref(true)
-// 角色立绘：public/hero-character.png 存在就显示，不存在（或加载失败）自动隐藏。
+// 角色分镜：public/hero-character.jpg 存在就显示，不存在（或加载失败）自动隐藏。
 // 用动态绑定而不是写死 src="..."，否则构建时 Vue 会把它当模块导入、文件不存在就直接构建失败。
+// 换图：把新图命名成 hero-character.jpg 覆盖即可（建议 900px 宽左右，JPEG 体积最小）。
 const heroVisible = ref(true)
-const heroSrc = '/hero-character.png'
+const heroSrc = '/hero-character.jpg'
 const demoAccounts = [
   { label: '总部', username: 'admin' },
   { label: '店长', username: 'manager' },
@@ -238,7 +239,12 @@ const handleLogin = async () => {
   right: 5%; bottom: 7%; width: 268px; height: 404px; transform: rotate(1.5deg);
   background: linear-gradient(170deg, #16325a, #0b1a30);
 }
-.panel-hero img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; }
+/* scale 轻微放大 + 溢出裁掉：顺手把生成图右下角的模型水印切出画面 */
+.panel-hero img {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 8%;
+  transform: scale(1.12); transform-origin: 50% 10%;
+}
 /* 网点压在角色上，增强"漫画分镜"感 */
 .panel-hero .panel-ink { opacity: .2; }
 
