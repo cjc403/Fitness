@@ -120,15 +120,19 @@ service.interceptors.response.use(
       const blob = response.data as unknown
       if (blob instanceof Blob) {
         const contentType = String(response.headers['content-type'] || '')
-        if (contentType.includes('text/csv') || contentType.includes('application/octet-stream')) return blob
+        // 约定：导出接口成功时返回文件（CSV / Excel / PDF…），失败时返回 application/json 的业务错误。
+        // 所以这里用"是不是 JSON"来判断，而不是枚举文件类型白名单——
+        // 之前只写了 text/csv 与 octet-stream，接口换成 Excel（spreadsheetml）后就被误判成"没有返回文件"。
+        const isBusinessError = contentType.includes('json')
+        if (!isBusinessError) return blob
         return blob.text().then(text => {
           const failure = parseBlobPayload(text)
           if (failure) {
             ElMessage.error(failure.message)
             return Promise.reject(new BusinessError(failure.code, failure.message))
           }
-          ElMessage.error('导出失败，服务器没有返回 CSV 文件')
-          return Promise.reject(new BusinessError(-1, '导出失败，服务器没有返回 CSV 文件'))
+          ElMessage.error('导出失败，服务器返回的不是文件')
+          return Promise.reject(new BusinessError(-1, '导出失败，服务器返回的不是文件'))
         })
       }
     }

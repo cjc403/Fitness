@@ -34,13 +34,15 @@ function runtime(adapter) {
   return {deps,api,messages,downloads,calls,auth}
 }
 const csv = '\uFEFF"amount"\n"30.00"\n'
-const success = config => ({data:new Blob([csv],{type:'text/csv'}),status:200,statusText:'OK',headers:{'content-type':'text/csv'},config})
+const success = (config, contentType='text/csv') => ({data:new Blob([csv],{type:contentType}),status:200,statusText:'OK',headers:{'content-type':contentType},config})
 const failure = (config,status,code=1001) => Promise.reject({config,response:{status,data:new Blob([JSON.stringify({code,message:'controlled failure'})],{type:'application/json'})}})
 
 test('Excel export: interceptor -> API -> component downloads actual bytes, including refreshed 401 replay', async()=>{
+  // CSV 与 Excel 两种返回类型都必须能下载（此前拦截器写死白名单，Excel 被误判成"没有返回文件"）
+  for (const contentType of ['text/csv','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']) {
   for (const replay of [false,true]) {
     let attempts=0
-    const r=runtime(config=>replay&&attempts++===0?failure(config,401):success(config))
+    const r=runtime(config=>replay&&attempts++===0?failure(config,401):success(config,contentType))
     const panel=execute('components/FinanceReportPanel.vue',r.deps,['exportExcel'])
     const original=URL.createObjectURL; const received=[]
     URL.createObjectURL=blob=>{assert.ok(blob instanceof Blob);received.push(blob);return 'blob:controlled'}
@@ -48,6 +50,7 @@ test('Excel export: interceptor -> API -> component downloads actual bytes, incl
     assert.equal(r.downloads.length,1);assert.deepEqual(new Uint8Array(await received[0].arrayBuffer()),new TextEncoder().encode(csv))
     assert.equal(r.calls.length,replay?2:1)
     if(replay) assert.equal(r.calls[1].headers.Authorization,'Bearer new')
+  }
   }
 })
 test('JSON Blob business error never downloads; 403 remains throttled and repeated 401 ends session',async()=>{
