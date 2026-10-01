@@ -2329,6 +2329,64 @@ class FitnessApplicationIntegrationTest {
                 .as("冲正后分摊记录应被撤销").isEqualTo(before);
     }
 
+
+    // ------------------------------------------------ CSV 导出中文化
+
+    @Test
+    @Order(46)
+    void financeCsvExportUsesChineseHeadersAndReadableValues() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        // 先确保范围内有一笔收款流水（复用"跨店通用月卡"之外的简单开卡）
+        long venueId = firstVenueId(admin);
+        long productId = mapper.readTree(mvc.perform(post("/api/v1/commercial/products")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"CSV导出验证卡","category":"CARD","productType":"MONTH_CARD",
+                                 "validityDays":30,"price":66.00,"accessAllowed":true,"venueId":%d}
+                                """.formatted(venueId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        long memberId = mapper.readTree(mvc.perform(get("/api/v1/member/profile")
+                        .header("Authorization", bearer(login("member", "MEMBER", "会员"))))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+        mvc.perform(post("/api/v1/commercial/orders").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"memberId":%d,"productId":%d,"paymentMethod":"ALIPAY","idempotencyKey":"it-csv-1"}
+                                """.formatted(memberId, productId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        var response = mvc.perform(get("/api/v1/finance/report/export")
+                        .param("from", java.time.LocalDate.now().minusDays(7).toString())
+                        .param("to", java.time.LocalDate.now().toString())
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        String csv = new String(response.getContentAsByteArray(), StandardCharsets.UTF_8);
+
+        // ① 行首必须是 UTF-8 BOM：没有它，Excel/WPS 打开中文会乱码
+        org.assertj.core.api.Assertions.assertThat(csv.charAt(0))
+                .as("首字符应为 UTF-8 BOM").isEqualTo('\uFEFF');
+
+        String[] lines = csv.substring(1).split("\n");
+        // ② 表头必须是中文
+        org.assertj.core.api.Assertions.assertThat(lines[0])
+                .as("CSV 表头应为中文")
+                .isEqualTo("\"发生时间\",\"交易编号\",\"交易类型\",\"订单号\",\"金额(元)\",\"支付渠道\",\"支付流水号\",\"对账状态\"");
+
+        // ③ 数据行取值也应是中文，不出现英文枚举
+        org.assertj.core.api.Assertions.assertThat(lines.length).as("应至少有一行数据").isGreaterThan(1);
+        String dataRow = lines[1];
+        org.assertj.core.api.Assertions.assertThat(dataRow)
+                .as("交易类型应为中文").containsAnyOf("收款", "退款")
+                .as("渠道应为中文").containsAnyOf("微信", "支付宝", "银行卡", "现金", "会员自助", "未知")
+                .doesNotContain("PAYMENT").doesNotContain("REFUND").doesNotContain("NOT_APPLICABLE")
+                .doesNotContain("ALIPAY").doesNotContain("WECHAT").doesNotContain("CASH").doesNotContain("SELF_SERVICE");
+        // ④ 时间格式：yyyy-MM-dd HH:mm:ss，Excel/WPS 能直接识别排序
+        org.assertj.core.api.Assertions.assertThat(dataRow)
+                .as("时间应为 yyyy-MM-dd HH:mm:ss").containsPattern("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}");
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }

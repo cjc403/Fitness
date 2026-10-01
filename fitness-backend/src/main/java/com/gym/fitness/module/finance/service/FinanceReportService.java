@@ -28,13 +28,15 @@ public class FinanceReportService {
     public byte[] export(LocalDate from,LocalDate to) {
         Cash cash=cash(range(from,to),MAX_EXPORT_ROWS+1);
         if(cash.rawRows().size()>MAX_EXPORT_ROWS)throw fail("导出流水超过10000条，请缩短日期范围");
+        // 导出给人看的：中文表头 + 中文取值，行首保留 UTF-8 BOM（没有 BOM 时 Excel/WPS 打开会乱码）。
+        // 以后新增导出请沿用同一约定：中文表头 + 中文取值 + BOM。
         StringBuilder csv=new StringBuilder("\uFEFF");
-        csv.append("\"occurredAt\",\"transactionNo\",\"transactionType\",\"orderId\",\"amount\",\"channel\",\"paymentTransactionId\",\"reconciliationStatus\"\n");
-        for(var p:cash.rows()) csv.append(Csv.cell(p.getOccurredAt().toString())).append(',')
-            .append(Csv.cell(p.getTransactionNo())).append(',').append(Csv.cell(p.getTransactionType())).append(',')
+        csv.append("\"发生时间\",\"交易编号\",\"交易类型\",\"订单号\",\"金额(元)\",\"支付渠道\",\"支付流水号\",\"对账状态\"\n");
+        for(var p:cash.rows()) csv.append(Csv.cell(stampText(p.getOccurredAt()))).append(',')
+            .append(Csv.cell(p.getTransactionNo())).append(',').append(Csv.cell(typeText(p.getTransactionType()))).append(',')
             .append(Csv.cell(String.valueOf(p.getOrderId()))).append(',').append(Csv.cell(Money.yuan(Money.cents(p.getAmount())).toPlainString())).append(',')
-            .append(Csv.cell(channel(p.getPaymentMethod()))).append(',').append(Csv.cell(String.valueOf(p.getId()))).append(',')
-            .append(Csv.cell(cash.integrity().getOrDefault(p.getId(),"NOT_APPLICABLE"))).append('\n');
+            .append(Csv.cell(channelText(p.getPaymentMethod()))).append(',').append(Csv.cell(String.valueOf(p.getId()))).append(',')
+            .append(Csv.cell(reconciliationText(cash.integrity().get(p.getId())))).append('\n');
         return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
     public BigDecimal netCash(LocalDate from,LocalDate to){Cash cash=cash(range(from,to),null);return Money.yuan(cash.receipts()-cash.refunds());}
@@ -82,7 +84,45 @@ public class FinanceReportService {
     private Valuation serviceConsumed(Range range,Long venue,List<com.gym.fitness.module.commercial.entity.MemberEntitlementEntity> entitlementRows,Map<Long,EntitlementValueAccountEntity> accountByEntitlement){List<EntitlementValueEventEntity> rows=venue==null?events.findByOccurredAtGreaterThanEqualAndOccurredAtLessThanOrderByIdAsc(range.from(),range.until()):events.findByVenueIdAndOccurredAtGreaterThanEqualAndOccurredAtLessThanOrderByIdAsc(venue,range.from(),range.until());LocalDate valuationDate=LocalDate.now(ZoneId.of("Asia/Shanghai"));long total=0,unposted=0;for(var e:rows)if(e.isVerified()&&Set.of("CONSUME","TIME_CONSUME","REVERSE").contains(e.getEventType()))total=Math.addExact(total,-e.getDeltaCents());List<Long> ids=entitlementRows.stream().map(com.gym.fitness.module.commercial.entity.MemberEntitlementEntity::getId).toList();if(ids.isEmpty())return new Valuation(total,0,valuationDate);Map<Long,com.gym.fitness.module.commercial.entity.MemberEntitlementEntity> entitlementById=entitlementRows.stream().collect(Collectors.toMap(com.gym.fitness.module.commercial.entity.MemberEntitlementEntity::getId,e->e));Map<Long,EntitlementFundingEntity> sourceById=funding.findByEntitlementIdIn(ids).stream().collect(Collectors.toMap(EntitlementFundingEntity::getId,f->f));for(var p:periods.findByEntitlementIdInOrderByEntitlementIdAscIdAsc(ids)){var e=entitlementById.get(p.getEntitlementId());var a=accountByEntitlement.get(p.getEntitlementId());var f=sourceById.get(p.getFundingId());if(e==null||a==null||f==null||e.getRemainingUses()!=null||a.getPausedAt()!=null||a.getActiveRefundId()!=null||!"VERIFIED".equals(a.getVerificationStatus())||"REFUNDED".equals(e.getStatus()))continue;int days=(int)Math.min(p.getTotalDays()-p.getConsumedDays(),Math.max(0,java.time.temporal.ChronoUnit.DAYS.between(p.getNextServiceDate(),valuationDate)));long available=f.getRemainingCents();for(int i=0;i<days;i++){int consumed=p.getConsumedDays()+i+1;long cents=p.getTotalCents()/p.getTotalDays();if(consumed==p.getTotalDays())cents+=p.getTotalCents()%p.getTotalDays();LocalDate serviceDate=p.getNextServiceDate().plusDays(i);if(available<cents)break;available-=cents;unposted=Math.addExact(unposted,cents);if(!serviceDate.isBefore(range.from().toLocalDate())&&serviceDate.isBefore(range.until().toLocalDate()))total=Math.addExact(total,cents);}}return new Valuation(total,unposted,valuationDate);}
     private static Difference orderDifference(Long id,long stored,long actual,String message){return new Difference("ORDER_PAYMENTS","ORDER",id,null,id,null,null,Money.yuan(stored),Money.yuan(actual),message);}
     private static Difference refundDifference(Long id,long stored,long actual,String message){return new Difference("PAID_REFUND","REFUND",id,null,null,null,id,Money.yuan(stored),Money.yuan(actual),message);}
-    private static long sum(List<PaymentTransactionEntity> rows,String type){return rows==null?0:rows.stream().filter(p->type.equals(p.getTransactionType())).mapToLong(p->Money.cents(p.getAmount())).sum();} private static Difference diff(String type,Long entitlementId,long account,long event,String message){return new Difference(type,entitlementId,Money.yuan(account),Money.yuan(event),message);} private Long scope(){return SecurityUtil.isSuperAdmin()?null:SecurityUtil.getCurrentOrganizationId();} private Range range(LocalDate from,LocalDate to){if(from==null||to==null||from.isAfter(to)||from.plusDays(MAX_DAYS).isBefore(to))throw fail("日期范围非法或超过366天");return new Range(from.atStartOfDay(),to.plusDays(1).atStartOfDay());} private static String channel(String value){return value==null||value.trim().isEmpty()?"UNKNOWN":value.trim();} private static BusinessException fail(String message){return new BusinessException(ErrorCode.PARAM_ERROR,message);} private record Range(LocalDateTime from,LocalDateTime until){} private record Cash(long receipts,long refunds,List<Channel> channels,List<Difference> differences,List<PaymentTransactionEntity> rawRows,List<PaymentTransactionEntity> rows,Map<Long,String> integrity){} private record Valuation(long consumed,long unposted,LocalDate date){}
+    private static long sum(List<PaymentTransactionEntity> rows,String type){return rows==null?0:rows.stream().filter(p->type.equals(p.getTransactionType())).mapToLong(p->Money.cents(p.getAmount())).sum();} private static Difference diff(String type,Long entitlementId,long account,long event,String message){return new Difference(type,entitlementId,Money.yuan(account),Money.yuan(event),message);} private Long scope(){return SecurityUtil.isSuperAdmin()?null:SecurityUtil.getCurrentOrganizationId();} private Range range(LocalDate from,LocalDate to){if(from==null||to==null||from.isAfter(to)||from.plusDays(MAX_DAYS).isBefore(to))throw fail("日期范围非法或超过366天");return new Range(from.atStartOfDay(),to.plusDays(1).atStartOfDay());} private static String channel(String value){return value==null||value.trim().isEmpty()?"UNKNOWN":value.trim();}     // ---------------------------------------------------------------- 导出用中文文案
+    // 与前端界面用词保持一致，避免同一份数据在两处叫法不同。
+
+    /** 交易类型：PAYMENT=收款、REFUND=退款。 */
+    private static String typeText(String type) {
+        if (type == null || type.isBlank()) return "";
+        return switch (type.trim().toUpperCase()) {
+            case "PAYMENT" -> "收款";
+            case "REFUND" -> "退款";
+            default -> type.trim();
+        };
+    }
+
+    /** 支付渠道中文名。 */
+    private static String channelText(String value) {
+        String code = channel(value);
+        return switch (code.toUpperCase()) {
+            case "WECHAT" -> "微信";
+            case "ALIPAY" -> "支付宝";
+            case "CARD" -> "银行卡";
+            case "CASH" -> "现金";
+            case "SELF_SERVICE" -> "会员自助";
+            case "UNKNOWN" -> "未知";
+            default -> code;
+        };
+    }
+
+    /** 对账状态：无差异记录时是 NOT_APPLICABLE，其余情况本身就是中文说明。 */
+    private static String reconciliationText(String value) {
+        if (value == null || value.isBlank()) return "不适用";
+        return "NOT_APPLICABLE".equalsIgnoreCase(value.trim()) ? "不适用" : value;
+    }
+
+    /** 时间写成 yyyy-MM-dd HH:mm:ss，Excel/WPS 能直接按日期排序筛选。 */
+    private static String stampText(java.time.LocalDateTime time) {
+        return time == null ? "" : time.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+private static BusinessException fail(String message){return new BusinessException(ErrorCode.PARAM_ERROR,message);} private record Range(LocalDateTime from,LocalDateTime until){} private record Cash(long receipts,long refunds,List<Channel> channels,List<Difference> differences,List<PaymentTransactionEntity> rawRows,List<PaymentTransactionEntity> rows,Map<Long,String> integrity){} private record Valuation(long consumed,long unposted,LocalDate date){}
     private List<Difference> refundEntitlementAndReuse(Long venue){
         List<RefundApplicationEntity> paid=(venue==null?refunds.findAllByOrderByIdDesc():refunds.findByVenueIdOrderByIdDesc(venue)).stream().filter(r->"PAID".equals(r.getStatus())).toList();
         if(paid.isEmpty())return List.of();
