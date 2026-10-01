@@ -53,6 +53,13 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: '消息与渠道', requiresAuth: true, permissions: ['MEMBER_READ'] }
       },
       {
+        path: 'chat',
+        name: 'Chat',
+        component: () => import('@/views/admin/Chat.vue'),
+        // 所有登录角色都能用；会员走会员中心的「消息」页签，这里用 roles 只把菜单给员工
+        meta: { title: '站内消息', requiresAuth: true }
+      },
+      {
         path: 'members',
         name: 'Members',
         component: () => import('@/views/admin/MemberList.vue'),

@@ -2105,6 +2105,140 @@ class FitnessApplicationIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
     }
 
+
+    // ------------------------------------------------ 角色间站内私信（V16）
+
+    @Test
+    @Order(44)
+    void allRolesCanMessageEachOtherInsideTheApp() throws Exception {
+        String admin = login("admin", "SUPER_ADMIN", "总部管理员");
+        String member = login("member", "MEMBER", "会员");
+        String coach = login("coach", "COACH", "教练");
+
+        // ① 超管的联系人里既有员工也有会员（会员端只会看到员工）
+        JsonNode adminContacts = mapper.readTree(mvc.perform(get("/api/v1/messages/contacts")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(adminContacts.path("staff").size()).isGreaterThan(0);
+        org.assertj.core.api.Assertions.assertThat(adminContacts.path("members").size()).isGreaterThan(0);
+        long memberUserId = 0;
+        for (JsonNode c : adminContacts.path("members")) {
+            if ("林晓雨".equals(c.path("name").asText())) memberUserId = c.path("userId").asLong();
+        }
+        org.assertj.core.api.Assertions.assertThat(memberUserId).as("联系人里应有演示会员账号").isPositive();
+
+        JsonNode memberContacts = mapper.readTree(mvc.perform(get("/api/v1/messages/contacts")
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(memberContacts.path("members").size())
+                .as("会员端不应看到其它会员").isZero();
+        org.assertj.core.api.Assertions.assertThat(memberContacts.path("staff").size()).isGreaterThan(0);
+        // 管理员的 userId 从"会员看到的员工列表"里取：自己的联系人列表会排除自己，取不到
+        long adminUserId = 0;
+        for (JsonNode c : memberContacts.path("staff")) {
+            if ("SUPER_ADMIN".equals(c.path("roleCode").asText())) adminUserId = c.path("userId").asLong();
+        }
+        org.assertj.core.api.Assertions.assertThat(adminUserId).as("会员的联系人里应有超管").isPositive();
+
+        // ② 管理员发给会员 → 会员的未读 +1，能读到内容
+        //    注意：测试库是**持久的 H2 文件**，之前运行会留下未读消息，
+        //    所以这里用"相对值"断言，不假设未读恰好是 1。
+        long unreadBefore = mapper.readTree(mvc.perform(get("/api/v1/messages/summary")
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("unreadTotal").asLong();
+        mvc.perform(post("/api/v1/messages/send").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"recipientUserId":%d,"content":"你好，你的会员卡即将到期，记得续费。"}
+                                """.formatted(memberUserId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        JsonNode afterSend = mapper.readTree(mvc.perform(get("/api/v1/messages/summary")
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        org.assertj.core.api.Assertions.assertThat(afterSend.path("unreadTotal").asLong())
+                .as("发给会员后，该会员的未读应当增加 1").isEqualTo(unreadBefore + 1);
+
+        JsonNode thread = mapper.readTree(mvc.perform(get("/api/v1/messages/thread/" + adminUserId)
+                        .header("Authorization", bearer(member)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        JsonNode lastFromAdmin = null;
+        for (JsonNode m : thread.path("messages")) lastFromAdmin = m;
+        org.assertj.core.api.Assertions.assertThat(lastFromAdmin).as("对话里应当有消息").isNotNull();
+        org.assertj.core.api.Assertions.assertThat(lastFromAdmin.path("content").asText()).contains("即将到期");
+        org.assertj.core.api.Assertions.assertThat(lastFromAdmin.path("mine").asBoolean())
+                .as("这条是收到的，mine 应为 false").isFalse();
+        // 打开对话后，与这位对手的未读清零
+        mvc.perform(get("/api/v1/messages/summary").header("Authorization", bearer(member)))
+                .andExpect(jsonPath("$.data.unreadTotal").value(0));
+
+        // ③ 会员回复管理员 → 管理员的会话里能看到，并带未读
+        mvc.perform(post("/api/v1/messages/send").header("Authorization", bearer(member))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"recipientUserId":%d,"content":"好的，我周末过来办理。"}
+                                """.formatted(adminUserId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        JsonNode convs = mapper.readTree(mvc.perform(get("/api/v1/messages/conversations")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        boolean found = false;
+        for (JsonNode c : convs) {
+            if (c.path("userId").asLong() == memberUserId) {
+                found = true;
+                org.assertj.core.api.Assertions.assertThat(c.path("lastContent").asText()).contains("周末过来");
+                org.assertj.core.api.Assertions.assertThat(c.path("unread").asLong())
+                        .as("会员刚回复过一条，未读至少为 1").isGreaterThanOrEqualTo(1);
+            }
+        }
+        org.assertj.core.api.Assertions.assertThat(found).as("管理员会话列表里应出现该会员").isTrue();
+
+        // ④ 员工之间也能互发（教练 → 管理员）
+        mvc.perform(post("/api/v1/messages/send").header("Authorization", bearer(coach))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"recipientUserId":%d,"content":"本周排课已确认。"}
+                                """.formatted(adminUserId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        // ⑤ 规则：不能发给自己
+        mvc.perform(post("/api/v1/messages/send").header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"recipientUserId":%d,"content":"自说自话"}
+                                """.formatted(adminUserId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1001));
+
+        // ⑥ 规则：不能给别的门店的员工发（跨店隔离）
+        JsonNode venues = mapper.readTree(mvc.perform(get("/api/v1/admin/venues").header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        long otherVenue = venues.get(1).path("id").asLong();
+        String otherVenueStaff = "chat" + (System.nanoTime() % 1000000);
+        mapper.readTree(mvc.perform(post("/api/v1/admin/accounts/employees")
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"Chat@2026!","realName":"滨江前台","roleCode":"RECEPTION","venueId":%d}
+                                """.formatted(otherVenueStaff, otherVenue)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data").path("id").asLong();
+        long otherStaffUserId = 0;
+        JsonNode contactsAgain = mapper.readTree(mvc.perform(get("/api/v1/messages/contacts")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).path("data");
+        for (JsonNode c : contactsAgain.path("staff")) {
+            if ("滨江前台".equals(c.path("name").asText())) otherStaffUserId = c.path("userId").asLong();
+        }
+        org.assertj.core.api.Assertions.assertThat(otherStaffUserId).as("超管联系人里应能看到别店员工").isPositive();
+        mvc.perform(post("/api/v1/messages/send").header("Authorization", bearer(coach))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"recipientUserId":%d,"content":"跨店消息不应发出"}
+                                """.formatted(otherStaffUserId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(1003));
+    }
+
     private long coachUserId() throws Exception {
         return mapper.readTree(loginResponse("coach", "password")).path("data").path("userInfo").path("id").asLong();
     }
