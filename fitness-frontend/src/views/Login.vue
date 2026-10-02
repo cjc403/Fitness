@@ -16,7 +16,7 @@
       <div class="dots dots-back" aria-hidden="true"></div>
       <div class="dots dots-front" aria-hidden="true"></div>
       <div class="magic-circle" aria-hidden="true"></div>
-      <div class="sparkles" aria-hidden="true"><i v-for="n in 18" :key="n"></i></div>
+      <div class="sparkles" aria-hidden="true"><i v-for="n in 24" :key="n"></i></div>
       <div class="vertical-tag" aria-hidden="true">连锁运营</div>
 
       <header class="brand-head">
@@ -43,7 +43,12 @@
       -->
       <div v-show="heroVisible" class="hero-wrap" aria-hidden="true">
         <div class="hero-frame">
-          <img :src="heroSrc" alt="" @error="heroVisible = false"/>
+          <div class="hero-media">
+            <img :src="heroSrc" alt="" @error="heroVisible = false"/>
+            <!-- 眨眼：两层"眼皮"盖在眼部，约 7.5 秒眨一次（偶尔连眨两下），全程约 140ms -->
+            <span v-if="heroVisible" class="eye-lid eye-lid-l"></span>
+            <span v-if="heroVisible" class="eye-lid eye-lid-r"></span>
+          </div>
           <span class="hero-ink"></span>
           <span class="hero-sheen"></span>
         </div>
@@ -247,35 +252,51 @@ const handleLogin = async () => {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ④ 星尘：前后两层速度不同 */
+/* ④ 星尘：更亮更快；前后两层速度不同；部分星点带四角星闪烁 */
 .sparkles { position: absolute; inset: 0; pointer-events: none; }
 .sparkles i {
-  position: absolute; width: 4px; height: 4px; border-radius: 50%;
-  background: #eaf8ff; box-shadow: 0 0 10px 3px rgba(165, 218, 255, .8);
-  opacity: .12; animation: float 11s ease-in-out infinite;
+  position: absolute; width: 5px; height: 5px; border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 14px 4px rgba(178, 226, 255, .95), 0 0 4px 1px rgba(255, 255, 255, .9);
+  opacity: .22; animation: float 6.5s ease-in-out infinite;
 }
-.sparkles i:nth-child(n+10) { width: 2.5px; height: 2.5px; animation-duration: 17s; opacity: .08; }
-.sparkles i:nth-child(1) { left: 7%;  top: 16%; animation-delay: -0.4s; }
-.sparkles i:nth-child(2) { left: 19%; top: 64%; animation-delay: -1.6s; }
-.sparkles i:nth-child(3) { left: 27%; top: 11%; animation-delay: -2.9s; }
-.sparkles i:nth-child(4) { left: 33%; top: 79%; animation-delay: -3.6s; }
-.sparkles i:nth-child(5) { left: 41%; top: 33%; animation-delay: -4.3s; }
-.sparkles i:nth-child(6) { left: 47%; top: 68%; animation-delay: -5.1s; }
-.sparkles i:nth-child(7) { left: 52%; top: 23%; animation-delay: -6.2s; }
-.sparkles i:nth-child(8) { left: 58%; top: 52%; animation-delay: -7.4s; }
-.sparkles i:nth-child(9) { left: 13%; top: 87%; animation-delay: -0.9s; }
-.sparkles i:nth-child(10){ left: 23%; top: 39%; animation-delay: -2.2s; }
-.sparkles i:nth-child(11){ left: 37%; top: 56%; animation-delay: -3.3s; }
-.sparkles i:nth-child(12){ left: 44%; top: 9%;  animation-delay: -4.8s; }
-.sparkles i:nth-child(13){ left: 51%; top: 88%; animation-delay: -5.7s; }
-.sparkles i:nth-child(14){ left: 56%; top: 13%; animation-delay: -6.8s; }
-.sparkles i:nth-child(15){ left: 62%; top: 45%; animation-delay: -8.1s; }
-.sparkles i:nth-child(16){ left: 6%;  top: 49%; animation-delay: -7.1s; }
-.sparkles i:nth-child(17){ left: 30%; top: 26%; animation-delay: -9.4s; }
-.sparkles i:nth-child(18){ left: 55%; top: 72%; animation-delay: -10.6s; }
+.sparkles i:nth-child(n+13) { width: 3px; height: 3px; animation-duration: 9s; opacity: .16; }
+/* 每三个星点里有一个带十字星芒，闪烁更明显 */
+.sparkles i:nth-child(3n)::before,
+.sparkles i:nth-child(3n)::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); border-radius: 2px; background: #ffffff;
+  box-shadow: 0 0 9px 2px rgba(196, 234, 255, .9);
+}
+.sparkles i:nth-child(3n)::before { width: 15px; height: 2px; }
+.sparkles i:nth-child(3n)::after  { width: 2px; height: 15px; }
+.sparkles i:nth-child(1) { left: 7%;  top: 16%; animation-delay: -0.2s; }
+.sparkles i:nth-child(2) { left: 19%; top: 64%; animation-delay: -0.9s; }
+.sparkles i:nth-child(3) { left: 27%; top: 11%; animation-delay: -1.6s; }
+.sparkles i:nth-child(4) { left: 33%; top: 79%; animation-delay: -2.1s; }
+.sparkles i:nth-child(5) { left: 41%; top: 33%; animation-delay: -2.6s; }
+.sparkles i:nth-child(6) { left: 47%; top: 68%; animation-delay: -3.1s; }
+.sparkles i:nth-child(7) { left: 52%; top: 23%; animation-delay: -3.7s; }
+.sparkles i:nth-child(8) { left: 58%; top: 52%; animation-delay: -4.3s; }
+.sparkles i:nth-child(9) { left: 13%; top: 87%; animation-delay: -0.6s; }
+.sparkles i:nth-child(10){ left: 23%; top: 39%; animation-delay: -1.3s; }
+.sparkles i:nth-child(11){ left: 37%; top: 56%; animation-delay: -1.9s; }
+.sparkles i:nth-child(12){ left: 44%; top: 9%;  animation-delay: -2.8s; }
+.sparkles i:nth-child(13){ left: 51%; top: 88%; animation-delay: -3.4s; }
+.sparkles i:nth-child(14){ left: 56%; top: 13%; animation-delay: -4.0s; }
+.sparkles i:nth-child(15){ left: 62%; top: 45%; animation-delay: -4.6s; }
+.sparkles i:nth-child(16){ left: 6%;  top: 49%; animation-delay: -4.2s; }
+.sparkles i:nth-child(17){ left: 30%; top: 26%; animation-delay: -5.4s; }
+.sparkles i:nth-child(18){ left: 55%; top: 72%; animation-delay: -6.1s; }
+.sparkles i:nth-child(19){ left: 16%; top: 30%; animation-delay: -5.0s; }
+.sparkles i:nth-child(20){ left: 25%; top: 52%; animation-delay: -2.4s; }
+.sparkles i:nth-child(21){ left: 39%; top: 18%; animation-delay: -3.9s; }
+.sparkles i:nth-child(22){ left: 46%; top: 47%; animation-delay: -5.7s; }
+.sparkles i:nth-child(23){ left: 60%; top: 35%; animation-delay: -1.1s; }
+.sparkles i:nth-child(24){ left: 21%; top: 74%; animation-delay: -6.5s; }
 @keyframes float {
-  0%, 100% { opacity: .1;  transform: translate3d(0, 0, 0) scale(.9); }
-  50%      { opacity: .85; transform: translate3d(0, -18px, 0) scale(1.22); }
+  0%, 100% { opacity: .16; transform: translate3d(0, 0, 0) scale(.85); }
+  50%      { opacity: 1;   transform: translate3d(0, -24px, 0) scale(1.35); }
 }
 
 .vertical-tag {
@@ -295,15 +316,15 @@ const handleLogin = async () => {
 }
 .brand-name { font-size: 21px; font-weight: 800; letter-spacing: .5px; }
 
-/* 文字区宽度设上限：即使文案变长也绝不会压到角色（留出安全间距） */
-.brand-copy { margin: auto 0; position: relative; z-index: 3; max-width: min(46%, 470px); }
+/* 文字区宽度设上限：即使文案变长也绝不会压到角色（角色约 53% 宽，这里留出安全间距） */
+.brand-copy { margin: auto 0; position: relative; z-index: 3; max-width: min(34%, 380px); }
 .brand-copy em, .welcome {
   color: #86bbff; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 2px;
 }
 .brand-copy h1 {
-  margin: 16px 0 20px; line-height: 1.26; letter-spacing: -1.5px;
-  /* 字号上限压到 40px：保证两行标题在任何宽度下都放得下、不会折成三行，也不会压到角色 */
-  font-size: clamp(26px, 2.6vw, 40px);
+  margin: 16px 0 20px; line-height: 1.26; letter-spacing: -1.2px;
+  /* 字号上限 34px：8 字的最长一行（~272px）一定放得下，两行不会折成三行 */
+  font-size: clamp(22px, 2.2vw, 34px);
   text-shadow: 0 0 28px rgba(140, 205, 255, .5), 0 0 60px rgba(90, 160, 255, .26);
 }
 .brand-copy p { color: #b6c6de; line-height: 1.85; font-size: clamp(13px, .95vw, 15px); }
@@ -315,9 +336,10 @@ const handleLogin = async () => {
 
 /* ---------- 角色主视觉（布局 A：右侧全高） ---------- */
 .hero-wrap {
-  position: absolute; top: 7.5%; bottom: 8%;
-  right: clamp(22px, 3.4vw, 54px);
-  width: clamp(250px, 40%, 420px);
+  position: absolute; top: 8%; right: clamp(20px, 3vw, 48px);
+  /* 长宽比锁死成图片本身的 2:3 —— 这样 cover 不再裁剪，
+     眼皮用"图片百分比"定位就能在任何窗口尺寸下都精准贴合 */
+  height: 74%; aspect-ratio: 2 / 3; width: auto;
   z-index: 2; pointer-events: none;
   animation: hero-float 20s ease-in-out infinite;
 }
@@ -332,12 +354,46 @@ const handleLogin = async () => {
   background: linear-gradient(170deg, #16325a, #0b1a30);
   box-shadow: 0 0 0 1px rgba(186, 222, 255, .35), 0 26px 60px rgba(0, 0, 0, .5);
 }
-.hero-frame img {
+.hero-media { position: absolute; inset: 0; }
+.hero-media img {
   display: block; width: 100%; height: 100%;
   object-fit: cover; object-position: 50% 8%;
   /* 轻微放大 + 溢出裁掉：顺手把生成图右下角的模型水印切出画面 */
   transform: scale(1.1); transform-origin: 50% 8%;
 }
+
+/* ---------- 眨眼 ---------- */
+/* 图片在 .hero-media 内被 scale(1.1) 放大（缩小水印），所以眼皮坐标要按
+   框坐标 = 8% + (图片坐标 − 8%) × 1.1 换算，尺寸同样 ×1.1。
+   眼睛实测（图片百分比）：左眼中心 (32%, 37.5%)，右眼中心 (50%, 33%)。 */
+.eye-lid {
+  position: absolute;
+  background: linear-gradient(180deg,
+    rgba(212, 194, 192, .90) 0%,
+    rgba(199, 179, 178, .92) 58%,
+    rgba(176, 148, 150, .88) 84%,
+    rgba(132, 100, 108, .70) 100%);
+  border-radius: 46% 46% 52% 52% / 30% 30% 70% 70%;
+  box-shadow: inset 0 -1px 1px rgba(116, 88, 94, .35), 0 1px 2px rgba(110, 84, 90, .16);
+  transform-origin: 50% 0;
+  animation: blink 7.5s ease-in-out infinite;
+  will-change: transform;
+}
+/* 位置按"渲染后实测"（已包含 scale(1.1) 的影响，不要再重复补偿） */
+.eye-lid-l { left: 19.5%; top: 37.4%; width: 17.5%; height: 8.4%; --lid-rot: -6deg; }
+.eye-lid-r { left: 34.4%; top: 33.6%; width: 17.5%; height: 8.4%; --lid-rot: -12deg; }
+
+/* 眨一次约 140ms；偶尔连眨两下，其余时间保持睁开 */
+@keyframes blink {
+  0%, 27%   { transform: scaleY(0)    rotate(var(--lid-rot, -8deg)); }
+  28.2%     { transform: scaleY(.55)  rotate(var(--lid-rot, -8deg)); }
+  29%       { transform: scaleY(1)    rotate(var(--lid-rot, -8deg)); }
+  30%       { transform: scaleY(0)    rotate(var(--lid-rot, -8deg)); }
+  31.4%     { transform: scaleY(.55)  rotate(var(--lid-rot, -8deg)); }
+  32.2%     { transform: scaleY(1)    rotate(var(--lid-rot, -8deg)); }
+  33.4%,100%{ transform: scaleY(0)    rotate(var(--lid-rot, -8deg)); }
+}
+
 .hero-ink {
   position: absolute; inset: 0; opacity: .16; pointer-events: none;
   background-image: radial-gradient(rgba(212, 238, 255, .85) 1.1px, transparent 1.6px);
@@ -411,7 +467,7 @@ const handleLogin = async () => {
 /* ---------- 适配常见屏幕 ---------- */
 /* 偏矮的笔记本：收紧纵向节奏，避免文字与角色挤在一起 */
 @media (max-height: 780px) {
-  .brand-copy h1 { font-size: clamp(26px, 2.6vw, 36px); margin: 12px 0 14px; }
+  .brand-copy h1 { font-size: clamp(20px, 2vw, 30px); margin: 12px 0 14px; }
   .brand-copy p { line-height: 1.7; }
   .login-card { padding: 24px 24px 18px; }
   .login-card h2 { font-size: 26px; }
@@ -439,7 +495,7 @@ const handleLogin = async () => {
 /* ---------- 尊重系统「减少动态效果」 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .bg-tone, .dots, .magic-circle, .magic-circle::after,
-  .sparkles i, .hero-wrap, .hero-sheen { animation: none !important; }
+  .sparkles i, .hero-wrap, .hero-sheen, .eye-lid { animation: none !important; }
   .bg-tone { opacity: .4; }
   .sparkles i { opacity: .5; }
   .hero-sheen { display: none; }
