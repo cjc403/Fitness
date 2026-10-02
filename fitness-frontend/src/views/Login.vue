@@ -45,9 +45,6 @@
         <div class="hero-frame">
           <div class="hero-media">
             <img :src="heroSrc" alt="" @error="heroVisible = false"/>
-            <!-- 眨眼：两层"眼皮"盖在眼部，约 7.5 秒眨一次（偶尔连眨两下），全程约 140ms -->
-            <span v-if="heroVisible" class="eye-lid eye-lid-l"></span>
-            <span v-if="heroVisible" class="eye-lid eye-lid-r"></span>
           </div>
           <span class="hero-ink"></span>
           <span class="hero-sheen"></span>
@@ -362,38 +359,6 @@ const handleLogin = async () => {
   transform: scale(1.1); transform-origin: 50% 8%;
 }
 
-/* ---------- 眨眼 ---------- */
-/* 图片在 .hero-media 内被 scale(1.1) 放大（缩小水印），所以眼皮坐标要按
-   框坐标 = 8% + (图片坐标 − 8%) × 1.1 换算，尺寸同样 ×1.1。
-   眼睛实测（图片百分比）：左眼中心 (32%, 37.5%)，右眼中心 (50%, 33%)。 */
-.eye-lid {
-  position: absolute;
-  background: linear-gradient(180deg,
-    rgba(212, 194, 192, .90) 0%,
-    rgba(199, 179, 178, .92) 58%,
-    rgba(176, 148, 150, .88) 84%,
-    rgba(132, 100, 108, .70) 100%);
-  border-radius: 46% 46% 52% 52% / 30% 30% 70% 70%;
-  box-shadow: inset 0 -1px 1px rgba(116, 88, 94, .35), 0 1px 2px rgba(110, 84, 90, .16);
-  transform-origin: 50% 0;
-  animation: blink 7.5s ease-in-out infinite;
-  will-change: transform;
-}
-/* 位置按"渲染后实测"（已包含 scale(1.1) 的影响，不要再重复补偿） */
-.eye-lid-l { left: 19.5%; top: 37.4%; width: 17.5%; height: 8.4%; --lid-rot: -6deg; }
-.eye-lid-r { left: 34.4%; top: 33.6%; width: 17.5%; height: 8.4%; --lid-rot: -12deg; }
-
-/* 眨一次约 140ms；偶尔连眨两下，其余时间保持睁开 */
-@keyframes blink {
-  0%, 27%   { transform: scaleY(0)    rotate(var(--lid-rot, -8deg)); }
-  28.2%     { transform: scaleY(.55)  rotate(var(--lid-rot, -8deg)); }
-  29%       { transform: scaleY(1)    rotate(var(--lid-rot, -8deg)); }
-  30%       { transform: scaleY(0)    rotate(var(--lid-rot, -8deg)); }
-  31.4%     { transform: scaleY(.55)  rotate(var(--lid-rot, -8deg)); }
-  32.2%     { transform: scaleY(1)    rotate(var(--lid-rot, -8deg)); }
-  33.4%,100%{ transform: scaleY(0)    rotate(var(--lid-rot, -8deg)); }
-}
-
 .hero-ink {
   position: absolute; inset: 0; opacity: .16; pointer-events: none;
   background-image: radial-gradient(rgba(212, 238, 255, .85) 1.1px, transparent 1.6px);
@@ -495,7 +460,7 @@ const handleLogin = async () => {
 /* ---------- 尊重系统「减少动态效果」 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .bg-tone, .dots, .magic-circle, .magic-circle::after,
-  .sparkles i, .hero-wrap, .hero-sheen, .eye-lid { animation: none !important; }
+  .sparkles i, .hero-wrap, .hero-sheen { animation: none !important; }
   .bg-tone { opacity: .4; }
   .sparkles i { opacity: .5; }
   .hero-sheen { display: none; }
