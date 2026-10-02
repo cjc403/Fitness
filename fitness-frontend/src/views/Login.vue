@@ -1,30 +1,22 @@
 <template>
   <!--
-    进入界面：冰蓝「魔法 × 漫画分镜」视觉。
+    进入界面：冰蓝「魔法 × 漫画分镜」视觉，左侧为角色主视觉，右侧为登录表单。
 
-    ⚠️ 自包含约定（务必保留）：这里所有装饰都是**纯 CSS + 内联 SVG**，
+    ⚠️ 自包含约定（务必保留）：所有装饰都是**纯 CSS + 内联元素**，
     不加载任何外部图片 / 字体 / 远程资源，也不读取系统壁纸。
     所以即使关闭 Wallpaper Engine、换掉壁纸、甚至换一台机器，本页面都照常显示与使用。
+
+    动效约定（保持"克制"）：只用 transform / opacity（走 GPU，不触发重排）；
+    不使用 blur 动画、不使用视频或逐帧 JS；开启系统"减少动态效果"时全部关闭。
   -->
   <div class="login-container">
-    <!-- 左侧：品牌区（漫画分镜 + 魔法元素） -->
+    <!-- 左侧：角色主视觉 -->
     <section class="login-brand">
-      <div class="sparkles" aria-hidden="true"><i v-for="n in 16" :key="n"></i></div>
+      <div class="bg-tone" aria-hidden="true"></div>
+      <div class="dots dots-back" aria-hidden="true"></div>
+      <div class="dots dots-front" aria-hidden="true"></div>
       <div class="magic-circle" aria-hidden="true"></div>
-      <div class="panel panel-a" aria-hidden="true"><span class="panel-ink"></span></div>
-
-      <!--
-        角色分镜格（当前放的是本项目生成的原创角色，可替换）。
-        换图：把图片命名成 fitness-frontend/public/hero-character.jpg 覆盖即可；
-        用 `npm run dev` 立即生效，用打包产物（dist）需重新 build 一次。
-        图片不存在或加载失败时这一格自动隐藏，页面照常可用 —— 不依赖任何外部软件或壁纸。
-        放进分镜格的意义：**任何背景的图**（截图/立绘/带白底）都像"漫画的一格"，不用抠图。
-      -->
-      <div v-show="heroVisible" class="panel panel-hero" aria-hidden="true">
-        <img :src="heroSrc" alt="" @error="heroVisible = false"/>
-        <span class="panel-ink"></span>
-      </div>
-
+      <div class="sparkles" aria-hidden="true"><i v-for="n in 18" :key="n"></i></div>
       <div class="vertical-tag" aria-hidden="true">连锁运营</div>
 
       <header class="brand-head">
@@ -43,9 +35,22 @@
         <div><strong>20</strong><span>演示会员</span></div>
         <div><strong>24h</strong><span>数据洞察</span></div>
       </div>
+
+      <!--
+        角色主视觉（布局 A：占左侧面板右侧、全高展示；文字独占左边，互不重叠）。
+        换图：把图片命名成 public/hero-character.jpg 覆盖即可（建议 900px 宽左右，JPEG 体积最小）。
+        图片不存在或加载失败时整块自动隐藏，页面照常可用 —— 不依赖任何外部软件或壁纸。
+      -->
+      <div v-show="heroVisible" class="hero-wrap" aria-hidden="true">
+        <div class="hero-frame">
+          <img :src="heroSrc" alt="" @error="heroVisible = false"/>
+          <span class="hero-ink"></span>
+          <span class="hero-sheen"></span>
+        </div>
+      </div>
     </section>
 
-    <!-- 右侧：登录表单（保持原有功能与交互不变） -->
+    <!-- 右侧：登录表单（功能与交互保持原样） -->
     <section class="login-panel">
       <div class="login-card">
         <div class="mobile-logo"><div class="logo">F</div><b>FitChain</b></div>
@@ -109,11 +114,11 @@ const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true'
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 const remember = ref(true)
-// 角色分镜：public/hero-character.jpg 存在就显示，不存在（或加载失败）自动隐藏。
+// 角色主视觉：public/hero-character.jpg 存在就显示，不存在（或加载失败）自动隐藏。
 // 用动态绑定而不是写死 src="..."，否则构建时 Vue 会把它当模块导入、文件不存在就直接构建失败。
-// 换图：把新图命名成 hero-character.jpg 覆盖即可（建议 900px 宽左右，JPEG 体积最小）。
 const heroVisible = ref(true)
 const heroSrc = '/hero-character.jpg'
+
 const demoAccounts = [
   { label: '总部', username: 'admin' },
   { label: '店长', username: 'manager' },
@@ -170,138 +175,118 @@ const handleLogin = async () => {
 
 <style scoped>
 /* ============================================================
-   进入界面视觉：冰蓝魔法 × 漫画分镜
-   —— 全部由 CSS / 内联元素绘制，无任何外部依赖（详见模板顶部说明）
+   左侧角色主视觉 + 右侧登录表单
+   —— 装饰全部由 CSS 绘制，无任何外部依赖（见模板顶部说明）
    ============================================================ */
 
 .login-container {
   display: grid;
-  grid-template-columns: minmax(480px, 1.15fr) minmax(440px, .85fr);
+  grid-template-columns: minmax(0, 1.16fr) minmax(440px, .84fr);
   min-height: 100vh;
   background: #fff;
 }
-
-/* 本页统一盒模型：避免 width:100% 叠加内边距后撑破窄屏（scoped，只影响本页元素） */
-.login-container, .login-container * , .login-container *::before, .login-container *::after {
+.login-container, .login-container *, .login-container *::before, .login-container *::after {
   box-sizing: border-box;
 }
 
-/* ---------- 左：品牌区 ---------- */
+/* ---------- 左：角色主视觉 ---------- */
 .login-brand {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 48px 64px;
+  padding: 44px clamp(30px, 4vw, 62px);
   color: #fff;
   overflow: hidden;
   background:
-    radial-gradient(circle at 78% 16%, rgba(168, 219, 255, .55), transparent 44%),
-    radial-gradient(circle at 14% 84%, rgba(88, 152, 255, .42), transparent 48%),
-    linear-gradient(160deg, #0a1424 0%, #132a4c 46%, #1d4a86 100%);
+    radial-gradient(circle at 74% 20%, rgba(168, 219, 255, .5), transparent 46%),
+    radial-gradient(circle at 12% 86%, rgba(88, 152, 255, .4), transparent 50%),
+    linear-gradient(158deg, #0a1424 0%, #132a4c 48%, #1c4780 100%);
 }
 
-/* 网点纸纹理（漫画感） */
-.login-brand::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: .55;
-  background-image: radial-gradient(rgba(196, 228, 255, .55) 1px, transparent 1.5px);
+/* ① 底色明暗呼吸（最慢，幅度极小） */
+.bg-tone {
+  position: absolute; inset: 0; pointer-events: none; opacity: .25;
+  background: radial-gradient(circle at 62% 38%, rgba(150, 205, 255, .3), transparent 58%);
+  animation: tone-breathe 60s ease-in-out infinite;
+}
+@keyframes tone-breathe { 0%, 100% { opacity: .25; } 50% { opacity: .65; } }
+
+/* ② 网点纸（两层不同速度 = 轻微视差） */
+.dots {
+  position: absolute; inset: -12%; pointer-events: none;
+  background-image: radial-gradient(rgba(198, 230, 255, .55) 1px, transparent 1.5px);
   background-size: 6px 6px;
-  -webkit-mask-image: radial-gradient(circle at 68% 32%, #000 12%, transparent 74%);
-  mask-image: radial-gradient(circle at 68% 32%, #000 12%, transparent 74%);
+  -webkit-mask-image: radial-gradient(circle at 66% 34%, #000 10%, transparent 76%);
+  mask-image: radial-gradient(circle at 66% 34%, #000 10%, transparent 76%);
+}
+.dots-back { opacity: .38; animation: drift 96s ease-in-out infinite alternate; }
+.dots-front {
+  opacity: .22; background-size: 9px 9px;
+  animation: drift 68s ease-in-out infinite alternate-reverse;
+}
+@keyframes drift {
+  from { transform: translate3d(-14px, 8px, 0); }
+  to   { transform: translate3d(18px, -12px, 0); }
 }
 
-/* 斜向光带 */
-.login-brand::after {
-  content: "";
-  position: absolute;
-  inset: -20% -10%;
-  pointer-events: none;
-  background: linear-gradient(108deg, transparent 38%, rgba(190, 226, 255, .16) 48%, transparent 58%);
-}
-
-/* ---------- 漫画分镜框 ---------- */
-.panel {
-  position: absolute;
-  border: 3px solid #050b16;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(186, 222, 255, .35), 0 22px 55px rgba(0, 0, 0, .45);
-  pointer-events: none;
-}
-
-.panel-a { top: 6%; right: 6%; width: 188px; height: 122px; transform: rotate(2.5deg);
-  background: radial-gradient(circle at 60% 40%, rgba(150, 210, 255, .5), rgba(12, 30, 56, .9) 62%); }
-/* 角色分镜格：图片按 cover 裁进格子，任意背景都成立 */
-.panel-hero {
-  right: 5%; bottom: 7%; width: 268px; height: 404px; transform: rotate(1.5deg);
-  background: linear-gradient(170deg, #16325a, #0b1a30);
-}
-/* scale 轻微放大 + 溢出裁掉：顺手把生成图右下角的模型水印切出画面 */
-.panel-hero img {
-  display: block; width: 100%; height: 100%;
-  object-fit: cover; object-position: 50% 8%;
-  transform: scale(1.12); transform-origin: 50% 10%;
-}
-/* 网点压在角色上，增强"漫画分镜"感 */
-.panel-hero .panel-ink { opacity: .2; }
-
-.panel-ink { position: absolute; inset: 0; opacity: .5;
-  background-image: radial-gradient(rgba(210, 236, 255, .8) 1.1px, transparent 1.6px); background-size: 5px 5px; }
-
-/* ---------- 魔法阵 ---------- */
+/* ③ 魔法阵：缓慢自转 */
 .magic-circle {
-  position: absolute; right: -120px; bottom: -140px; width: 460px; height: 460px;
+  position: absolute; right: -130px; bottom: -150px; width: 480px; height: 480px;
   border-radius: 50%; pointer-events: none;
-  border: 1px dashed rgba(158, 214, 255, .45);
-  animation: wb-spin 52s linear infinite;
+  border: 1px dashed rgba(158, 214, 255, .42);
+  animation: spin 52s linear infinite;
 }
 .magic-circle::before {
   content: ""; position: absolute; inset: 13%;
-  border: 1px solid rgba(158, 214, 255, .26); border-radius: 50%;
+  border: 1px solid rgba(158, 214, 255, .24); border-radius: 50%;
 }
 .magic-circle::after {
   content: ""; position: absolute; inset: 27%;
-  border: 2px solid rgba(190, 230, 255, .2); border-top-color: rgba(224, 246, 255, .62);
-  border-radius: 50%; animation: wb-spin 19s linear infinite reverse;
+  border: 2px solid rgba(190, 230, 255, .18); border-top-color: rgba(224, 246, 255, .6);
+  border-radius: 50%; animation: spin 19s linear infinite reverse;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------- 漂浮光点 ---------- */
+/* ④ 星尘：前后两层速度不同 */
 .sparkles { position: absolute; inset: 0; pointer-events: none; }
 .sparkles i {
   position: absolute; width: 4px; height: 4px; border-radius: 50%;
-  background: #eaf8ff; box-shadow: 0 0 10px 3px rgba(165, 218, 255, .85);
-  opacity: .15; animation: wb-float 9s ease-in-out infinite;
+  background: #eaf8ff; box-shadow: 0 0 10px 3px rgba(165, 218, 255, .8);
+  opacity: .12; animation: float 11s ease-in-out infinite;
 }
-.sparkles i:nth-child(1) { left: 8%;  top: 18%; animation-delay: -0.4s; }
-.sparkles i:nth-child(2) { left: 22%; top: 62%; animation-delay: -1.6s; }
-.sparkles i:nth-child(3) { left: 34%; top: 12%; animation-delay: -2.9s; }
-.sparkles i:nth-child(4) { left: 46%; top: 78%; animation-delay: -3.6s; }
-.sparkles i:nth-child(5) { left: 55%; top: 34%; animation-delay: -4.3s; }
-.sparkles i:nth-child(6) { left: 63%; top: 66%; animation-delay: -5.1s; }
-.sparkles i:nth-child(7) { left: 71%; top: 24%; animation-delay: -6.2s; }
-.sparkles i:nth-child(8) { left: 79%; top: 52%; animation-delay: -7.4s; }
-.sparkles i:nth-child(9) { left: 15%; top: 86%; animation-delay: -0.9s; }
-.sparkles i:nth-child(10){ left: 28%; top: 38%; animation-delay: -2.2s; }
-.sparkles i:nth-child(11){ left: 41%; top: 55%; animation-delay: -3.3s; }
-.sparkles i:nth-child(12){ left: 52%; top: 8%;  animation-delay: -4.8s; }
-.sparkles i:nth-child(13){ left: 66%; top: 88%; animation-delay: -5.7s; }
-.sparkles i:nth-child(14){ left: 74%; top: 12%; animation-delay: -6.8s; }
-.sparkles i:nth-child(15){ left: 88%; top: 44%; animation-delay: -8.1s; }
-.sparkles i:nth-child(16){ left: 6%;  top: 48%; animation-delay: -7.1s; }
+.sparkles i:nth-child(n+10) { width: 2.5px; height: 2.5px; animation-duration: 17s; opacity: .08; }
+.sparkles i:nth-child(1) { left: 7%;  top: 16%; animation-delay: -0.4s; }
+.sparkles i:nth-child(2) { left: 19%; top: 64%; animation-delay: -1.6s; }
+.sparkles i:nth-child(3) { left: 27%; top: 11%; animation-delay: -2.9s; }
+.sparkles i:nth-child(4) { left: 33%; top: 79%; animation-delay: -3.6s; }
+.sparkles i:nth-child(5) { left: 41%; top: 33%; animation-delay: -4.3s; }
+.sparkles i:nth-child(6) { left: 47%; top: 68%; animation-delay: -5.1s; }
+.sparkles i:nth-child(7) { left: 52%; top: 23%; animation-delay: -6.2s; }
+.sparkles i:nth-child(8) { left: 58%; top: 52%; animation-delay: -7.4s; }
+.sparkles i:nth-child(9) { left: 13%; top: 87%; animation-delay: -0.9s; }
+.sparkles i:nth-child(10){ left: 23%; top: 39%; animation-delay: -2.2s; }
+.sparkles i:nth-child(11){ left: 37%; top: 56%; animation-delay: -3.3s; }
+.sparkles i:nth-child(12){ left: 44%; top: 9%;  animation-delay: -4.8s; }
+.sparkles i:nth-child(13){ left: 51%; top: 88%; animation-delay: -5.7s; }
+.sparkles i:nth-child(14){ left: 56%; top: 13%; animation-delay: -6.8s; }
+.sparkles i:nth-child(15){ left: 62%; top: 45%; animation-delay: -8.1s; }
+.sparkles i:nth-child(16){ left: 6%;  top: 49%; animation-delay: -7.1s; }
+.sparkles i:nth-child(17){ left: 30%; top: 26%; animation-delay: -9.4s; }
+.sparkles i:nth-child(18){ left: 55%; top: 72%; animation-delay: -10.6s; }
+@keyframes float {
+  0%, 100% { opacity: .1;  transform: translate3d(0, 0, 0) scale(.9); }
+  50%      { opacity: .85; transform: translate3d(0, -18px, 0) scale(1.22); }
+}
 
-/* ---------- 竖排小标签 ---------- */
 .vertical-tag {
   position: absolute; left: 22px; top: 50%; transform: translateY(-50%);
   writing-mode: vertical-rl; letter-spacing: 6px;
-  color: rgba(206, 233, 255, .5); font-size: 12px; font-weight: 700;
-  border-left: 2px solid rgba(150, 210, 255, .3); padding-left: 10px;
+  color: rgba(206, 233, 255, .48); font-size: 12px; font-weight: 700;
+  border-left: 2px solid rgba(150, 210, 255, .28); padding-left: 10px;
 }
 
-/* ---------- 品牌文字 ---------- */
-.brand-head { display: flex; align-items: center; gap: 14px; position: relative; z-index: 2; }
+/* ---------- 品牌文字（独占左侧，与角色互不重叠） ---------- */
+.brand-head { display: flex; align-items: center; gap: 14px; position: relative; z-index: 3; }
 .logo {
   display: grid; place-items: center; width: 43px; height: 43px; border-radius: 13px;
   background: linear-gradient(135deg, #3d80ff, #8fc0ff); color: #fff;
@@ -310,40 +295,82 @@ const handleLogin = async () => {
 }
 .brand-name { font-size: 21px; font-weight: 800; letter-spacing: .5px; }
 
-.brand-copy { margin: auto 0; position: relative; z-index: 2; }
+/* 文字区宽度设上限：即使文案变长也绝不会压到角色（留出安全间距） */
+.brand-copy { margin: auto 0; position: relative; z-index: 3; max-width: min(46%, 470px); }
 .brand-copy em, .welcome {
   color: #86bbff; font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 2px;
 }
 .brand-copy h1 {
-  margin: 18px 0 22px; font-size: 48px; line-height: 1.22; letter-spacing: -2px;
-  text-shadow: 0 0 28px rgba(140, 205, 255, .5), 0 0 60px rgba(90, 160, 255, .28);
+  margin: 16px 0 20px; line-height: 1.26; letter-spacing: -1.5px;
+  /* 字号上限压到 40px：保证两行标题在任何宽度下都放得下、不会折成三行，也不会压到角色 */
+  font-size: clamp(26px, 2.6vw, 40px);
+  text-shadow: 0 0 28px rgba(140, 205, 255, .5), 0 0 60px rgba(90, 160, 255, .26);
 }
-.brand-copy p { color: #b6c6de; line-height: 1.9; }
+.brand-copy p { color: #b6c6de; line-height: 1.85; font-size: clamp(13px, .95vw, 15px); }
 
-.brand-stats { display: flex; gap: 52px; position: relative; z-index: 2; }
+.brand-stats { display: flex; gap: clamp(28px, 4vw, 52px); position: relative; z-index: 3; }
 .brand-stats strong, .brand-stats span { display: block; }
 .brand-stats strong { font-size: 23px; text-shadow: 0 0 18px rgba(150, 210, 255, .45); }
 .brand-stats span { margin-top: 5px; color: #93a3bd; font-size: 11px; }
 
+/* ---------- 角色主视觉（布局 A：右侧全高） ---------- */
+.hero-wrap {
+  position: absolute; top: 7.5%; bottom: 8%;
+  right: clamp(22px, 3.4vw, 54px);
+  width: clamp(250px, 40%, 420px);
+  z-index: 2; pointer-events: none;
+  animation: hero-float 20s ease-in-out infinite;
+}
+/* ⑤ 角色轻微浮动（20 秒一个来回，上下约 8px） */
+@keyframes hero-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(.5deg); }
+  50%      { transform: translate3d(0, -8px, 0) rotate(.5deg); }
+}
+.hero-frame {
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+  border: 2px solid #050b16; border-radius: 16px;
+  background: linear-gradient(170deg, #16325a, #0b1a30);
+  box-shadow: 0 0 0 1px rgba(186, 222, 255, .35), 0 26px 60px rgba(0, 0, 0, .5);
+}
+.hero-frame img {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 8%;
+  /* 轻微放大 + 溢出裁掉：顺手把生成图右下角的模型水印切出画面 */
+  transform: scale(1.1); transform-origin: 50% 8%;
+}
+.hero-ink {
+  position: absolute; inset: 0; opacity: .16; pointer-events: none;
+  background-image: radial-gradient(rgba(212, 238, 255, .85) 1.1px, transparent 1.6px);
+  background-size: 5px 5px;
+}
+/* ⑥ 柔光带：约 12 秒掠过一次，很淡 */
+.hero-sheen {
+  position: absolute; inset: -25% -65%; pointer-events: none;
+  background: linear-gradient(104deg, transparent 43%, rgba(232, 246, 255, .3) 50%, transparent 57%);
+  animation: sheen 12s ease-in-out infinite;
+}
+@keyframes sheen {
+  0%        { transform: translate3d(-32%, 0, 0); }
+  14%, 100% { transform: translate3d(32%, 0, 0); }
+}
+
 /* ---------- 右：登录表单 ---------- */
 .login-panel {
   display: grid; place-items: center; padding: 40px;
-  min-width: 0; /* 关键：防止网格项被内容的最小宽度撑破（窄屏溢出根因） */
+  min-width: 0;
   background:
     radial-gradient(circle at 82% 12%, rgba(186, 222, 255, .5), transparent 46%),
     radial-gradient(circle at 8% 92%, rgba(206, 232, 255, .55), transparent 42%),
     linear-gradient(165deg, #f6fbff, #eaf4ff 58%, #dfeeff);
 }
-
 .login-card {
   width: 380px; max-width: 100%; min-width: 0; position: relative;
   padding: 30px 28px 22px; border-radius: 18px;
-  background: rgba(255, 255, 255, .82);
+  background: rgba(255, 255, 255, .84);
   border: 1px solid rgba(150, 198, 245, .55);
   box-shadow: 0 22px 60px rgba(52, 106, 178, .18), inset 0 1px 0 rgba(255, 255, 255, .9);
   backdrop-filter: blur(6px);
 }
-/* 卡片四角的「分镜」小括号，呼应左侧漫画分镜 */
 .login-card::before, .login-card::after {
   content: ""; position: absolute; width: 22px; height: 22px; border: 3px solid #2f6bd8; opacity: .55;
 }
@@ -381,27 +408,40 @@ const handleLogin = async () => {
 .demo-tip { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 12px; border-radius: 8px; background: #eef5ff; color: #4a6fa8; font-size: 12px; }
 .login-card footer { margin-top: 18px; text-align: center; color: #a9b4c6; font-size: 11px; }
 
-/* 动画 ---------- */
-@keyframes wb-spin { to { transform: rotate(360deg); } }
-@keyframes wb-float {
-  0%, 100% { opacity: .1; transform: translateY(0) scale(.9); }
-  50%      { opacity: .85; transform: translateY(-16px) scale(1.25); }
+/* ---------- 适配常见屏幕 ---------- */
+/* 偏矮的笔记本：收紧纵向节奏，避免文字与角色挤在一起 */
+@media (max-height: 780px) {
+  .brand-copy h1 { font-size: clamp(26px, 2.6vw, 36px); margin: 12px 0 14px; }
+  .brand-copy p { line-height: 1.7; }
+  .login-card { padding: 24px 24px 18px; }
+  .login-card h2 { font-size: 26px; }
 }
 
-/* 尊重系统「减少动态效果」设置 */
-@media (prefers-reduced-motion: reduce) {
-  .magic-circle, .magic-circle::after, .sparkles i { animation: none; }
-  .sparkles i { opacity: .5; }
+@media (max-width: 1440px) {
+  /* 左栏变窄时，竖排装饰标签会贴到标题，直接隐藏更干净 */
+  .vertical-tag { display: none; }
 }
 
-/* ---------- 窄屏 ---------- */
+@media (max-width: 1180px) {
+  .brand-copy { max-width: 54%; }
+  .hero-wrap { width: clamp(220px, 36%, 320px); }
+}
+
+/* 窄屏：只保留登录卡片（角色与装饰整体隐藏，保证表单可用） */
 @media (max-width: 980px) {
-  /* minmax(0,1fr)：普通 1fr 不会小于内容的最小宽度，会被表单撑破导致横向溢出 */
   .login-container { grid-template-columns: minmax(0, 1fr); }
   .login-brand { display: none; }
-  .login-panel { padding: 20px 16px; min-width: 0; }
+  .login-panel { padding: 20px 16px; }
   .mobile-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
-  .login-card { box-sizing: border-box; width: 100%; max-width: 420px; min-width: 0; padding: 24px 20px 18px; }
-  .brand-copy h1 { font-size: 34px; }
+  .login-card { box-sizing: border-box; width: 100%; max-width: 420px; padding: 24px 20px 18px; }
+}
+
+/* ---------- 尊重系统「减少动态效果」 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .bg-tone, .dots, .magic-circle, .magic-circle::after,
+  .sparkles i, .hero-wrap, .hero-sheen { animation: none !important; }
+  .bg-tone { opacity: .4; }
+  .sparkles i { opacity: .5; }
+  .hero-sheen { display: none; }
 }
 </style>
