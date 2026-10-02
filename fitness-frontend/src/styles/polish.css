@@ -1,0 +1,146 @@
+/* ============================================================
+   工作台外观层（纯样式，零业务逻辑）
+   —— 统一设计变量、组件质感与三态、通用入场动效。
+   —— 所有动效只使用 transform / opacity，并遵循"减少动态效果"设置。
+   ============================================================ */
+
+:root {
+  --wb-brand: #2768ff;
+  --wb-brand-soft: #6aa8ff;
+  --wb-ink: #172033;
+  --wb-ink-2: #5b667a;
+  --wb-ink-3: #9aa3b2;
+  --wb-card: #ffffff;
+  --wb-line: #e8edf5;
+  --wb-radius: 16px;
+  --wb-radius-sm: 10px;
+  --wb-shadow: 0 6px 22px rgba(30, 44, 70, .07);
+  --wb-shadow-hover: 0 14px 32px rgba(30, 44, 70, .12);
+  --wb-gap: 16px;
+  --wb-fast: .18s;
+  --wb-mid: .3s;
+  --wb-ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ---------- 卡片质感（沿用项目既有的浅描边 + 柔阴影，只是统一化） ---------- */
+.el-card {
+  border-radius: var(--wb-radius) !important;
+  border: 1px solid var(--wb-line) !important;
+  box-shadow: var(--wb-shadow) !important;
+  transition: transform var(--wb-fast) var(--wb-ease), box-shadow var(--wb-fast) var(--wb-ease);
+}
+.el-card:hover { box-shadow: var(--wb-shadow-hover) !important; }
+
+/* ---------- 按钮三态：悬停微升起、按下微缩、键盘聚焦可见 ---------- */
+.el-button { transition: transform var(--wb-fast) var(--wb-ease), box-shadow var(--wb-fast) var(--wb-ease); }
+.el-button:hover { transform: translateY(-1px); }
+.el-button:active { transform: translateY(0) scale(.985); }
+.el-button:focus-visible { outline: 2px solid rgba(39, 104, 255, .45); outline-offset: 2px; }
+
+/* ---------- 输入框聚焦环 ---------- */
+.el-input__wrapper.is-focus { box-shadow: 0 0 0 3px rgba(39, 104, 255, .14) !important; }
+
+/* ---------- 表格：行悬停更明确、表头更清晰 ---------- */
+.el-table__body tr:hover > td.el-table__cell { background: #f2f7ff !important; }
+.el-table th.el-table__cell { background: #fafbfe !important; color: var(--wb-ink-2) !important; font-weight: 600; }
+
+/* ---------- 空状态：统一色调（插画仍用项目自带资源） ---------- */
+.el-empty__description p { color: var(--wb-ink-3); }
+
+/* ---------- 通用入场动效：给容器加 .wb-rise，子元素依次淡入上浮 ---------- */
+@keyframes wb-rise {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.wb-rise > * { animation: wb-rise var(--wb-mid) var(--wb-ease) both; }
+.wb-rise > *:nth-child(1) { animation-delay: .02s; }
+.wb-rise > *:nth-child(2) { animation-delay: .08s; }
+.wb-rise > *:nth-child(3) { animation-delay: .14s; }
+.wb-rise > *:nth-child(4) { animation-delay: .20s; }
+.wb-rise > *:nth-child(5) { animation-delay: .26s; }
+.wb-rise > *:nth-child(6) { animation-delay: .32s; }
+
+/* 数字入场：轻微上浮 + 放大落定 */
+@keyframes wb-num {
+  from { opacity: 0; transform: translate3d(0, 6px, 0) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+.wb-num { display: inline-block; animation: wb-num .5s var(--wb-ease) both; }
+
+/* ---------- 尊重系统「减少动态效果」 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .el-card, .el-button { transition: none; }
+  .el-button:hover, .el-button:active { transform: none; }
+  .wb-rise > *, .wb-num { animation: none; }
+}
+
+/* ============================================================
+   各角色首页统一的入场与数字动效
+   —— 通过容器类名直接命中（教练/会籍/会员/管理端共用）：
+      .stats-grid / .hero-stats / .entitlement-grid / .quick-grid / .coupon-list
+   —— 只加动画，不覆盖各页自己的排版，因此不会破坏任何布局。
+   ============================================================ */
+@keyframes wb-rise-sm {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.stats-grid > *,
+.hero-stats > *,
+.entitlement-grid > *,
+.quick-grid > *,
+.coupon-list > *,
+.blocker-list > * {
+  animation: wb-rise-sm .32s var(--wb-ease) both;
+}
+.stats-grid > *:nth-child(1), .hero-stats > *:nth-child(1),
+.entitlement-grid > *:nth-child(1), .quick-grid > *:nth-child(1),
+.coupon-list > *:nth-child(1), .blocker-list > *:nth-child(1) { animation-delay: .02s; }
+.stats-grid > *:nth-child(2), .hero-stats > *:nth-child(2),
+.entitlement-grid > *:nth-child(2), .quick-grid > *:nth-child(2),
+.coupon-list > *:nth-child(2), .blocker-list > *:nth-child(2) { animation-delay: .07s; }
+.stats-grid > *:nth-child(3), .hero-stats > *:nth-child(3),
+.entitlement-grid > *:nth-child(3), .quick-grid > *:nth-child(3),
+.coupon-list > *:nth-child(3), .blocker-list > *:nth-child(3) { animation-delay: .12s; }
+.stats-grid > *:nth-child(4), .hero-stats > *:nth-child(4),
+.entitlement-grid > *:nth-child(4), .quick-grid > *:nth-child(4),
+.coupon-list > *:nth-child(4), .blocker-list > *:nth-child(4) { animation-delay: .17s; }
+.stats-grid > *:nth-child(n+5), .hero-stats > *:nth-child(n+5),
+.entitlement-grid > *:nth-child(n+5), .quick-grid > *:nth-child(n+5),
+.coupon-list > *:nth-child(n+5), .blocker-list > *:nth-child(n+5) { animation-delay: .22s; }
+
+/* 数字落定动效（命中各页统计数字的常见标签） */
+.stats-grid strong, .stats-grid b, .stats-grid .num,
+.hero-stats strong, .hero-stats b, .hero-stats .num {
+  display: inline-block;
+  animation: wb-num .5s var(--wb-ease) both;
+}
+
+/* 这些自定义卡片也给一致的悬停反馈（el-card 已单独处理） */
+.stats-grid > *,
+.hero-stats > *,
+.entitlement-grid > *,
+.quick-grid > * {
+  transition: transform var(--wb-fast) var(--wb-ease), box-shadow var(--wb-fast) var(--wb-ease);
+}
+.stats-grid > *:hover,
+.hero-stats > *:hover,
+.entitlement-grid > *:hover,
+.quick-grid > *:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--wb-shadow-hover);
+}
+
+/* 表格与列表的行悬停已全局处理；这里给「可点击行」加一点位移提示 */
+.el-table__body tr { transition: background var(--wb-fast) var(--wb-ease); }
+
+/* 路由切换：内容淡入（不做位移，避免眩晕） */
+@keyframes wb-fade { from { opacity: 0; } to { opacity: 1; } }
+.el-main > * { animation: wb-fade .22s var(--wb-ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stats-grid > *, .hero-stats > *, .entitlement-grid > *, .quick-grid > *,
+  .coupon-list > *, .blocker-list > *, .el-main > * { animation: none; }
+  .stats-grid strong, .stats-grid b, .hero-stats strong, .hero-stats b { animation: none; }
+  .stats-grid > *:hover, .hero-stats > *:hover,
+  .entitlement-grid > *:hover, .quick-grid > *:hover { transform: none; }
+}

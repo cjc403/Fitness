@@ -110,4 +110,25 @@ const handleCommand = (command: string) => {
   gap: 9px; color:#374258; outline:none;
 }
 .avatar{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#2868ff,#72a1ff);color:#fff;font-weight:800}.user-name{font-size:13px;font-weight:700}.user-name small{display:block;margin-top:2px;color:#9aa3b2;font-size:10px;font-weight:400}.aside{position:relative;background:#111a2e;border-right:none;transition:width .2s;overflow:hidden}.brand{height:82px;display:flex;align-items:center;gap:12px;padding:0 18px;color:#fff}.brand-mark{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#3877ff,#75a4ff);font-size:21px;font-weight:900}.brand strong,.brand small{display:block;white-space:nowrap}.brand strong{font-size:18px;letter-spacing:.3px}.brand small{margin-top:3px;color:#7f8aa2;font-size:10px}.menu-label{padding:15px 23px 8px;color:#64718b;font-size:10px;letter-spacing:1.4px}.menu{border:0;background:transparent}.menu :deep(.el-menu-item){height:49px;margin:5px 11px;border-radius:11px;color:#929db2}.menu :deep(.el-menu-item:hover){background:#192641;color:#fff}.menu :deep(.el-menu-item.is-active){background:linear-gradient(90deg,#2768ff,#3b78f7);color:#fff;box-shadow:0 8px 20px rgba(39,104,255,.25)}.aside-bottom{position:absolute;left:14px;right:14px;bottom:16px;display:flex;align-items:center;gap:12px;padding:12px;color:#77839a;font-size:12px;cursor:pointer}.header-right{gap:8px}.main{background:#f5f7fb;padding:28px 32px;overflow:auto}@media(max-width:720px){.aside{width:76px!important}.brand>div:last-child,.menu-label,.aside-bottom span,.menu :deep(.el-menu-item span){display:none}.main{padding:20px 16px}.header{padding:0 16px}.user-name{display:none}}
+
+/* ===== 侧边栏动漫风点缀（与进入界面同一套冰蓝语言；纯装饰，不影响功能）===== */
+/* 选中项：品牌蓝渐变 + 左侧发光竖条 */
+:deep(.el-menu-item.is-active){
+  background:linear-gradient(90deg,rgba(64,132,224,.32),rgba(64,132,224,.06)) !important;
+  box-shadow:inset 3px 0 0 #6aa8ff, 0 0 18px rgba(90,150,255,.22);
+}
+:deep(.el-menu-item.is-active)::after{
+  content:"";position:absolute;left:0;top:18%;bottom:18%;width:3px;border-radius:0 3px 3px 0;
+  background:linear-gradient(180deg,#8fc2ff,#3f80e0);
+  box-shadow:0 0 10px rgba(120,180,255,.75);
+}
+:deep(.el-menu-item){position:relative}
+/* 底部区域：极淡网点纹（只在留白处） */
+.aside-bottom{position:relative;overflow:hidden}
+.aside-bottom::before{
+  content:"";position:absolute;inset:-20px;pointer-events:none;
+  background-image:radial-gradient(rgba(190,222,255,.6) 1px,transparent 1.5px);
+  background-size:6px 6px;opacity:.12;
+}
+.aside-bottom>*{position:relative}
 </style>
