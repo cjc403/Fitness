@@ -54,6 +54,21 @@
 
     <!-- 右侧：登录表单（功能与交互保持原样） -->
     <section class="login-panel">
+      <!--
+        右侧装饰层：只做视觉，全部在卡片背后、不接收鼠标事件、不改变任何布局。
+        元素与左侧同一套语言：网点纸 / 漫画分镜框 / 魔法阵 / 星尘 / 花瓣。
+      -->
+      <div class="p-deco" aria-hidden="true">
+        <div class="p-dots p-dots-tr"></div>
+        <div class="p-dots p-dots-bl"></div>
+        <div class="p-ring"></div>
+        <div class="p-circle"></div>
+        <div class="p-panel p-panel-tr"><span class="p-ink"></span></div>
+        <div class="p-panel p-panel-bl"><span class="p-ink"></span></div>
+        <div class="p-petals"><i v-for="n in 5" :key="n"></i></div>
+        <div class="p-sparkles"><i v-for="n in 14" :key="n"></i></div>
+      </div>
+
       <div class="login-card">
         <div class="mobile-logo"><div class="logo">F</div><b>FitChain</b></div>
         <span class="welcome">WELCOME BACK</span>
@@ -377,15 +392,150 @@ const handleLogin = async () => {
 
 /* ---------- 右：登录表单 ---------- */
 .login-panel {
+  position: relative;
   display: grid; place-items: center; padding: 40px;
-  min-width: 0;
+  min-width: 0; overflow: hidden;
   background:
     radial-gradient(circle at 82% 12%, rgba(186, 222, 255, .5), transparent 46%),
     radial-gradient(circle at 8% 92%, rgba(206, 232, 255, .55), transparent 42%),
     linear-gradient(165deg, #f6fbff, #eaf4ff 58%, #dfeeff);
 }
+
+/* ---------- 右侧装饰层（纯装饰：在卡片背后、不挡鼠标、不影响布局） ---------- */
+.p-deco { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+/* 网点纸角块（呼应左侧的网点） */
+.p-dots {
+  position: absolute; pointer-events: none;
+  background-image: radial-gradient(rgba(96, 158, 226, .5) 1.2px, transparent 1.7px);
+  background-size: 8px 8px;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 6%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 6%, transparent 72%);
+  animation: p-drift 90s ease-in-out infinite alternate;
+}
+.p-dots-tr { top: -30px; right: -30px; width: 300px; height: 300px; opacity: .34; }
+.p-dots-bl { bottom: -40px; left: -40px; width: 340px; height: 340px; opacity: .28;
+  background-size: 11px 11px; animation-direction: alternate-reverse; }
+@keyframes p-drift {
+  from { transform: translate3d(-10px, 6px, 0); }
+  to   { transform: translate3d(14px, -10px, 0); }
+}
+
+/* 卡片后的柔光魔力环（缓慢自转，只在卡片背后露出边缘） */
+.p-ring {
+  position: absolute; left: 50%; top: 50%;
+  width: 560px; height: 560px; margin: -280px 0 0 -280px;
+  border-radius: 50%; opacity: .5;
+  background: conic-gradient(from 0deg,
+    rgba(120, 180, 255, 0) 0%, rgba(120, 180, 255, .30) 18%, rgba(180, 220, 255, 0) 34%,
+    rgba(120, 180, 255, 0) 50%, rgba(120, 180, 255, .24) 68%, rgba(180, 220, 255, 0) 84%);
+  -webkit-mask-image: radial-gradient(circle, transparent 58%, #000 60%, #000 74%, transparent 76%);
+  mask-image: radial-gradient(circle, transparent 58%, #000 60%, #000 74%, transparent 76%);
+  animation: p-spin 45s linear infinite;
+}
+@keyframes p-spin { to { transform: rotate(360deg); } }
+
+/* 左下角魔法阵（与左侧同一个母题） */
+.p-circle {
+  position: absolute; left: -120px; bottom: -130px; width: 420px; height: 420px;
+  border-radius: 50%; opacity: .55;
+  border: 1px dashed rgba(84, 148, 222, .5);
+  animation: p-spin 60s linear infinite;
+}
+.p-circle::before {
+  content: ""; position: absolute; inset: 14%; border-radius: 50%;
+  border: 1px solid rgba(84, 148, 222, .3);
+}
+.p-circle::after {
+  content: ""; position: absolute; inset: 30%; border-radius: 50%;
+  border: 2px solid rgba(84, 148, 222, .22); border-top-color: rgba(120, 178, 240, .6);
+  animation: p-spin 22s linear infinite reverse;
+}
+
+/* 漫画分镜小框（呼应左侧的分镜格） */
+.p-panel {
+  position: absolute; overflow: hidden; border-radius: 12px;
+  border: 2px solid rgba(36, 76, 132, .5);
+  background: linear-gradient(160deg, rgba(214, 234, 255, .9), rgba(190, 218, 248, .8));
+  box-shadow: 0 12px 30px rgba(52, 106, 178, .12);
+  animation: p-float 22s ease-in-out infinite;
+}
+.p-panel .p-ink {
+  position: absolute; inset: 0; opacity: .5;
+  background-image: radial-gradient(rgba(88, 144, 210, .8) 1.1px, transparent 1.6px);
+  background-size: 5px 5px;
+}
+.p-panel-tr { top: 7%; right: 7%; width: 92px; height: 62px; --p-rot: 4deg; }
+.p-panel-bl { bottom: 9%; left: 6%; width: 72px; height: 96px; --p-rot: -5deg; animation-delay: -8s; }
+@keyframes p-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--p-rot, 4deg)); }
+  50%      { transform: translate3d(0, -7px, 0) rotate(var(--p-rot, 4deg)); }
+}
+
+/* 花瓣：缓慢飘落 + 左右摇摆 + 自转 */
+.p-petals { position: absolute; inset: 0; pointer-events: none; }
+.p-petals i {
+  position: absolute; top: -40px; width: 17px; height: 17px;
+  /* 背景是淡蓝，花瓣必须比背景更深才看得见（原来太浅，等于隐形） */
+  background: linear-gradient(150deg, #cfe3ff 8%, #7fb2ea 88%);
+  border: 1px solid rgba(74, 130, 198, .35);
+  border-radius: 50% 0 50% 50%;
+  box-shadow: 0 2px 8px rgba(70, 126, 194, .28), inset 0 0 4px rgba(255, 255, 255, .6);
+  opacity: 0; animation: p-petal 18s linear infinite;
+}
+.p-petals i:nth-child(1) { left: 12%; animation-delay: 0s; }
+.p-petals i:nth-child(2) { left: 31%; animation-delay: -4s; animation-duration: 22s; }
+.p-petals i:nth-child(3) { left: 54%; animation-delay: -8s; animation-duration: 16s; }
+.p-petals i:nth-child(4) { left: 74%; animation-delay: -12s; animation-duration: 24s; }
+.p-petals i:nth-child(5) { left: 89%; animation-delay: -16s; animation-duration: 20s; }
+.p-petals i:nth-child(2) { left: 31%; animation-delay: -4s; animation-duration: 22s; }
+.p-petals i:nth-child(3) { left: 54%; animation-delay: -8s; animation-duration: 16s; }
+.p-petals i:nth-child(4) { left: 74%; animation-delay: -12s; animation-duration: 24s; }
+.p-petals i:nth-child(5) { left: 89%; animation-delay: -16s; animation-duration: 20s; }
+@keyframes p-petal {
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg) scale(.9); opacity: 0; }
+  8%   { opacity: .75; }
+  50%  { transform: translate3d(-34px, 52vh, 0) rotate(180deg) scale(1); }
+  90%  { opacity: .55; }
+  100% { transform: translate3d(22px, 108vh, 0) rotate(340deg) scale(.9); opacity: 0; }
+}
+
+/* 星尘：比左侧更少更慢，避免抢戏 */
+.p-sparkles { position: absolute; inset: 0; pointer-events: none; }
+.p-sparkles i {
+  position: absolute; width: 4px; height: 4px; border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 12px 3px rgba(140, 196, 250, .9);
+  opacity: .18; animation: p-twinkle 9s ease-in-out infinite;
+}
+.p-sparkles i:nth-child(3n)::before, .p-sparkles i:nth-child(3n)::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); border-radius: 2px; background: #ffffff;
+  box-shadow: 0 0 7px 2px rgba(160, 208, 250, .85);
+}
+.p-sparkles i:nth-child(3n)::before { width: 12px; height: 1.6px; }
+.p-sparkles i:nth-child(3n)::after  { width: 1.6px; height: 12px; }
+.p-sparkles i:nth-child(1) { left: 8%;  top: 14%; animation-delay: -0.4s; }
+.p-sparkles i:nth-child(2) { left: 21%; top: 71%; animation-delay: -1.5s; }
+.p-sparkles i:nth-child(3) { left: 33%; top: 24%; animation-delay: -2.6s; }
+.p-sparkles i:nth-child(4) { left: 45%; top: 86%; animation-delay: -3.4s; }
+.p-sparkles i:nth-child(5) { left: 57%; top: 9%;  animation-delay: -4.5s; }
+.p-sparkles i:nth-child(6) { left: 68%; top: 62%; animation-delay: -5.2s; }
+.p-sparkles i:nth-child(7) { left: 79%; top: 31%; animation-delay: -6.4s; }
+.p-sparkles i:nth-child(8) { left: 90%; top: 78%; animation-delay: -7.3s; }
+.p-sparkles i:nth-child(9) { left: 15%; top: 46%; animation-delay: -1.1s; }
+.p-sparkles i:nth-child(10){ left: 27%; top: 92%; animation-delay: -2.2s; }
+.p-sparkles i:nth-child(11){ left: 62%; top: 40%; animation-delay: -3.9s; }
+.p-sparkles i:nth-child(12){ left: 84%; top: 55%; animation-delay: -5.8s; }
+.p-sparkles i:nth-child(13){ left: 40%; top: 6%;  animation-delay: -6.9s; }
+.p-sparkles i:nth-child(14){ left: 72%; top: 90%; animation-delay: -8.2s; }
+@keyframes p-twinkle {
+  0%, 100% { opacity: .14; transform: translate3d(0, 0, 0) scale(.85); }
+  50%      { opacity: .9;  transform: translate3d(0, -14px, 0) scale(1.2); }
+}
+
 .login-card {
-  width: 380px; max-width: 100%; min-width: 0; position: relative;
+  width: 380px; max-width: 100%; min-width: 0; position: relative; z-index: 1;
   padding: 30px 28px 22px; border-radius: 18px;
   background: rgba(255, 255, 255, .84);
   border: 1px solid rgba(150, 198, 245, .55);
@@ -455,12 +605,17 @@ const handleLogin = async () => {
   .login-panel { padding: 20px 16px; }
   .mobile-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
   .login-card { box-sizing: border-box; width: 100%; max-width: 420px; padding: 24px 20px 18px; }
+  /* 窄屏只留少量星尘：花瓣、分镜框、大圆环在小屏上容易显得杂乱 */
+  .p-petals, .p-panel, .p-ring { display: none; }
+  .p-sparkles i:nth-child(n+8) { display: none; }
 }
 
 /* ---------- 尊重系统「减少动态效果」 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .bg-tone, .dots, .magic-circle, .magic-circle::after,
-  .sparkles i, .hero-wrap, .hero-sheen { animation: none !important; }
+  .sparkles i, .hero-wrap, .hero-sheen,
+  .p-dots, .p-ring, .p-circle, .p-circle::after, .p-panel, .p-petals i, .p-sparkles i { animation: none !important; }
+  .p-petals { display: none; }
   .bg-tone { opacity: .4; }
   .sparkles i { opacity: .5; }
   .hero-sheen { display: none; }
