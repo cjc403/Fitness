@@ -19,7 +19,7 @@ export const createSale=(data:{memberId:number;productId:number;paymentMethod:st
 export const listEntitlements=(params?:{memberId?:number;remindersOnly?:boolean})=>request.get<Entitlement[]>('/v1/commercial/entitlements',{params})
 export const freezeEntitlement=(id:number,note='会员申请冻结')=>request.post<Entitlement>(`/v1/commercial/entitlements/${id}/freeze`,{note})
 export const unfreezeEntitlement=(id:number,note='会员申请解冻')=>request.post<Entitlement>(`/v1/commercial/entitlements/${id}/unfreeze`,{note})
-export const renewEntitlement=(id:number,data:{additionalDays?:number;additionalUses?:number;amount:number;paymentMethod:string;note?:string})=>request.post<Entitlement>(`/v1/commercial/entitlements/${id}/renew`,data)
+export const renewEntitlement=(id:number,data:{idempotencyKey:string;additionalDays?:number;additionalUses?:number;amount:number;paymentMethod:string;note?:string})=>request.post<Entitlement>(`/v1/commercial/entitlements/${id}/renew`,data)
 export const transferEntitlement=(id:number,targetMemberId:number,note='会员转卡')=>request.post<Entitlement>(`/v1/commercial/entitlements/${id}/transfer`,{targetMemberId,note})
 export const refundEntitlement=(id:number,amount:number,paymentMethod='ORIGINAL',reason='协商退款')=>request.post<Entitlement>(`/v1/commercial/entitlements/${id}/refund`,{amount,paymentMethod,reason})
 export const listPayments=()=>request.get<Payment[]>('/v1/commercial/payments')

@@ -20,6 +20,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "sys_user")
 @Getter
 @Setter
@@ -70,6 +71,15 @@ public class SysUserEntity {
     // PostgreSQL enforces NOT NULL through Flyway V6.
     @Column(name = "must_change_password")
     private Boolean mustChangePassword = false;
+
+    // Nullable for Hibernate's upgrade of existing local H2 files; legacy rows
+    // are interpreted as version zero. PostgreSQL V18 enforces DEFAULT/NOT NULL.
+    @Column(name = "session_version")
+    private Long sessionVersion = 0L;
+
+    public long currentSessionVersion() { return sessionVersion == null ? 0L : sessionVersion; }
+
+    public void revokeSessions() { sessionVersion = Math.addExact(currentSessionVersion(), 1L); }
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;

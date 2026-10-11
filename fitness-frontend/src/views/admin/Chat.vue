@@ -1,13 +1,14 @@
 <template>
   <div class="chat-page">
-    <div class="page-title">
-      <div><span>INTERNAL MESSAGES</span><h1>站内消息</h1><p>各角色账号之间真实互发：员工之间、员工与会员之间都可以。会员在自己的「消息」页签里就能看到。</p></div>
-    </div>
+    <WorkspaceHero compact>
+      <template #heading><span>INTERNAL MESSAGES</span><h1>站内消息</h1><p>各角色账号之间真实互发：员工之间、员工与会员之间都可以。会员在自己的「消息」页签里就能看到。</p></template>
+    </WorkspaceHero>
     <ChatPanel/>
   </div>
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
 </script>
 

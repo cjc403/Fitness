@@ -74,6 +74,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
+import { useAuthStore } from '@/store/modules/auth'
 import {
   getChatContacts, getChatConversations, getChatThread, sendChatMessage,
   type ChatContact, type ChatContactGroups, type ChatConversation, type ChatThread,
@@ -93,6 +94,17 @@ const pickerTab = ref<'staff' | 'members'>('staff')
 const keyword = ref('')
 const scrollBox = ref<HTMLElement>()
 let timer: number | undefined
+let disposed = false
+let selectionVersion = 0
+let threadRequestVersion = 0
+let listRequestVersion = 0
+let reloadVersion = 0
+let polling = false
+const drafts = new Map<number, string>()
+const authStore = useAuthStore()
+const sessionGeneration = authStore.sessionGeneration
+const isCurrentView = () => !disposed && authStore.sessionGeneration === sessionGeneration
+const isSelected = (userId: number, version: number) => isCurrentView() && activeUserId.value === userId && selectionVersion === version
 
 const filtered = computed(() => {
   const kw = keyword.value.trim()
@@ -109,19 +121,44 @@ const timeText = (v?: string) => {
 }
 
 const reload = async () => {
+  if (!isCurrentView()) return
+  const version = ++reloadVersion
+  const listVersion = ++listRequestVersion
   loading.value = true
   try {
     const [c, ct] = await Promise.all([getChatConversations(), getChatContacts()])
-    conversations.value = c.data
+    if (!isCurrentView() || version !== reloadVersion) return
+    if (listVersion === listRequestVersion) conversations.value = c.data
     contacts.value = ct.data
-  } finally { loading.value = false }
+  } finally { if (isCurrentView() && version === reloadVersion) loading.value = false }
+}
+const reloadConversations = async () => {
+  if (!isCurrentView()) return
+  const version = ++listRequestVersion
+  const result = await getChatConversations()
+  if (isCurrentView() && version === listRequestVersion) conversations.value = result.data
+}
+const loadThread = async (userId: number, version: number, scroll = true) => {
+  const requestVersion = ++threadRequestVersion
+  const result = await getChatThread(userId)
+  if (!isSelected(userId, version) || requestVersion !== threadRequestVersion) return
+  const hasNewMessages = result.data.messages.length !== (thread.value?.messages.length ?? 0)
+  thread.value = result.data
+  if (scroll || hasNewMessages) await scrollToBottom()
 }
 const openThread = async (userId: number) => {
+  if (!isCurrentView()) return
+  if (activeUserId.value !== userId) {
+    if (activeUserId.value !== null) drafts.set(activeUserId.value, draft.value)
+    draft.value = drafts.get(userId) || ''
+  }
+  const version = ++selectionVersion
   activeUserId.value = userId
-  thread.value = (await getChatThread(userId)).data
-  await scrollToBottom()
+  thread.value = null
+  await loadThread(userId, version)
+  if (!isSelected(userId, version)) return
   // 打开即已读，刷新列表里的未读角标
-  conversations.value = (await getChatConversations()).data
+  await reloadConversations()
 }
 const startWith = async (c: ChatContact) => {
   pickerVisible.value = false
@@ -133,42 +170,45 @@ const startWith = async (c: ChatContact) => {
 const openPicker = () => { keyword.value = ''; pickerTab.value = 'staff'; pickerVisible.value = true }
 const send = async () => {
   const content = draft.value.trim()
-  if (!content || !activeUserId.value) return
+  const userId = activeUserId.value
+  const version = selectionVersion
+  if (!isCurrentView() || sending.value || !content || !userId || thread.value?.userId !== userId) return
   sending.value = true
   try {
-    await sendChatMessage(activeUserId.value, content)
-    draft.value = ''
-    thread.value = (await getChatThread(activeUserId.value)).data
-    conversations.value = (await getChatConversations()).data
-    await scrollToBottom()
+    await sendChatMessage(userId, content)
+    if (!isSelected(userId, version)) return
+    if (draft.value.trim() === content) draft.value = ''
+    await loadThread(userId, version)
+    if (!isSelected(userId, version)) return
+    await reloadConversations()
   } catch (e: any) {
-    ElMessage.error(e?.message || '发送失败')
-  } finally { sending.value = false }
+    if (isSelected(userId, version)) ElMessage.error(e?.message || '发送失败')
+  } finally { if (isCurrentView()) sending.value = false }
 }
 const scrollToBottom = async () => {
   await nextTick()
-  if (scrollBox.value) scrollBox.value.scrollTop = scrollBox.value.scrollHeight
+  if (isCurrentView() && scrollBox.value) scrollBox.value.scrollTop = scrollBox.value.scrollHeight
 }
 
 onMounted(async () => {
   await reload()
+  if (!isCurrentView()) return
   // 轻量轮询：对方（比如会员）发来的消息能自动出现
   timer = window.setInterval(async () => {
-    if (!document.hidden) {
+    if (!isCurrentView()) { window.clearInterval(timer); return }
+    if (!document.hidden && !polling) {
+      const userId = activeUserId.value
+      const version = selectionVersion
+      polling = true
       try {
-        conversations.value = (await getChatConversations()).data
-        if (activeUserId.value) {
-          const t = await getChatThread(activeUserId.value)
-          if (t.data.messages.length !== (thread.value?.messages.length ?? 0)) {
-            thread.value = t.data
-            await scrollToBottom()
-          }
-        }
+        await reloadConversations()
+        if (userId && isSelected(userId, version) && !sending.value) await loadThread(userId, version, false)
       } catch { /* 轮询失败静默，不打断使用 */ }
+      finally { polling = false }
     }
   }, 20000)
 })
-onBeforeUnmount(() => { if (timer) window.clearInterval(timer) })
+onBeforeUnmount(() => { disposed = true; if (timer !== undefined) window.clearInterval(timer) })
 </script>
 
 <style scoped>

@@ -107,7 +107,8 @@ foreach ($port in @(5433, 8080, 9091, 5173)) {
 Add-Line
 Add-Line '=== HTTP endpoints ==='
 Add-Line "Backend health: $(Test-Endpoint 'http://127.0.0.1:9091/actuator/health')"
-Add-Line "Backend API docs: $(Test-Endpoint 'http://127.0.0.1:8080/api-docs')"
+Add-Line "Backend public venues API: $(Test-Endpoint 'http://127.0.0.1:8080/api/v1/auth/venues')"
+Add-Line "Backend API docs (optional; HTTP 404 is expected when disabled in production): $(Test-Endpoint 'http://127.0.0.1:8080/api-docs')"
 Add-Line "Frontend login: $(Test-Endpoint 'http://localhost:5173/login')"
 
 Add-Line

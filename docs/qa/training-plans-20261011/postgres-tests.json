@@ -1,0 +1,15 @@
+{
+  "skipped": 0,
+  "passed": true,
+  "port": 55450,
+  "failed": 0,
+  "fullBackendSuiteOnPostgres": false,
+  "hibernateSchema": "validate",
+  "errors": 0,
+  "postgresVersion": "18.6",
+  "flywayEnabled": true,
+  "command": "mvn -B -Dtest=TrainingPlanPostgresConcurrencyTest -Dtraining.test.pgurl=jdbc:postgresql://127.0.0.1:55450/training_junit test",
+  "log": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-training-build-20261011-122120\\final-pg.log",
+  "database": "training_junit",
+  "tests": 7
+}

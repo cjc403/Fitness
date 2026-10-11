@@ -76,7 +76,7 @@ public class CrossVenueService {
         if (targetVenueId == null) return false;
         if (targetVenueId.equals(memberVenueId)) return true;
         return entitlements.findByMemberIdOrderByIdDesc(memberId).stream()
-                .filter(e -> "ACTIVE".equals(e.getStatus()))
+                .filter(this::currentlyUsable)
                 .anyMatch(e -> usableAt(e.getVenueScope(), e.getVenueId(), targetVenueId));
     }
 
@@ -85,7 +85,7 @@ public class CrossVenueService {
     public List<MemberEntitlementEntity> coverableEntitlements(Long memberId, Long targetVenueId) {
         if (targetVenueId == null) return List.of();
         return entitlements.findByMemberIdOrderByIdDesc(memberId).stream()
-                .filter(e -> "ACTIVE".equals(e.getStatus()))
+                .filter(this::currentlyUsable)
                 .filter(e -> usableAt(e.getVenueScope(), e.getVenueId(), targetVenueId))
                 .toList();
     }
@@ -96,11 +96,18 @@ public class CrossVenueService {
         Set<Long> out = new LinkedHashSet<>();
         if (memberVenueId != null) out.add(memberVenueId);
         for (MemberEntitlementEntity e : entitlements.findByMemberIdOrderByIdDesc(memberId)) {
-            if (!"ACTIVE".equals(e.getStatus())) continue;
+            if (!currentlyUsable(e)) continue;
             out.addAll(parse(e.getVenueScope()));
             if (e.getVenueId() != null) out.add(e.getVenueId());
         }
         return out;
+    }
+
+    private boolean currentlyUsable(MemberEntitlementEntity e) {
+        java.time.LocalDate today = com.gym.fitness.module.finance.service.EntitlementValueService.today();
+        return "ACTIVE".equals(e.getStatus()) && e.getValidFrom() != null && e.getValidUntil() != null
+                && !today.isBefore(e.getValidFrom()) && !today.isAfter(e.getValidUntil())
+                && (e.getRemainingUses() == null || e.getRemainingUses() > 0);
     }
 
     public List<Long> parse(String venueScope) {

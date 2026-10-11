@@ -1,0 +1,358 @@
+[
+  {
+    "path": "package-lock.json",
+    "sha256": "C2F046D78570FE7B40CE9A26E5A9FD8FC9D5030ADA20846E6FBC602B59E2D2CE"
+  },
+  {
+    "path": "package.json",
+    "sha256": "12D61A0B863AB123E4EC944AB1F814926256533532698F1FAAAA5F3BC95987AA"
+  },
+  {
+    "path": "src/api/modules/account.ts",
+    "sha256": "EC4D3C852ADBAC7E962453C0ABF6C0F3FE8EDF615E4BFE7A9143121EF63A5A7C"
+  },
+  {
+    "path": "src/api/modules/advisor.ts",
+    "sha256": "D4075CC5771C7BB47F81001ECC3C8A8CA7C644C9BE7E2A9FC53D5C426B2556F6"
+  },
+  {
+    "path": "src/api/modules/analytics.ts",
+    "sha256": "D7B6033D3AF0FF9BF055FFFEA0F82D571777FA1ACC675ACBB24A84153311B1C8"
+  },
+  {
+    "path": "src/api/modules/assistant.ts",
+    "sha256": "45F817FC418F1BB83A15408AD48057A0C536044712B4EC8575B5CC40B8874BEF"
+  },
+  {
+    "path": "src/api/modules/auth.ts",
+    "sha256": "846F95F5E6B64B5B91A9C729E5BE769BF3DFE6990E360E028AB57D1DD1875CE4"
+  },
+  {
+    "path": "src/api/modules/bodyMeasurement.ts",
+    "sha256": "3D1DB7945FA6EFF210A5ECB5EDEF10F8B878E0F00628AB8D5E85096509B5592F"
+  },
+  {
+    "path": "src/api/modules/booking.ts",
+    "sha256": "2B5805A6423CD61E99BD062EB0FEB8A68A40F6F93DD0BE306F07B45D28EAC20E"
+  },
+  {
+    "path": "src/api/modules/cashShifts.ts",
+    "sha256": "F8254DF8992816ABA7E66E675D35D641D71E4A7351D02EF3F874751C689B4E33"
+  },
+  {
+    "path": "src/api/modules/chat.ts",
+    "sha256": "604B74B7E8544054CE102AD2180A8C06A9D538B5C04DAD6233C3A0B5585C97DA"
+  },
+  {
+    "path": "src/api/modules/coach.ts",
+    "sha256": "8B76278F0C7598F01C21E674BCC48D6BAB46ECA0B375651E5169830482C500D4"
+  },
+  {
+    "path": "src/api/modules/commercial.ts",
+    "sha256": "32AD9B38F5AF465B935EEDF7C1E43C9F42F65599B1699168C3708BDB3544F70A"
+  },
+  {
+    "path": "src/api/modules/coupon.ts",
+    "sha256": "46711622A58E75B3C320A40EB5330369DD586089A2CF238669AAE795DD435FAF"
+  },
+  {
+    "path": "src/api/modules/course.ts",
+    "sha256": "FE0EEEC0788BFFA3E32000CF1637B7BAC3417AC87CB3C265147E5602586F11FA"
+  },
+  {
+    "path": "src/api/modules/finance.ts",
+    "sha256": "819EAB1F9ADB8D55BA459F132CC00FC989EC06355C3AA147589DAC159CA55520"
+  },
+  {
+    "path": "src/api/modules/leads.ts",
+    "sha256": "CC567E3FE4C6BC8E80F9CB627EFB1B7335DDB7F1627508E9A447B45BDD0A6A2B"
+  },
+  {
+    "path": "src/api/modules/member.ts",
+    "sha256": "36FCDE7DD44146B2C54E84117ACDFE8A2F0375386CDD851A7EC8972D70E00D60"
+  },
+  {
+    "path": "src/api/modules/memberPortal.ts",
+    "sha256": "B69B096BD925394F5370E9014836D7C6688266D2A308376B3DC207F64098C6FD"
+  },
+  {
+    "path": "src/api/modules/messages.ts",
+    "sha256": "95325D55EEDDE2AD35D703FE14D8732989FF2D93EE6CF1BECEFE2F306992944C"
+  },
+  {
+    "path": "src/api/modules/notification.ts",
+    "sha256": "F6C97D6396E300DD29E7D667BF87D86C47A45EEA4EAC47175FF424337F28E52A"
+  },
+  {
+    "path": "src/api/modules/report.ts",
+    "sha256": "07E2E310A94006F4F30BD87AD2A2DE934F9C08CAD59DDB9EB8A80E8EF36857D4"
+  },
+  {
+    "path": "src/api/modules/review.ts",
+    "sha256": "3308B7776914DE4BE756C12F1A756D7AC3C016D6BB2C1BB9303EF2CBE8D86AAA"
+  },
+  {
+    "path": "src/api/modules/room.ts",
+    "sha256": "40BAA2A639B9910EC23596366D3A9514E068FA5E9C7A191B877169A272EB385F"
+  },
+  {
+    "path": "src/api/modules/training.ts",
+    "sha256": "1D9A9BD56A670BD89DEF115CD5B25C12C64F2B2CB00C366346B3DE8027B54FBA"
+  },
+  {
+    "path": "src/api/modules/trainingPlans.ts",
+    "sha256": "1F8C2184427574A7F8B8D2AB346A1625084D54339ED39F564ECD476B37A755F9"
+  },
+  {
+    "path": "src/api/modules/venue.ts",
+    "sha256": "23F4B00940D02BA433E3688435F30B0CF50409DDDF5BA40E1CB18AACCE35B661"
+  },
+  {
+    "path": "src/App.vue",
+    "sha256": "F1ED9FEAC064BECFB201B803A704B9C1FDCAFD72502FA7BA363369438EF5ED34"
+  },
+  {
+    "path": "src/components/AssistantPanel.vue",
+    "sha256": "62248CBE77F2F6B9C4AAFB15C94B0784F8197FC8EDC2358144869A48DBF57308"
+  },
+  {
+    "path": "src/components/BodyMeasurePanel.vue",
+    "sha256": "B0B5F5CB27CDF019C071703AB4ECD42B9E8ED34B259F90AECEA3A6358CFC5D22"
+  },
+  {
+    "path": "src/components/ChatPanel.vue",
+    "sha256": "B3EB8C84EFED381F3CD23F13CB14B6A666E3C82AC6F08A15660F0472D096FC32"
+  },
+  {
+    "path": "src/components/FinanceReportPanel.vue",
+    "sha256": "7AE53FB0C81C3CF60C5057225A05CD35B4D739711F354448B0D5DB727E41A837"
+  },
+  {
+    "path": "src/components/RefundPanel.vue",
+    "sha256": "D05E19A0BBBD87DA92CB3B3DD33EF4B07098052766F9F308894149B193603E62"
+  },
+  {
+    "path": "src/components/TrainingPanel.vue",
+    "sha256": "AEFE2B9B2A7079BEC037A296B44DD05DCBA09A511FE17D44D3A5AE111B80ABA6"
+  },
+  {
+    "path": "src/components/TrainingPlanPanel.vue",
+    "sha256": "B7F70E8179A027D2B4B63E7382AFCF1AC97BA2F160598ADC65F10B4790F1C88B"
+  },
+  {
+    "path": "src/components/WorkspaceHero.vue",
+    "sha256": "90DB2F6698DD391D50A538D6E6668CF000059E49C9D801ACA326C51BE4838BF7"
+  },
+  {
+    "path": "src/env.d.ts",
+    "sha256": "424FAF9241DD699DDA995B367ED36665732DA1E6EC1F33B2FD40394488ECAC92"
+  },
+  {
+    "path": "src/layouts/AdminLayout.vue",
+    "sha256": "A451E228BCC40A78126D49BEE46EA492C848119754EE384C26FC63B25F6CDB20"
+  },
+  {
+    "path": "src/main.ts",
+    "sha256": "A48EA6937EAEA17C6926B870842F2F112254A9CB7138A68CC10A046E4F00059E"
+  },
+  {
+    "path": "src/router/index.ts",
+    "sha256": "8EF764CF4D81DFE22C384E2840DFDDBB6550963FFAA518F825A726C0A6D4924C"
+  },
+  {
+    "path": "src/store/modules/auth.ts",
+    "sha256": "F000883DAEBB17AADF75DE6154782AA1D377A70D9F3FE332BD8C71434B76CB0F"
+  },
+  {
+    "path": "src/styles/polish.css",
+    "sha256": "BCDA5654478F0BC43693EA94CD5CD46171AE0BA528E028B4898A8FFF1CAD2AB1"
+  },
+  {
+    "path": "src/utils/accessControl.d.mts",
+    "sha256": "F2EEF11487540B90179EBDA11FCD60F9944E5FEEC8931527EF298BE7BC75D2BF"
+  },
+  {
+    "path": "src/utils/accessControl.d.ts",
+    "sha256": "F2EEF11487540B90179EBDA11FCD60F9944E5FEEC8931527EF298BE7BC75D2BF"
+  },
+  {
+    "path": "src/utils/accessControl.mjs",
+    "sha256": "E271FC611AF614C558AE222314EAAC49B8E85EC2562E145DEE197442F0318E86"
+  },
+  {
+    "path": "src/utils/auth.ts",
+    "sha256": "81AB86AB68FE7CB9B6E70AB187BFF833AC47484CFB3A453AF68889B8DD6C2A0B"
+  },
+  {
+    "path": "src/utils/financeUi.d.mts",
+    "sha256": "3FC3F96D250C992B3964A7A96AD9FEC2EC084C2A8D9AC88DED41C54A85E84FAB"
+  },
+  {
+    "path": "src/utils/financeUi.d.ts",
+    "sha256": "A44CC72C259346DF32D59E8C982556C5CE4AE9C8883F3CCEDC09C0D969CE3A09"
+  },
+  {
+    "path": "src/utils/financeUi.mjs",
+    "sha256": "9FE40DDCCB849A7F53D7A61459BC922B702517E4CB3710A62934DEAC4E1404C4"
+  },
+  {
+    "path": "src/utils/request.ts",
+    "sha256": "E699706CD161C96EB3A2892F7B6CB78DE69B7A097C391733EDCAC4632517A0D8"
+  },
+  {
+    "path": "src/utils/storage.ts",
+    "sha256": "65AE0E388852BFE06CE38AEA3B0479A870707208DDEA057F6088C880D2D29EC8"
+  },
+  {
+    "path": "src/utils/workspaceAppearance.d.mts",
+    "sha256": "74366FD47F9A44F73FF2B843A78B5B51009338792CD6A85932F83924EE22C520"
+  },
+  {
+    "path": "src/utils/workspaceAppearance.mjs",
+    "sha256": "0DC02345D9752FE42684861D3CF0E216DCCA174D417111759290359A1936901D"
+  },
+  {
+    "path": "src/utils/workspaceMotion.ts",
+    "sha256": "8ED0D040456630677FF7D42D44B9B396A2FB493CBE459E0C029D4A968BDB5587"
+  },
+  {
+    "path": "src/views/AccessDenied.vue",
+    "sha256": "B8F06676381DC8729D1E24A25F5BF7851271E8E40F5D5E2042D7B87EBB60F71C"
+  },
+  {
+    "path": "src/views/admin/Analytics.vue",
+    "sha256": "43FDC43BC4BDA015D8A040B1A06C26B74ABCC345A76AF12FA5F2171AE1B5609F"
+  },
+  {
+    "path": "src/views/admin/BookingList.vue",
+    "sha256": "6910DB9ECC3752BFDCCE187E5E106700E551675AF83446100F8E540DE538DCEC"
+  },
+  {
+    "path": "src/views/admin/CashShiftCenter.vue",
+    "sha256": "D79213E97BC85992B7C0ADF939C6D3759B0C5EE195FC1FB7A9A6E4B97420FF2C"
+  },
+  {
+    "path": "src/views/admin/Chat.vue",
+    "sha256": "F16264738B49CB63EEFABEEA16484395C0C3FEEFFED65586052B7789606D3B58"
+  },
+  {
+    "path": "src/views/admin/CommercialCenter.vue",
+    "sha256": "3A26B0E9A38776C2B500A79E8FAF8111DE39D51050A9E57B0B834081285F3A6F"
+  },
+  {
+    "path": "src/views/admin/CourseManagement.vue",
+    "sha256": "3DF6AD36C67069B25E2F4D0A9CC4D8A7B151E0438297DBA40C37528BD8ACD349"
+  },
+  {
+    "path": "src/views/admin/Dashboard.vue",
+    "sha256": "B8DEA95DACC09904F73628822102BB8620715BDB318251557AA51764875DC8B4"
+  },
+  {
+    "path": "src/views/admin/EmployeeAccounts.vue",
+    "sha256": "9528C59036E3DBD6BF98C7D4A09CD58201EA49DD9674431AD94B9C1B3F7F328A"
+  },
+  {
+    "path": "src/views/admin/LeadCenter.vue",
+    "sha256": "2721CCC686B28CCCBBA6E0344893B3C7C6CB43D41848CCA38E84FC91C2EF8BF7"
+  },
+  {
+    "path": "src/views/admin/MemberList.vue",
+    "sha256": "FD1E09527B96B47960ABF36CE64BB27E4EE3D0E7A508E3C1881FA3384CD95242"
+  },
+  {
+    "path": "src/views/admin/Messages.vue",
+    "sha256": "8E81586C96E1EB664C84C1465B04FA780B8798ECCC116637B79A6D7D49FF2C14"
+  },
+  {
+    "path": "src/views/admin/RetentionCenter.vue",
+    "sha256": "39B62FD5F3BFED927E447D1DF6D8E9A45E07D416989E7CCA517C9EA458354A09"
+  },
+  {
+    "path": "src/views/admin/ScheduleWeek.vue",
+    "sha256": "A31A5FC46C9AF5D4326A029966429740B7EFFA001E0C46A7754993B8D8FF0ED3"
+  },
+  {
+    "path": "src/views/admin/TrainingPlanCenter.vue",
+    "sha256": "978BDEF421C06B90D1BA7482862C506170F091C9F5ACFA9A46746998F7168E66"
+  },
+  {
+    "path": "src/views/admin/VenueList.vue",
+    "sha256": "A802EE4A7DF6EC77C6FC02E9627FD9A7D649301B9326876C9022C34CDA33A723"
+  },
+  {
+    "path": "src/views/advisor/AdvisorWorkbench.vue",
+    "sha256": "9C32AA637FD75899B65FD6F1380B67B6E10903022B5CC2EB397A23C3E80D75B4"
+  },
+  {
+    "path": "src/views/ChangePassword.vue",
+    "sha256": "067050272BD95EFF7BC3111CC23056CD24D2F90FA97C59CEE38C61E069F90052"
+  },
+  {
+    "path": "src/views/coach/CoachWorkbench.vue",
+    "sha256": "71D3A0682A74D2370E7BCB8E2307D4412C7908962DBA852D31C41BC4208FD611"
+  },
+  {
+    "path": "src/views/Login.vue",
+    "sha256": "931F759BA558FBC08D77358457EB789EDB39FC3FF0AD49772BB327D412DC56E1"
+  },
+  {
+    "path": "src/views/member/MemberHome.vue",
+    "sha256": "702913266786811AF8204E16E642ED981B34B1D64036BCB8E09E023165593942"
+  },
+  {
+    "path": "src/views/Register.vue",
+    "sha256": "04663CF9C9F75B1CC2D2AA4537EBACAB93D2FB59AAA8B4469DA3898A5ABE0E81"
+  },
+  {
+    "path": "tests/access-control.test.mjs",
+    "sha256": "128248B1053F0575E1C6BB97AAAF4140087C2FB081101ED1319A2F7570F854AD"
+  },
+  {
+    "path": "tests/async-safety.test.mjs",
+    "sha256": "DAA38D8E693CF0D77644F7D0BF798867426FB79E95C7A4F5DD73D35E539E9F38"
+  },
+  {
+    "path": "tests/cash-shifts-runtime.test.mjs",
+    "sha256": "EF680AEC68F336782E649FB894F16B8D2EAA6AA5F769A9B28C95F312D9A7E709"
+  },
+  {
+    "path": "tests/commercial-renewal.test.mjs",
+    "sha256": "26DD2ECCFDEA9B4EB9204C21978388F3F59DF27649E16E846614CADF08704EC2"
+  },
+  {
+    "path": "tests/finance-runtime.test.mjs",
+    "sha256": "7467A3B06F935B2F3FC80F992EEE501F1C9AF6DAAE1DD2704DED7010DE1EC3F0"
+  },
+  {
+    "path": "tests/finance-ui.helpers.test.mjs",
+    "sha256": "990658327F1B7FF9C8B6E6E6DB2CBA0C5425FCA1E0B9AF4D39BC0CE0F91AED74"
+  },
+  {
+    "path": "tests/leads-runtime.test.mjs",
+    "sha256": "74EF6BD09D2764CD9E269013838A99A8D1051B034E138F373263460A62CE55A0"
+  },
+  {
+    "path": "tests/retention-runtime.test.mjs",
+    "sha256": "E24072B6C2E1340DD839BC28F9A22D6497AEB6FEB18171D88DFB018F895A79C9"
+  },
+  {
+    "path": "tests/training-plans-runtime.test.mjs",
+    "sha256": "A8B1CE485D61FC519EE9963168DA8B1A9DFB378FDBC60A3F0627E5AF370FA256"
+  },
+  {
+    "path": "tests/workspace-appearance.test.mjs",
+    "sha256": "C91E60A97AED64C14866AA72EF05C59E151415DF7562745C49E84570EA1C1260"
+  },
+  {
+    "path": "tsconfig.json",
+    "sha256": "37792B37C0176BBFE468943F74E5DDF6F1512004E6EE233D3271E2A67EFCE39E"
+  },
+  {
+    "path": "tsconfig.node.json",
+    "sha256": "6EC602B8AA146888C76F0B41CA3515F91F95919F6E6417A4670DECABA8FCB982"
+  },
+  {
+    "path": "vite.config.ts",
+    "sha256": "7FD5A2C112C1C78ECC9C01F089D5ADD3F29BB4FCCF88C0D762F16BE1CE544E28"
+  }
+]

@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 public class OperationsService {
     private final BookingOverdueService overdueBookings;
     private final AccessGrantRepository grants;
+    private final com.gym.fitness.module.auth.repository.RevokedAuthSessionRepository revokedSessions;
     private final MemberEntitlementRepository entitlements;
     private final NotificationService notifications;
 
@@ -64,7 +65,8 @@ public class OperationsService {
         int retention = Math.max(1, tokenRetentionDays);
         long removed = grants.deleteByExpiresAtBefore(LocalDateTime.now().minusDays(retention));
         if (removed > 0) log.info("运营自检：清理过期门禁令牌 {} 条（保留最近 {} 天）", removed, retention);
-        return "清理过期门禁令牌 " + removed + " 条";
+        int revokedRemoved = revokedSessions.deleteExpiredBefore(java.time.Instant.now());
+        return "清理过期门禁令牌 " + removed + " 条；过期会话撤销记录 " + revokedRemoved + " 条";
     }
 
     /** 权益到期提醒（7/3/1 天各一次）。 */

@@ -1,14 +1,14 @@
 <template>
   <div class="week-page">
-    <div class="page-title">
-      <div><span>SCHEDULE BOARD</span><h1>周课表</h1><p>按周查看排课与占用，一眼看出空档与冲突。</p></div>
-      <div class="actions">
+    <WorkspaceHero compact>
+      <template #heading><span>SCHEDULE BOARD</span><h1>周课表</h1><p>按周查看排课与占用，一眼看出空档与冲突。</p></template>
+      <template #actions><div class="actions">
         <el-button @click="shift(-1)"><el-icon><ArrowLeft/></el-icon> 上一周</el-button>
         <el-button @click="goToday">本周</el-button>
         <el-button @click="shift(1)">下一周 <el-icon><ArrowRight/></el-icon></el-button>
         <el-button type="primary" @click="$router.push('/courses')">去排课</el-button>
-      </div>
-    </div>
+      </div></template>
+    </WorkspaceHero>
 
     <div class="controls">
       <el-radio-group v-model="mode">
@@ -63,6 +63,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { listSchedules, type Schedule } from '@/api/modules/course'

@@ -76,3 +76,10 @@ logging:
       max-file-size: 20MB
       max-history: 30
       total-size-cap: 1GB
+
+# Keep public API documentation closed in production; normal dev profile retains it.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

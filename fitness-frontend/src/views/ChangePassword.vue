@@ -33,11 +33,14 @@ const rules: FormRules = {
   confirmPassword: [{ required: true, validator: (_r, v, cb) => v === form.newPassword ? cb() : cb(new Error('两次密码输入不一致')), trigger: 'blur' }]
 }
 const submit = async () => {
+  const generation = authStore.sessionGeneration
   if (!formRef.value || !(await formRef.value.validate().catch(() => false))) return
+  if (authStore.sessionGeneration !== generation) return
   saving.value = true
   try {
-    await changePassword(form.currentPassword, form.newPassword)
-    authStore.markPasswordChanged()
+    const response = await changePassword(form.currentPassword, form.newPassword)
+    if (authStore.sessionGeneration !== generation) return
+    authStore.applySession(response.data)
     ElMessage.success('密码修改成功')
     router.replace(homeForRole(authStore.userInfo?.role))
   } finally { saving.value = false }

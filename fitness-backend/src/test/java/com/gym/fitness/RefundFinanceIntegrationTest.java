@@ -55,7 +55,7 @@ class RefundFinanceIntegrationTest {
         var sale=ok("POST","/api/v1/commercial/orders","admin",Map.of("memberId",memberId,"productId",p.getId(),"paidAmount",10,"paymentMethod", "CASH", "idempotencyKey", java.util.UUID.randomUUID().toString()));orderId=sale.path("id").asLong();entitlementId=entitlements.findByMemberIdOrderByIdDesc(memberId).get(0).getId();
     }
     HttpResponse<String> response(String method,String path,String who,Object body)throws Exception {
-        var u=users.findByUsername(who).orElseThrow();String token=jwt.generateToken(u.getId(),u.getUsername(),u.getRole().getCode(),u.getVenueId());
+        var u=users.findByUsername(who).orElseThrow();String token=jwt.generateToken(u.getId(),u.getUsername(),u.getRole().getCode(),u.getVenueId(),u.currentSessionVersion());
         var request=HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+path)).header("Authorization","Bearer "+token).header("Content-Type","application/json").method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build();
         return HttpClient.newHttpClient().send(request,HttpResponse.BodyHandlers.ofString());
     }
@@ -83,7 +83,7 @@ class RefundFinanceIntegrationTest {
     @Test void approvalAndPaymentAreSeparateAndIdempotent()throws Exception {
         var q=quote();var body=Map.of("entitlementId",entitlementId,"version",q.path("version").asLong(),"remainingUses",3,"reason","退剩余","idempotencyKey",UUID.randomUUID().toString());
         var r=ok("POST","/api/v1/finance/refunds","reception",body);long id=r.path("id").asLong();assertEquals("PENDING",r.path("status").asText());assertEquals(id,ok("POST","/api/v1/finance/refunds","reception",body).path("id").asLong());
-        assertNotEquals(0,call("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalUses",1,"amount",5,"paymentMethod","CASH")).path("code").asInt());
+        assertNotEquals(0,call("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalUses",1,"amount",5,"paymentMethod","CASH")).path("code").asInt());
         assertNotEquals(0,call("POST","/api/v1/finance/refunds/"+id+"/approve","reception",Map.of("reason","同意")).path("code").asInt());
         assertEquals("APPROVED",ok("POST","/api/v1/finance/refunds/"+id+"/approve","manager",Map.of("reason","核对同意")).path("status").asText());
         assertEquals(new BigDecimal("0.00"),orders.findById(orderId).orElseThrow().getRefundedAmount().setScale(2));
@@ -95,7 +95,7 @@ class RefundFinanceIntegrationTest {
     long request(String who)throws Exception{return ok("POST","/api/v1/finance/refunds",who,Map.of("entitlementId",entitlementId,"version",quote().path("version").asLong(),"reason","未使用服务退款","idempotencyKey",UUID.randomUUID().toString())).path("id").asLong();}
     @Test void multiSourceRenewalOnlyRefundsUnusedValue()throws Exception {
         ok("POST","/api/v1/commercial/access/scan","admin",Map.of("token",freshToken()));
-        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalUses",2,"amount",20,"paymentMethod","CASH"));
+        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalUses",2,"amount",20,"paymentMethod","CASH"));
         assertEquals(new BigDecimal("26.67"),quote().path("refundableAmount").decimalValue().setScale(2));
         long id=request("reception");ok("POST","/api/v1/finance/refunds/"+id+"/approve","manager",Map.of("reason","来源核验"));
         var r=ok("POST","/api/v1/finance/refunds/"+id+"/pay","manager",Map.of("amount",new BigDecimal("26.67"),"channel","CASH","externalReference",UUID.randomUUID().toString(),"occurredAt",LocalDateTime.now().minusMinutes(1).toString(),"note","实际登记"));
@@ -110,7 +110,7 @@ class RefundFinanceIntegrationTest {
     }
     @Test void moneyValidationPrecedesOrderWritesAndCoachHasNoFinanceAccess()throws Exception {
         long before=orders.count();
-        for(String amount:List.of("0.001","-1.00","10000000000.00"))assertNotEquals(0,call("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalUses",1,"amount",new BigDecimal(amount),"paymentMethod","CASH")).path("code").asInt());
+        for(String amount:List.of("0.001","-1.00","10000000000.00"))assertNotEquals(0,call("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalUses",1,"amount",new BigDecimal(amount),"paymentMethod","CASH")).path("code").asInt());
         assertEquals(before,orders.count());assertNotEquals(0,call("GET","/api/v1/finance/refunds","coach",null).path("code").asInt());assertNotEquals(0,call("GET","/api/v1/finance/entitlements/"+entitlementId+"/quote","member",null).path("code").asInt());
     }
     @Test void concurrentRequestsCreateOneActiveRefund()throws Exception {
@@ -125,7 +125,7 @@ class RefundFinanceIntegrationTest {
     @Test void legacyIsUnknownAndRenewalIsMergedOnceDuringReconciliation()throws Exception {
         legacy();assertEquals("UNVERIFIED",quote().path("verificationStatus").asText());assertTrue(quote().path("refundableAmount").isNull());
         ok("POST","/api/v1/commercial/access/scan","admin",Map.of("token",freshToken()));assertEquals(2,entitlements.findById(entitlementId).orElseThrow().getRemainingUses());
-        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalUses",2,"amount",20,"paymentMethod","CASH"));assertEquals("UNVERIFIED",quote().path("verificationStatus").asText());
+        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalUses",2,"amount",20,"paymentMethod","CASH"));assertEquals("UNVERIFIED",quote().path("verificationStatus").asText());
         long renewOrder=funding.findByEntitlementIdOrderByOrderIdAsc(entitlementId).get(0).getOrderId();var q=quote();var reconcile=Map.of("version",q.path("version").asLong(),"remainingUses",4,"reason","凭证和剩余服务核验","sources",List.of(Map.of("orderId",orderId,"unusedAmount",new BigDecimal("6.67"),"productType","TIMES_CARD"),Map.of("orderId",renewOrder,"unusedAmount",20)));
         var result=ok("POST","/api/v1/finance/entitlements/"+entitlementId+"/reconcile","manager",reconcile);assertEquals(new BigDecimal("26.67"),result.path("refundableAmount").decimalValue().setScale(2));assertEquals(2,result.path("funding").size());
         assertEquals(2,funding.findByOrderId(renewOrder).orElseThrow().getTotalUnits(),"Known renewal service quantity is an immutable original snapshot");
@@ -145,7 +145,7 @@ class RefundFinanceIntegrationTest {
     }
     @Test void timeServiceUsesPastCompleteDaysAndFreezeShiftsFutureRenewal()throws Exception {
         termSale();assertEquals(3,quote().path("remainingServiceDays").asInt());
-        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalDays",3,"amount",20,"paymentMethod","CASH"));
+        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalDays",3,"amount",20,"paymentMethod","CASH"));
         for(var p:periods.findByEntitlementIdOrderByIdAsc(entitlementId)){p.setStartDate(p.getStartDate().minusDays(2));p.setNextServiceDate(p.getNextServiceDate().minusDays(2));periods.save(p);}
         var e=entitlements.findById(entitlementId).orElseThrow();e.setValidFrom(e.getValidFrom().minusDays(2));e.setValidUntil(e.getValidUntil().minusDays(2));entitlements.save(e);
         assertEquals(new BigDecimal("23.34"),quote().path("refundableAmount").decimalValue().setScale(2));assertEquals(4,quote().path("remainingServiceDays").asInt());
@@ -182,7 +182,7 @@ class RefundFinanceIntegrationTest {
         orderId=ok("POST","/api/v1/commercial/orders","admin",Map.of("memberId",memberId,"productId",p.getId(),"paidAmount",10,"paymentMethod", "CASH", "idempotencyKey", java.util.UUID.randomUUID().toString())).path("id").asLong();entitlementId=entitlements.findByMemberIdOrderByIdDesc(memberId).get(0).getId();long sid=schedule("PRIVATE",memberId);
         long booking=ok("POST","/api/v1/admin/bookings","admin",Map.of("memberId",memberId,"scheduleId",sid,"entitlementId",entitlementId)).path("id").asLong();var s=schedules.findById(sid).orElseThrow();s.setScheduledStartTime(LocalDateTime.now().minusHours(2));s.setScheduledEndTime(LocalDateTime.now().minusHours(1));schedules.save(s);
         ok("POST","/api/v1/admin/bookings/"+booking+"/check-in","coach",Map.of());ok("POST","/api/v1/training/lessons/"+booking+"/submit","coach",Map.of());assertEquals(new BigDecimal("3.33"),ok("POST","/api/v1/training/lessons/"+booking+"/confirm","member",Map.of()).path("unitPrice").decimalValue().setScale(2));
-        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalUses",2,"amount",20,"paymentMethod","CASH"));assertEquals(new BigDecimal("26.67"),quote().path("refundableAmount").decimalValue().setScale(2));
+        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalUses",2,"amount",20,"paymentMethod","CASH"));assertEquals(new BigDecimal("26.67"),quote().path("refundableAmount").decimalValue().setScale(2));
         ok("POST","/api/v1/training/lessons/"+booking+"/reverse","manager",Map.of("reason","原签课纠错"));assertEquals(new BigDecimal("30.00"),quote().path("refundableAmount").decimalValue().setScale(2));assertEquals(5,entitlements.findById(entitlementId).orElseThrow().getRemainingUses());
     }
     @Test void legacyTypeMustBeAttestedAndZeroServicesCannotHavePositiveUnusedValue()throws Exception {
@@ -290,7 +290,7 @@ class RefundFinanceIntegrationTest {
     @Test void exhaustedLegacyTermSourceCanBeReconciledWithKnownUnconsumedRenewal()throws Exception {
         legacy();var e=entitlements.findById(entitlementId).orElseThrow();e.setRemainingUses(null);e.setTotalUses(null);e.setValidFrom(LocalDate.now().minusDays(30));e.setValidUntil(LocalDate.now().minusDays(1));e.setStatus("EXPIRED");entitlements.save(e);
         var product=products.findById(e.getProductId()).orElseThrow();product.setProductType("MONTH_CARD");products.save(product);
-        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","manager",Map.of("additionalDays",3,"amount",20,"paymentMethod","CASH"));
+        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","manager",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalDays",3,"amount",20,"paymentMethod","CASH"));
         var renewal=funding.findByEntitlementIdOrderByOrderIdAsc(entitlementId).get(0);var originalPeriod=periods.findByEntitlementIdOrderByIdAsc(entitlementId).get(0);
         var body=new HashMap<String,Object>();body.put("version",quote().path("version").asLong());body.put("remainingUses",null);body.put("reason","原服务期已耗尽，续费三天尚未使用");
         body.put("sources",List.of(Map.of("orderId",orderId,"unusedAmount",0,"productType","MONTH_CARD","totalUnits",0),Map.of("orderId",renewal.getOrderId(),"unusedAmount",20,"totalUnits",3,"startDate",LocalDate.now().toString())));
@@ -315,10 +315,10 @@ class RefundFinanceIntegrationTest {
     @Test void explicitlyExhaustedKnownPeriodDoesNotRetainRefundableServiceDays()throws Exception {
         legacy();var e=entitlements.findById(entitlementId).orElseThrow();e.setRemainingUses(null);e.setTotalUses(null);e.setValidFrom(LocalDate.now().minusDays(30));e.setValidUntil(LocalDate.now().minusDays(4));e.setStatus("EXPIRED");entitlements.save(e);
         var product=products.findById(e.getProductId()).orElseThrow();product.setProductType("MONTH_CARD");products.save(product);
-        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","manager",Map.of("additionalDays",3,"amount",20,"paymentMethod","CASH"));
+        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","manager",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalDays",3,"amount",20,"paymentMethod","CASH"));
         var exhausted=funding.findByEntitlementIdOrderByOrderIdAsc(entitlementId).get(0);var exhaustedPeriod=periods.findByEntitlementIdOrderByIdAsc(entitlementId).get(0);exhaustedPeriod.setStartDate(LocalDate.now().minusDays(3));exhaustedPeriod.setNextServiceDate(LocalDate.now().minusDays(3));periods.save(exhaustedPeriod);
         e=entitlements.findById(entitlementId).orElseThrow();e.setValidUntil(LocalDate.now().minusDays(1));entitlements.save(e);
-        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","manager",Map.of("additionalDays",3,"amount",30,"paymentMethod","CASH"));var future=funding.findByEntitlementIdOrderByOrderIdAsc(entitlementId).get(1);
+        ok("POST","/api/v1/commercial/entitlements/"+entitlementId+"/renew","manager",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalDays",3,"amount",30,"paymentMethod","CASH"));var future=funding.findByEntitlementIdOrderByOrderIdAsc(entitlementId).get(1);
         var body=new HashMap<String,Object>();body.put("version",quote().path("version").asLong());body.put("remainingUses",null);body.put("reason","原期及上一续费均已耗尽，保留下期三天");body.put("sources",List.of(Map.of("orderId",orderId,"unusedAmount",0,"productType","MONTH_CARD","totalUnits",0),Map.of("orderId",exhausted.getOrderId(),"unusedAmount",0,"totalUnits",0),Map.of("orderId",future.getOrderId(),"unusedAmount",30,"totalUnits",3,"startDate",LocalDate.now().toString())));
         var result=ok("POST","/api/v1/finance/entitlements/"+entitlementId+"/reconcile","manager",body);assertEquals(3,result.path("remainingServiceDays").asInt());assertEquals(new BigDecimal("30.00"),result.path("refundableAmount").decimalValue().setScale(2));
         var saved=periods.findById(exhaustedPeriod.getId()).orElseThrow();assertEquals(3,saved.getTotalDays());assertEquals(3,saved.getConsumedDays());assertEquals(2000,saved.getTotalCents());assertEquals(2,periods.findByEntitlementIdOrderByIdAsc(entitlementId).size());assertEquals(0,funding.findByOrderId(exhausted.getOrderId()).orElseThrow().getRemainingCents());

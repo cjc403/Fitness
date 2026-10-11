@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "tests": 219,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 6,
+  "oldMigrationsUnchanged": true,
+  "oldMigrationCount": 20,
+  "sourceFiles": 270,
+  "pomSha256": "484692E87C5CDB35DBE00830467CC6EB812A76D0965CB708FE7996D88A4054F2",
+  "jarSha256": "A7985D1B329DAF6B1B57E747758B80A207E4D4D87C87EEE801068BC29BB88E31",
+  "buildCommand": "mvn -B clean package",
+  "artifact": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-cash-build-20261010-114922\\target\\fitness-backend-1.0.0.jar",
+  "log": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-cash-build-20261010-114922\\final-package.log"
+}

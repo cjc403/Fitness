@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
  * 这两个字段在 V1 就存在，此前一直没有业务逻辑读它。</p>
  */
 @Entity
-@Table(name = "member_follow_up")
+@Table(name = "member_follow_up", uniqueConstraints = @UniqueConstraint(
+        name = "uk_follow_member_staff_request", columnNames = {"member_id", "staff_user_id", "request_key"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,6 +35,14 @@ public class MemberFollowUpEntity {
     private String followType;
     @Column(nullable = false, length = 500)
     private String content;
+    /** Historical and older-client records remain explicitly unclassified. */
+    @org.hibernate.annotations.ColumnDefault("'NOT_RECORDED'")
+    @Column(nullable = false, length = 20)
+    private String outcome = "NOT_RECORDED";
+    @Column(name = "request_key", length = 64)
+    private String requestKey;
+    @Column(name = "request_fingerprint", length = 64)
+    private String requestFingerprint;
     /** 约定下次跟进时间；到期后会出现在顾问工作台的"待跟进"里。 */
     @Column(name = "next_follow_at")
     private LocalDateTime nextFollowAt;

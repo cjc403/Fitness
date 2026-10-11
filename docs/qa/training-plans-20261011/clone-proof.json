@@ -1,0 +1,5 @@
+{
+  "cloneDatabase": "training_migration",
+  "sourceReadOnly": true,
+  "dumpSha256": "AB438F05DC987B6BF9ED954EF050C4B11DC5D79868792252F1160137B113E6F2"
+}

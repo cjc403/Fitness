@@ -40,17 +40,22 @@
 - 站内通知（V10）：排课变更、商品下架、退款审批结果主动推送给会员，会员端带未读角标
 - 门禁二维码一次性化（V10）：改为 60 秒短时效一次性令牌，截图无法重复入场
 - 销售幂等（V10）：同一幂等键只落一单，杜绝连点或重试造成的重复开卡
+- 会员续费与回访（V19）：今日/逾期回访、7/30 天临期、高风险筛选、结构化沟通结果、下次回访、顾问/店长/总部范围统计及防重复提交；实际续费依据已支付续费订单的退款后净额。使用与验证见 [续费与回访指南](docs/会员续费与回访_20261003.md)。
+- 潜客与体验课（V20）：咨询建档、联系任务、跟进历史、独立体验预约与到店结果、实际开卡或核验订单关联、渠道转化统计；包含门店/顾问隔离、幂等、版本冲突及事务回滚保护。使用与验证见 [潜客与体验课指南](docs/潜客与体验课_20261009.md)。
+
+- 前台交班与日结（V21）：每店同时一个班次，逐渠道核对实际收款/退款、差异说明、提交交班、独立店长复核、退回修正、固定流水快照和前后审计；总部跨店、本店隔离。使用与验证见 [交班与日结指南](docs/交班与日结_20261010.md)。
+
+- 教练训练计划与执行记录（V22）：草稿/发布/归档、动作目标、训练执行快照、会员反馈、错误作废及审计；教练、门店监督与会员本人隔离。登记不签到或扣课。见 [训练计划指南](docs/教练训练计划与执行记录_20261011.md)。
 
 ## 技术栈
 
 ### 后端
 - Java 17 LTS
-- Spring Boot 3.3.13
+- Spring Boot 3.5.16
 - Spring Data JPA
-- QueryDSL 5.1.0
 - Spring Security 6.3 + JWT
 - H2（本地零配置）/ PostgreSQL 18（生产环境）
-- Flyway 11.15（数据库迁移，与 Spring Boot 3.3 兼容）
+- Flyway 11.15（数据库迁移，与 Spring Boot 3.5 配套验证）
 - MapStruct 1.5.5 (DTO转换)
 - Swagger/OpenAPI 3 (API文档)
 
@@ -58,7 +63,7 @@
 - Vue 3.4.x
 - TypeScript 5.x
 - Element Plus 2.5.0+
-- Vite 5.x
+- Vite 7.3.6
 - Vue Router 4.x
 - Pinia 2.x
 - Axios 1.x
@@ -91,6 +96,8 @@ hh-gym/
 
 双击项目根目录的 `start.bat`。现在使用的是自修复启动器，只有数据库、后端接口和前端登录页全部通过真实健康检查后才会打开浏览器。它会自动处理以下常见问题：
 
+最终检查使用后台健康状态、只读场馆接口 `/api/v1/auth/venues`（校验成功码与列表格式）和登录页面。PostgreSQL 的生产配置默认关闭 API 文档，`/api-docs` 返回 404 属于正常情况，不会阻止启动。
+
 - PostgreSQL 显示“正在运行”但实际无响应时，请求管理员权限并自动重启服务
 - 使用本机直连、关闭无意义的 SSL 探测并设置连接超时，避免数据库连接长时间假死
 - 启动前验证数据库账号确实能够执行查询，而不只是检查端口是否存在
@@ -105,7 +112,7 @@ hh-gym/
 
 - 系统地址：http://localhost:5173
 - 后端接口：http://localhost:8080
-- Swagger：http://localhost:8080/swagger-ui.html
+- Swagger（仅启用文档的开发环境）：http://localhost:8080/swagger-ui.html
 - 登录账号：使用“角色与演示账号”章节列出的五类正式账号
 
 本项目已经在 `.tools/` 中安装了项目专用 JDK 17 和 Maven，不需要配置系统环境变量。首次运行若没有 `node_modules`，脚本会自动执行 `npm install`。
@@ -114,7 +121,7 @@ hh-gym/
 
 - JDK 17+
 - Maven 3.9+
-- Node.js 18+
+- Node.js 20.19+（20.x）或 22.12+；Vite 7 构建要求，推荐使用当前受支持的 LTS
 - PostgreSQL 18（仅 `prod` 生产配置需要）
 
 ### 后端启动
@@ -190,11 +197,18 @@ npm run dev
 
 ## 验证
 
-后端测试使用**内存 H2**，不需要预先准备数据库：
+后端默认测试使用**内存 H2**。必须在新鲜TEMP源码副本运行以下命令，避免覆盖运行中的JAR；PG专项另外在明确的隔离库执行：
 
-```bash
-cd fitness-backend
-mvn -B clean package      # 85 个测试：资金/退款/私教/门禁/通知/权限矩阵的集成测试
+```powershell
+# 在仓库根目录执行；仅复制源码到新临时目录，不覆盖运行中的JAR
+$repoPath = (Get-Location).Path
+$verifyBuildPath = Join-Path $env:TEMP ('fitchain-verify-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $verifyBuildPath | Out-Null
+Copy-Item -LiteralPath (Join-Path $repoPath 'fitness-backend\src') -Destination $verifyBuildPath -Recurse
+Copy-Item -LiteralPath (Join-Path $repoPath 'fitness-backend\pom.xml') -Destination $verifyBuildPath
+$env:JAVA_HOME = Join-Path $repoPath '.tools\jdk-17'
+Push-Location $verifyBuildPath
+try { & (Join-Path $repoPath '.tools\maven\bin\mvn.cmd') -B clean package } finally { Pop-Location }
 ```
 
 前端（类型检查 + 构建 + 单元测试）：
@@ -203,12 +217,12 @@ mvn -B clean package      # 85 个测试：资金/退款/私教/门禁/通知/�
 cd fitness-frontend
 npm ci
 npm run build             # 含 vue-tsc 类型检查
-node --test tests/finance-ui.helpers.test.mjs tests/finance-runtime.test.mjs
+node --test tests/*.test.mjs # 181项，含异步/续费/回访/潜客/交班/训练及会话失效行为
 ```
 
 ## 版本与文档状态
 
-- 数据库迁移由 Flyway 管理，当前到 **V10**；`ddl-auto=validate` + `validate-on-migrate=true`，V1–V9 迁移字节不可变。
+- 数据库迁移由 Flyway 管理，本地源码和实际 PostgreSQL 当前到 **V22**（训练计划、动作、执行快照和审计）；本轮只更新本地，最终运行与备份证据见 `docs/qa/training-plans-20261011/verification.json`。线上沿用2026-10-02 **V17**验收记录，本轮未连接或部署。`ddl-auto=validate` + `validate-on-migrate=true`，已应用 V1–V22 迁移不可修改。
 - **当前功能与待办以 [docs/当前功能与待办.md](docs/当前功能与待办.md) 为准**；`docs/后续完善计划.md` 是历史规划存档，已与实现脱节。
 
 ## API接口规范
@@ -235,3 +249,11 @@ DeepSeek 配置、安全降级和推荐算法说明见 [docs/AI_INTEGRATION.md](
 员工与会员账号创建、首次改密和权限边界见 [docs/ACCOUNT_MANAGEMENT.md](docs/ACCOUNT_MANAGEMENT.md)。
 
 商业会籍、订单财务、二维码入场和课程履约演示见 [docs/COMMERCIAL_OPERATIONS.md](docs/COMMERCIAL_OPERATIONS.md)。
+
+### 2026-10-02 本地安全加固
+
+检查结论、已修复问题、验证证据和后续建议见 [项目安全与优化检查](docs/项目安全与优化检查_20261002.md)。保留已有外观改动，未发布、推送或改变现有业务库。本地运行中的旧版本未重启；下次通过 `start.bat` 重建启动后才使用新代码和 V18。生产 API 文档默认关闭，服务默认绑定 loopback；特殊网络拓扑可显式配置 `SERVER_ADDRESS`。
+
+### 2026-10-03 启动器修复
+
+修正启动器对生产 API 文档的强制检查：改为验证只读场馆接口，并在诊断报告标明文档关闭时的 404 属于正常情况。实际执行 `start.bat` 已成功，默认浏览器登录页正常；只读确认本地 PostgreSQL 已应用 V18，未执行线上发布。回归检查：`powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/startup-endpoints.test.ps1`（10 项）。此前“本地旧版本未重启”的记录为 2026-10-02 的历史状态。

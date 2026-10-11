@@ -1,6 +1,9 @@
 <template>
   <div class="page">
-    <div class="page-toolbar"><div><h2>员工账号</h2><p>创建岗位账号，管理门店归属、登录状态与初始密码</p></div><el-button type="primary" @click="openCreate"><el-icon><Plus /></el-icon>新增员工账号</el-button></div>
+    <WorkspaceHero compact>
+      <template #heading><span>FITNESS OPERATIONS</span><h2>员工账号</h2><p>创建岗位账号，管理门店归属、登录状态与初始密码</p></template>
+      <template #actions><el-button type="primary" @click="openCreate"><el-icon><Plus /></el-icon>新增员工账号</el-button></template>
+    </WorkspaceHero>
     <el-card shadow="never">
       <div class="filters">
         <el-input v-model="filters.keyword" clearable placeholder="账号、姓名或手机号" @keyup.enter="search"><template #append><el-button :icon="Search" @click="search" /></template></el-input>
@@ -48,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'

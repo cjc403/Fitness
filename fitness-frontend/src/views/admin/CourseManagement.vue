@@ -1,6 +1,9 @@
 <template>
   <div class="page-shell">
-    <div class="page-title"><div><span class="eyebrow">TRAINING PROGRAM</span><h1>课程与排课</h1><p>{{ canWriteCourse ? '维护课程模板，安排教练与上课时间' : '查看本场馆课程模板与近期排课' }}</p></div><el-button v-if="canWriteCourse" type="primary" size="large" @click="openCourse"><el-icon><Plus /></el-icon> 新增课程</el-button></div>
+    <WorkspaceHero compact>
+      <template #heading><span class="eyebrow">TRAINING PROGRAM</span><h1>课程与排课</h1><p>{{ canWriteCourse ? '维护课程模板，安排教练与上课时间' : '查看本场馆课程模板与近期排课' }}</p></template>
+      <template #actions><el-button v-if="canWriteCourse" type="primary" size="large" @click="openCourse"><el-icon><Plus /></el-icon> 新增课程</el-button></template>
+    </WorkspaceHero>
     <div class="section-head"><h3>课程库</h3><span>{{ courses.length }} 个课程模板</span></div>
     <div class="course-grid">
       <article v-for="course in courses" :key="course.id" class="course-card">
@@ -93,6 +96,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'; import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'; import { Calendar, Plus, Timer, User } from '@element-plus/icons-vue'; import { createBatchSchedules, createCourse, createSchedule, deleteCourse, deleteSchedule, listCoaches, listCourses, listSchedules, updateCourse, updateSchedule, type CoachOption, type Course, type Schedule, type ScheduleBatchResult } from '@/api/modules/course'
 import { listVenues, type Venue } from '@/api/modules/venue'
 import { getVenueReviewSummary, type VenueReviewSummary } from '@/api/modules/review'

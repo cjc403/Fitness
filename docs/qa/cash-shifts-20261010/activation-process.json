@@ -1,0 +1,14 @@
+{
+  "database": "fitness_db",
+  "serverDeployed": false,
+  "oldPid": 31968,
+  "testedJarSha256": "A7985D1B329DAF6B1B57E747758B80A207E4D4D87C87EEE801068BC29BB88E31",
+  "installedJarSha256": "A7985D1B329DAF6B1B57E747758B80A207E4D4D87C87EEE801068BC29BB88E31",
+  "oldJarSha256": "ADE6A0BB117DAD1CD64C78E211B25CFAF4C7E5990B17E325CB85C575C6922C1A",
+  "databasePort": 5433,
+  "profile": "prod",
+  "newPid": 33316,
+  "healthPending": false,
+  "oldJar": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\cash-shifts-20261010\\backend-before-20261010-162219.jar",
+  "health": "UP"
+}

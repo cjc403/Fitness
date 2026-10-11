@@ -1,15 +1,13 @@
 <template>
   <div class="page">
-    <div class="page-toolbar">
-      <div>
-        <h2>会员管理</h2>
-        <p>查看会员资料并维护会员状态</p>
-      </div>
-      <el-button v-if="canWrite" type="primary" @click="openCreate">
+    <WorkspaceHero compact>
+      <template #heading><span>FITNESS OPERATIONS</span><h2>会员管理</h2>
+        <p>查看会员资料并维护会员状态</p></template>
+      <template #actions><el-button v-if="canWrite" type="primary" @click="openCreate">
         <el-icon><Plus /></el-icon>
         新增会员
-      </el-button>
-    </div>
+      </el-button></template>
+    </WorkspaceHero>
 
     <el-card shadow="never">
       <div class="search-bar">
@@ -124,6 +122,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { onMounted, reactive, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'

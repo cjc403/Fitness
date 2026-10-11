@@ -26,6 +26,7 @@ public class EntitlementValueService {
     private final EntitlementValueEventRepository events;
     private final EntitlementTermPeriodRepository periods;
     private final MemberEntitlementRepository entitlements;
+    private final com.gym.fitness.module.member.repository.MemberRepository members;
     private final SalesOrderRepository orders;
     private final MembershipProductRepository products;
     private final EntitlementOperationRepository operations;
@@ -41,6 +42,31 @@ public class EntitlementValueService {
         var initial=entitlements.findById(id).orElseThrow(()->fail("权益不存在"));assertScope(initial.getVenueId());venueLock.acquire(initial.getVenueId());
         var e=entitlements.findByIdForUpdate(id).orElseThrow();em.refresh(e);assertScope(e.getVenueId());return e;
     }
+    /** Stable member guard must precede venue/schedule/entitlement locks when adding service or starting a refund.
+     * PostgreSQL NO KEY UPDATE permits foreign-key KEY SHARE checks from independent funding operations. */
+    public com.gym.fitness.module.member.entity.MemberEntity lockMemberServices(Long memberId) {
+        var member=members.findById(memberId).orElseThrow(()->fail("会员不存在"));
+        var dialect=em.getEntityManagerFactory().unwrap(org.hibernate.engine.spi.SessionFactoryImplementor.class).getJdbcServices().getDialect();
+        if(dialect instanceof org.hibernate.dialect.PostgreSQLDialect) {
+            if(em.createNativeQuery("SELECT id FROM member WHERE id=:id FOR NO KEY UPDATE").setParameter("id",memberId).getResultList().isEmpty())throw fail("会员不存在");
+            em.refresh(member);
+        } else em.refresh(member,LockModeType.PESSIMISTIC_WRITE);
+        return member;
+    }
+
+    /** Self-service entry: ownership is checked both before and after the issuer/entitlement locks. */
+    public MemberEntitlementEntity lockForCurrentMember(Long id) {
+        if(!SecurityUtil.hasRole("MEMBER"))throw fail("仅会员本人可以办理");
+        Long memberId=members.findByUserId(SecurityUtil.getCurrentUserId()).orElseThrow(()->fail("账号未绑定会员")).getId();
+        var initial=entitlements.findById(id).orElseThrow(()->fail("权益不存在"));
+        if(!Objects.equals(initial.getMemberId(),memberId))throw fail("只能办理本人权益");
+        lockMemberServices(memberId);
+        venueLock.acquire(initial.getVenueId());
+        var e=entitlements.findByIdForUpdate(id).orElseThrow();em.refresh(e);
+        if(!Objects.equals(e.getMemberId(),memberId))throw fail("只能办理本人权益");
+        return e;
+    }
+
     public EntitlementValueAccountEntity account(MemberEntitlementEntity e){
         var found=accounts.findByEntitlementId(e.getId());
         if(found.isPresent()){var a=found.get();em.refresh(a,LockModeType.PESSIMISTIC_WRITE);return a;}

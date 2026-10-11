@@ -1,0 +1,11 @@
+{
+  "frontendUrl": "http://localhost:5173/login",
+  "localOnly": true,
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-fitchain.ps1 -NoBrowser",
+  "exitCode": 0,
+  "backendHealth": "UP",
+  "businessApiChecked": true,
+  "passed": true,
+  "openedBrowser": false,
+  "existingServicesReused": true
+}

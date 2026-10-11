@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request, { type SessionRequestConfig } from '@/utils/request'
 
 export interface LoginRequest {
   username: string
@@ -29,8 +29,12 @@ export const login = (data: LoginRequest) => {
   return request.post<LoginResponse>('/v1/auth/login', data)
 }
 
-export const logout = () => {
-  return request.post('/v1/auth/logout')
+export const logout = (accessToken: string | null, refreshToken: string | null = null) => {
+  const config: SessionRequestConfig = {
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    skipAuthRefresh: true
+  }
+  return request.post('/v1/auth/logout', refreshToken ? { refreshToken } : undefined, config)
 }
 
 export const refreshToken = (refreshToken: string) => {
@@ -38,4 +42,4 @@ export const refreshToken = (refreshToken: string) => {
 }
 
 export const changePassword = (currentPassword: string, newPassword: string) =>
-  request.post('/v1/auth/change-password', { currentPassword, newPassword })
+  request.post<LoginResponse>('/v1/auth/change-password', { currentPassword, newPassword })

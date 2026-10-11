@@ -1,0 +1,28 @@
+{
+  "localOnly": true,
+  "database": "training_qa",
+  "fakeDataOnly": true,
+  "checks": [
+    "coach write permission present",
+    "assigned students visible and unrelated excluded",
+    "student DTO excludes private phone",
+    "create draft with exact exercises",
+    "same create intent replays without extra plan",
+    "member list hides unpublished drafts",
+    "publish draft",
+    "publish retry accepts progressed version",
+    "record training with completed and skipped actions",
+    "session same intent cannot double register",
+    "member detail has no staff audit or write controls",
+    "member submits own training feedback",
+    "coach reads actual member feedback",
+    "void preserves history and excludes completed count",
+    "archive preserves fixed plan and history",
+    "manager reads own service venue archived plan with frozen actions",
+    "headquarters venue filter scoped and selectable",
+    "training actions do not register attendance, consume lessons or modify money/body measurements"
+  ],
+  "passed": true,
+  "assertionCount": 18,
+  "realBusinessTestWrites": false
+}

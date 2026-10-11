@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig, type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import type { LoginResponse } from '@/api/modules/auth'
 import { useAuthStore } from '@/store/modules/auth'
@@ -12,8 +12,17 @@ interface Result<T = any> {
   timestamp?: string
 }
 
+export interface SessionRequestConfig extends AxiosRequestConfig {
+  skipAuthRefresh?: boolean
+  // Opt-in page/venue guard. Invalidated reads and writes must not publish data or global notices.
+  isRequestCurrent?: () => boolean
+}
+
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
+  _sessionGeneration?: number
+  skipAuthRefresh?: boolean
+  isRequestCurrent?: () => boolean
 }
 
 export class BusinessError extends Error {
@@ -36,8 +45,7 @@ const service: AxiosInstance = axios.create({
   }
 })
 
-let refreshPromise: Promise<LoginResponse> | null = null
-let sessionEnding = false
+let refreshPending: { generation: number; promise: Promise<LoginResponse> } | null = null
 let lastForbiddenNoticeAt = 0
 
 const isAuthenticationRequest = (url?: string) =>
@@ -57,14 +65,19 @@ const describeFieldErrors = (payload: any): string => {
   return entries.length ? `（${entries.join('；')}）` : ''
 }
 
-const refreshSession = (): Promise<LoginResponse> => {
-  if (refreshPromise) return refreshPromise
+const isCurrentSession = (generation?: number) => useAuthStore().sessionGeneration === generation
+const isRequestCurrent = (config?: { isRequestCurrent?: () => boolean }) => !config?.isRequestCurrent || config.isRequestCurrent()
+
+const refreshSession = (generation: number): Promise<LoginResponse> => {
+  if (!isCurrentSession(generation)) return Promise.reject(new Error('登录会话已变更'))
+  if (refreshPending && refreshPending.generation === generation) return refreshPending.promise
 
   const refreshToken = getRefreshToken()
   if (!refreshToken) return Promise.reject(new Error('没有可用的刷新令牌'))
 
   // Use the base axios client here so a failed refresh never re-enters this interceptor.
-  refreshPromise = axios
+  const pending = { generation, promise: null as unknown as Promise<LoginResponse> }
+  pending.promise = axios
     .post<Result<LoginResponse>>(`${apiBaseUrl}/v1/auth/refresh`, { refreshToken }, {
       timeout: 10000,
       headers: { 'Content-Type': 'application/json' }
@@ -75,38 +88,44 @@ const refreshSession = (): Promise<LoginResponse> => {
         throw new Error(result.message || '刷新登录状态失败')
       }
       const authStore = useAuthStore()
-      authStore.applySession(result.data)
+      if (!isCurrentSession(generation)) throw new Error('登录会话已变更')
+      authStore.applySession(result.data, generation)
       return result.data
     })
     .finally(() => {
-      refreshPromise = null
+      if (refreshPending === pending) refreshPending = null
     })
 
-  return refreshPromise
+  refreshPending = pending
+  return pending.promise
 }
 
-const endExpiredSession = () => {
+const endExpiredSession = (generation?: number) => {
+  if (!isCurrentSession(generation)) return
   const authStore = useAuthStore()
   authStore.clearSession()
-  if (sessionEnding) return
-
-  sessionEnding = true
+  const endedGeneration = authStore.sessionGeneration
   ElMessage.closeAll()
   ElMessage.warning('登录状态已过期，请重新登录')
 
   if (window.location.pathname !== '/login') {
     const redirect = `${window.location.pathname}${window.location.search}${window.location.hash}`
     const loginUrl = `/login?reason=session-expired&redirect=${encodeURIComponent(redirect)}`
-    window.setTimeout(() => window.location.replace(loginUrl), 80)
-  } else {
-    window.setTimeout(() => { sessionEnding = false }, 1000)
+    window.setTimeout(() => {
+      if (isCurrentSession(endedGeneration) && !authStore.token) window.location.replace(loginUrl)
+    }, 80)
   }
 }
 
 service.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  (config: RetryableRequestConfig) => {
+    if (!isRequestCurrent(config)) return Promise.reject(new axios.CanceledError('请求范围已变更', config))
     const authStore = useAuthStore()
-    if (authStore.token) {
+    if (config._retry && !isCurrentSession(config._sessionGeneration)) {
+      return Promise.reject(new Error('登录会话已变更'))
+    }
+    config._sessionGeneration = authStore.sessionGeneration
+    if (!config.skipAuthRefresh && authStore.token) {
       config.headers.Authorization = `Bearer ${authStore.token}`
     }
     return config
@@ -116,6 +135,11 @@ service.interceptors.request.use(
 
 service.interceptors.response.use(
   (response: AxiosResponse<Result>): any => {
+    const config = response.config as RetryableRequestConfig
+    if (!isRequestCurrent(config)) return Promise.reject(new axios.CanceledError('请求范围已变更', config))
+    if (!config.skipAuthRefresh && !isAuthenticationRequest(config.url) && !isCurrentSession(config._sessionGeneration)) {
+      return Promise.reject(new Error('登录会话已变更'))
+    }
     if (response.config.responseType === 'blob') {
       const blob = response.data as unknown
       if (blob instanceof Blob) {
@@ -126,6 +150,7 @@ service.interceptors.response.use(
         const isBusinessError = contentType.includes('json')
         if (!isBusinessError) return blob
         return blob.text().then(text => {
+          if (!isRequestCurrent(config) || (!config.skipAuthRefresh && !isCurrentSession(config._sessionGeneration))) return Promise.reject(new axios.CanceledError('请求范围已变更', config))
           const failure = parseBlobPayload(text)
           if (failure) {
             ElMessage.error(failure.message)
@@ -146,22 +171,31 @@ service.interceptors.response.use(
     const status = error.response?.status
     const data = error.response?.data
     const originalRequest = error.config as RetryableRequestConfig | undefined
+    if (axios.isCancel(error) || !isRequestCurrent(originalRequest)) return Promise.reject(error)
     const blobFailure = data instanceof Blob ? parseBlobPayload(await data.text()) : null
+    if (!isRequestCurrent(originalRequest)) return Promise.reject(error)
     const errorMessage = blobFailure?.message || data?.message
     const fieldDetail = status === 400 && !blobFailure ? describeFieldErrors(data) : ''
+
+    if (originalRequest?.skipAuthRefresh) return Promise.reject(error)
+    if (originalRequest && !isAuthenticationRequest(originalRequest.url) && !isCurrentSession(originalRequest._sessionGeneration)) {
+      return Promise.reject(error)
+    }
 
     if (status === 401 && originalRequest && !isAuthenticationRequest(originalRequest.url)) {
       if (!originalRequest._retry && getRefreshToken()) {
         originalRequest._retry = true
         try {
-          const session = await refreshSession()
+          const session = await refreshSession(originalRequest._sessionGeneration!)
+          if (!isCurrentSession(originalRequest._sessionGeneration) || !isRequestCurrent(originalRequest)) return Promise.reject(error)
           originalRequest.headers.Authorization = `Bearer ${session.accessToken}`
           return service(originalRequest)
         } catch (refreshError) {
-          console.warn('自动刷新登录状态失败', refreshError)
+          if (!isCurrentSession(originalRequest._sessionGeneration) || !isRequestCurrent(originalRequest)) return Promise.reject(error)
+          console.warn('自动刷新登录状态失败')
         }
       }
-      endExpiredSession()
+      endExpiredSession(originalRequest._sessionGeneration)
       return Promise.reject(error)
     }
 

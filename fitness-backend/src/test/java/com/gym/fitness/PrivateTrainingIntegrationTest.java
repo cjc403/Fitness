@@ -70,7 +70,7 @@ class PrivateTrainingIntegrationTest {
         var c=new CourseEntity();c.setName("测试私教");c.setType("PRIVATE");c.setVenueId(venueId);c.setMaxCapacity(1);c.setFee(new BigDecimal("999"));c.setStatus("ACTIVE");courses.save(c);
         var s=new CourseScheduleEntity();s.setCourseId(c.getId());s.setCoachId(coachId);s.setCoachName("测试教练");s.setVenueId(venueId);s.setScheduledStartTime(LocalDateTime.now().plusDays(1));s.setScheduledEndTime(LocalDateTime.now().plusDays(1).plusHours(1));s.setMaxStudents(1);s.setEnrolledCount(0);s.setStatus("SCHEDULED");schedules.save(s);scheduleId=s.getId();
     }
-    String token(String name) {var u=users.findByUsername(name).orElseThrow();return "Bearer "+jwt.generateToken(u.getId(),u.getUsername(),u.getRole().getCode(),u.getVenueId());}
+    String token(String name) {var u=users.findByUsername(name).orElseThrow();return "Bearer "+jwt.generateToken(u.getId(),u.getUsername(),u.getRole().getCode(),u.getVenueId(),u.currentSessionVersion());}
     JsonNode postJson(String path,String who,Object body) throws Exception {return json.readTree(mvc.perform(post(path).header("Authorization",token(who)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body))).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));}
     JsonNode success(String path,String who,Object body) throws Exception {var r=postJson(path,who,body);assertEquals(0,r.path("code").asInt(),r.toString());return r.path("data");}
     long reserve() throws Exception {return success("/api/v1/admin/bookings","admin",Map.of("scheduleId",scheduleId,"memberId",memberId,"entitlementId",entitlementId)).path("id").asLong();}
@@ -125,7 +125,7 @@ class PrivateTrainingIntegrationTest {
     }
     @Test void renewalBetweenReservationAndSignatureUsesCurrentWeightedPrice() throws Exception {
         long id=reserve();
-        success("/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalUses",2,"amount",400,"paymentMethod","CASH"));
+        success("/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalUses",2,"amount",400,"paymentMethod","CASH"));
         past();success("/api/v1/admin/bookings/"+id+"/check-in","coach",Map.of());success("/api/v1/training/lessons/"+id+"/submit","coach",Map.of());
         assertEquals(150,success("/api/v1/training/lessons/"+id+"/confirm","member",Map.of()).path("unitPrice").asInt());
         assertEquals(3,entitlements.findById(entitlementId).orElseThrow().getRemainingUses());
@@ -186,14 +186,14 @@ class PrivateTrainingIntegrationTest {
         assertEquals(hash,users.findByUsername("admin").orElseThrow().getPasswordHash());
     }
     @Test void correctionAfterRenewalRestoresTheOriginalValueIntoTheCreditPool() throws Exception {
-        long first=complete();success("/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalUses",2,"amount",400,"paymentMethod","CASH"));
+        long first=complete();success("/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalUses",2,"amount",400,"paymentMethod","CASH"));
         success("/api/v1/training/lessons/"+first+"/reverse","manager",Map.of("reason","续费后核对纠错"));
         assertEquals(new BigDecimal("150.00"),entitlements.findById(entitlementId).orElseThrow().getLessonUnitPrice());
         var s=schedules.findById(scheduleId).orElseThrow();s.setId(null);s.setEnrolledCount(0);s.setScheduledStartTime(LocalDateTime.now().plusDays(2));s.setScheduledEndTime(LocalDateTime.now().plusDays(2).plusHours(1));schedules.save(s);scheduleId=s.getId();
         long next=complete();assertEquals(new BigDecimal("150.00"),lessons.findByBookingId(next).orElseThrow().getUnitPrice());
     }
     @Test void paidPrivateRenewalCannotAddZeroLessons() throws Exception {
-        long before=orders.count();assertNotEquals(0,postJson("/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("additionalUses",0,"amount",400,"paymentMethod","CASH")).path("code").asInt());assertEquals(before,orders.count());assertEquals(2,entitlements.findById(entitlementId).orElseThrow().getRemainingUses());
+        long before=orders.count();assertNotEquals(0,postJson("/api/v1/commercial/entitlements/"+entitlementId+"/renew","admin",Map.of("idempotencyKey",UUID.randomUUID().toString(),"additionalUses",0,"amount",400,"paymentMethod","CASH")).path("code").asInt());assertEquals(before,orders.count());assertEquals(2,entitlements.findById(entitlementId).orElseThrow().getRemainingUses());
     }
     @Test void explicitlyDisabledMigrationSeedIsBootstrappedOnce() {
         var before=users.findByUsername("admin").orElseThrow();String hash=before.getPasswordHash();

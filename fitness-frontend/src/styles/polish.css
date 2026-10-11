@@ -1,146 +1,137 @@
-/* ============================================================
-   工作台外观层（纯样式，零业务逻辑）
-   —— 统一设计变量、组件质感与三态、通用入场动效。
-   —— 所有动效只使用 transform / opacity，并遵循"减少动态效果"设置。
-   ============================================================ */
-
-:root {
-  --wb-brand: #2768ff;
-  --wb-brand-soft: #6aa8ff;
-  --wb-ink: #172033;
-  --wb-ink-2: #5b667a;
-  --wb-ink-3: #9aa3b2;
-  --wb-card: #ffffff;
-  --wb-line: #e8edf5;
-  --wb-radius: 16px;
-  --wb-radius-sm: 10px;
-  --wb-shadow: 0 6px 22px rgba(30, 44, 70, .07);
-  --wb-shadow-hover: 0 14px 32px rgba(30, 44, 70, .12);
-  --wb-gap: 16px;
-  --wb-fast: .18s;
-  --wb-mid: .3s;
-  --wb-ease: cubic-bezier(.22, .61, .36, 1);
+/* FitChain workspace theme. Scoped to the authenticated shell; login keeps its own design.
+   Tokens + passive decoration + existing components: no API, permission, or money changes. */
+.wb-workspace {
+  --wb-brand: #357beb; --wb-brand-soft: #78b8fb; --wb-accent: #4a90df;
+  --wb-ink: #19324f; --wb-ink-2: #526b87; --wb-ink-3: #71849b;
+  --wb-card: #fff; --wb-line: #dce7f4; --wb-radius: 18px; --wb-radius-sm: 11px;
+  --wb-shadow: 0 6px 24px #2c5b8610; --wb-shadow-hover: 0 12px 30px #2c5b861d;
+  --wb-gap: 18px; --wb-fast: .18s; --wb-mid: .3s; --wb-ease: cubic-bezier(.22,.61,.36,1);
+  --el-color-primary: #357beb; --el-color-primary-light-3: #6b9def; --el-color-primary-light-5: #95b8f5;
+  --el-color-primary-light-7: #c1d8fa; --el-color-primary-light-8: #d9e7fc; --el-color-primary-light-9: #edf4ff;
+  --el-color-primary-dark-2: #2464c9; --el-border-radius-base: 10px; --el-border-color: #d8e4f2;
+  --el-text-color-primary: #19324f; --el-text-color-regular: #526b87;
+  color: var(--wb-ink); font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
 }
-
-/* ---------- 卡片质感（沿用项目既有的浅描边 + 柔阴影，只是统一化） ---------- */
-.el-card {
-  border-radius: var(--wb-radius) !important;
-  border: 1px solid var(--wb-line) !important;
-  box-shadow: var(--wb-shadow) !important;
-  transition: transform var(--wb-fast) var(--wb-ease), box-shadow var(--wb-fast) var(--wb-ease);
+.wb-workspace[data-role="COACH"] { --wb-accent: #2ca59e; }
+.wb-workspace[data-role="MEMBER"] { --wb-accent: #8871cc; }
+.wb-workspace[data-role="SALES"] { --wb-accent: #c29450; }
+.wb-workspace .el-card {
+  --el-card-border-color: var(--wb-line); border-radius: var(--wb-radius);
+  box-shadow: var(--wb-shadow); transition: box-shadow var(--wb-fast) var(--wb-ease);
 }
-.el-card:hover { box-shadow: var(--wb-shadow-hover) !important; }
-
-/* ---------- 按钮三态：悬停微升起、按下微缩、键盘聚焦可见 ---------- */
-.el-button { transition: transform var(--wb-fast) var(--wb-ease), box-shadow var(--wb-fast) var(--wb-ease); }
-.el-button:hover { transform: translateY(-1px); }
-.el-button:active { transform: translateY(0) scale(.985); }
-.el-button:focus-visible { outline: 2px solid rgba(39, 104, 255, .45); outline-offset: 2px; }
-
-/* ---------- 输入框聚焦环 ---------- */
-.el-input__wrapper.is-focus { box-shadow: 0 0 0 3px rgba(39, 104, 255, .14) !important; }
-
-/* ---------- 表格：行悬停更明确、表头更清晰 ---------- */
-.el-table__body tr:hover > td.el-table__cell { background: #f2f7ff !important; }
-.el-table th.el-table__cell { background: #fafbfe !important; color: var(--wb-ink-2) !important; font-weight: 600; }
-
-/* ---------- 空状态：统一色调（插画仍用项目自带资源） ---------- */
-.el-empty__description p { color: var(--wb-ink-3); }
-
-/* ---------- 通用入场动效：给容器加 .wb-rise，子元素依次淡入上浮 ---------- */
-@keyframes wb-rise {
-  from { opacity: 0; transform: translate3d(0, 10px, 0); }
-  to   { opacity: 1; transform: none; }
+.wb-workspace .el-card:hover { box-shadow: var(--wb-shadow-hover); }
+.wb-workspace .el-card__header { background: linear-gradient(110deg,#fff,#f7faff); border-bottom-color: #e3ebf6; }
+.wb-workspace :is(h2,h3) { letter-spacing: -.3px; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row) { margin-bottom: 22px; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row) > :is(article,div):not(.el-loading-mask) {
+  position: relative; border-radius: var(--wb-radius); border-color: var(--wb-line);
+  box-shadow: var(--wb-shadow); transition: transform .18s ease, box-shadow .18s ease;
 }
-.wb-rise > * { animation: wb-rise var(--wb-mid) var(--wb-ease) both; }
-.wb-rise > *:nth-child(1) { animation-delay: .02s; }
-.wb-rise > *:nth-child(2) { animation-delay: .08s; }
-.wb-rise > *:nth-child(3) { animation-delay: .14s; }
-.wb-rise > *:nth-child(4) { animation-delay: .20s; }
-.wb-rise > *:nth-child(5) { animation-delay: .26s; }
-.wb-rise > *:nth-child(6) { animation-delay: .32s; }
-
-/* 数字入场：轻微上浮 + 放大落定 */
-@keyframes wb-num {
-  from { opacity: 0; transform: translate3d(0, 6px, 0) scale(.96); }
-  to   { opacity: 1; transform: none; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row) > :is(article,div):not(.el-loading-mask)::after {
+  content: ""; pointer-events: none; position: absolute; right: 13px; top: 13px;
+  width: 17px; height: 17px; border-top: 2px solid #a9c9f0; border-right: 2px solid #a9c9f0; border-radius: 0 8px 0 0;
 }
-.wb-num { display: inline-block; animation: wb-num .5s var(--wb-ease) both; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row) > :is(article,div):not(.el-loading-mask):nth-child(2)::after { border-color: #a2d8cd; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row) > :is(article,div):not(.el-loading-mask):nth-child(3)::after { border-color: #edccae; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row) > :is(article,div):not(.el-loading-mask):nth-child(4)::after { border-color: #d0c1ed; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row) > :is(article,div):not(.el-loading-mask):hover { transform: translateY(-2px); box-shadow: var(--wb-shadow-hover); }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid) > article:not(.warning):not(.alert):not(.alert-card) { background: linear-gradient(125deg,#fff 55%,#f3f8ff); }
+.wb-workspace :is(.metric-grid,.stats-grid) > article:nth-child(2):not(.warning):not(.alert):not(.alert-card) { background: linear-gradient(125deg,#fff 55%,#f1fbf8); }
+.wb-workspace :is(.metric-grid,.stats-grid) > article:nth-child(3):not(.warning):not(.alert):not(.alert-card) { background: linear-gradient(125deg,#fff 55%,#fff8f1); }
+.wb-workspace :is(.metric-grid,.stats-grid) > article:nth-child(4):not(.warning):not(.alert):not(.alert-card) { background: linear-gradient(125deg,#fff 55%,#f7f3ff); }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row) strong { font-variant-numeric: tabular-nums; line-height: 1.25; }
+.wb-workspace :is(.metric-icon,.stats-grid .icon) { box-shadow: inset 0 1px 0 #ffffffb3; border: 1px solid #ffffffad; }
+.wb-workspace :is(.section-head,.section-title,.tab-head) { gap: 12px; flex-wrap: wrap; }
+.wb-workspace :is(.section-head,.section-title) :is(h2,h3) { color: var(--wb-ink); }
+.wb-workspace :is(.section-head,.section-title) :is(h2,h3)::before {
+  content: ""; display: inline-block; vertical-align: middle; width: 4px; height: 17px; border-radius: 3px;
+  margin: -2px 9px 0 0; background: linear-gradient(var(--wb-accent),#bad8f3);
+}
+.wb-workspace .el-button { font-weight: 600; transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease; }
+.wb-workspace .el-button--primary:not(.is-link):not(.is-text):not(.is-disabled) { background: linear-gradient(125deg,#3172dd,#579df5); border-color: #4386eb; box-shadow: 0 5px 12px #367ad822; }
+.wb-workspace .el-button:not(.is-disabled):hover { transform: translateY(-1px); }
+.wb-workspace .el-button:not(.is-disabled):active { transform: translateY(0); }
+.wb-workspace :is(button,a,[role="button"]):focus-visible { outline: 2px solid #528cdb; outline-offset: 3px; }
+.wb-workspace .wb-hero__actions .el-button + .el-button { margin-left: 0; }
+.wb-workspace .el-input__wrapper, .wb-workspace .el-select__wrapper { background: #fbfdff; }
+.wb-workspace .el-input__wrapper.is-focus, .wb-workspace .el-select__wrapper.is-focused { box-shadow: 0 0 0 1px #78a8e5, 0 0 0 3px #357beb12; }
+.wb-workspace :is(.filter-bar,.filters,.search-bar) { gap: 12px; }
+.wb-workspace .el-table { --el-table-header-bg-color: #f3f7fd; --el-table-row-hover-bg-color: #edf5ff; --el-table-border-color: #e5edf7; --el-table-header-text-color: #526b87; border-radius: 10px; }
+.wb-workspace .el-table th.el-table__cell { font-weight: 700; }
+.wb-workspace .el-table .cell { line-height: 1.65; }
+.wb-workspace .el-table td.el-table__cell { padding-top: 12px; padding-bottom: 12px; }
+.wb-workspace .el-pagination { padding: 8px 0 0; flex-wrap: wrap; gap: 8px; }
+.wb-workspace .el-tabs__nav-wrap::after { height: 1px; background: #dce7f4; }
+.wb-workspace .el-tabs__item { font-weight: 600; color: #607693; }
+.wb-workspace .el-tabs__item.is-active { color: #3275d3; }
+.wb-workspace .el-tabs__active-bar { height: 3px; border-radius: 3px; background: linear-gradient(90deg,#357beb,#88b8ed); }
+.wb-workspace :is(.business-tabs,.portal-tabs) > .el-tabs__header { margin-bottom: 22px; background: #ffffffbd; border: 1px solid #deE8f6; padding: 4px 16px 0; border-radius: 14px; }
+.wb-workspace :is(.course-card,.product-card,.schedule-card,.entitlement-card,.channel-card) {
+  border-color: var(--wb-line); border-radius: var(--wb-radius); box-shadow: 0 4px 18px #2c5b860a;
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.wb-workspace :is(.course-card,.product-card,.schedule-card,.entitlement-card,.channel-card):hover { border-color: #b6cee9; box-shadow: var(--wb-shadow-hover); }
+.wb-workspace .quick-grid button { border-color: #dce7f4; background: linear-gradient(120deg,#fff,#f7fbff); border-radius: 16px; box-shadow: 0 3px 12px #2c5b8606; }
+.wb-workspace .quick-grid button:hover { border-color: #a7c8ed; box-shadow: var(--wb-shadow-hover); }
+.wb-workspace .el-empty { position: relative; padding: 30px 0; }
+.wb-workspace .el-empty::before { content: "✧"; position: absolute; top: 20px; right: calc(50% - 76px); color: #aac7e7; font-size: 30px; pointer-events: none; }
+.wb-workspace .el-empty__description p { color: #71849b; }
+.wb-workspace .schedule-list { border: 1px solid #dce7f4; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: var(--wb-shadow); }
+.wb-workspace .schedule-list .el-collapse-item__header { padding-left: 18px; padding-right: 18px; background: linear-gradient(100deg,#fff,#f8fbff); }
+.wb-workspace .schedule-list .el-collapse-item__wrap { padding: 0 18px; }
+.wb-workspace .wb-hero .hero-stats { display: flex; flex-wrap: wrap; gap: 12px 35px; }
+.wb-workspace .wb-hero .hero-stats > div { text-align: left; min-width: 80px; }
+.wb-workspace .wb-hero .hero-stats strong { color: #264d78; font-size: 25px; }
+.wb-workspace .wb-hero .hero-stats small { color: #617b99; }
+.wb-workspace .wb-hero .hero-stats strong, .wb-workspace .wb-hero .hero-stats small { display: block; }
+.wb-workspace .wb-hero .hero-stats small { margin-top: 3px; font-size: 11px; }
+.wb-workspace :is(.el-alert,.overdue-alert,.overdue-bar) { border-radius: 12px; }
+.wb-workspace .el-loading-mask { border-radius: inherit; }
 
-/* ---------- 尊重系统「减少动态效果」 ---------- */
+/* Overlays are teleported to body. This class exists only while the workspace is mounted. */
+body.wb-portal-active :is(.el-dialog,.el-message-box) { border-radius: 18px; box-shadow: 0 20px 65px #17355530; border: 1px solid #dae7f4; }
+body.wb-portal-active .el-dialog__header { padding: 8px 6px 15px; margin-right: 0; border-bottom: 1px solid #e7eef7; }
+body.wb-portal-active .el-dialog__body { padding-top: 20px; }
+body.wb-portal-active :is(.el-dialog,.el-message-box) .el-button--primary { --el-color-primary: #357beb; --el-color-primary-light-3: #6b9def; }
+body.wb-portal-active .el-dialog__footer { padding-top: 18px; }
+body.wb-portal-active .el-empty__description p { color: #71849b; }
+
+/* One-time reveal for small groups only. Monetary values are never counted up. */
+@keyframes wb-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes wb-num { from { opacity: 0; } to { opacity: 1; } }
+.wb-workspace .main > div > .wb-hero { animation: wb-rise .3s var(--wb-ease) both; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row,.quick-grid) > :not(.el-loading-mask) { animation: wb-rise .32s var(--wb-ease) both; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row,.quick-grid) > :not(.el-loading-mask):nth-child(2) { animation-delay: .04s; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row,.quick-grid) > :not(.el-loading-mask):nth-child(3) { animation-delay: .08s; }
+.wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row,.quick-grid) > :not(.el-loading-mask):nth-child(n+4) { animation-delay: .12s; }
+.wb-workspace.wb-motion--reduced *, .wb-workspace.wb-motion--reduced *::before, .wb-workspace.wb-motion--reduced *::after,
+body.wb-portal-active[data-wb-motion="reduced"] :is(.el-dialog,.el-message-box) { animation: none !important; transition: none !important; }
+.wb-workspace.wb-motion--reduced :is(.metric-grid,.stats-grid,.summary-grid,.stats-row,.quick-grid) > :not(.el-loading-mask):hover { transform: none; }
+.wb-workspace.wb-motion--paused *, .wb-workspace.wb-motion--paused *::before, .wb-workspace.wb-motion--paused *::after { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
-  .el-card, .el-button { transition: none; }
-  .el-button:hover, .el-button:active { transform: none; }
-  .wb-rise > *, .wb-num { animation: none; }
+  .wb-workspace *, .wb-workspace *::before, .wb-workspace *::after { animation: none !important; transition: none !important; }
+  .wb-workspace :is(.metric-grid,.stats-grid,.summary-grid,.stats-row,.quick-grid) > :not(.el-loading-mask):hover { transform: none; }
 }
-
-/* ============================================================
-   各角色首页统一的入场与数字动效
-   —— 通过容器类名直接命中（教练/会籍/会员/管理端共用）：
-      .stats-grid / .hero-stats / .entitlement-grid / .quick-grid / .coupon-list
-   —— 只加动画，不覆盖各页自己的排版，因此不会破坏任何布局。
-   ============================================================ */
-@keyframes wb-rise-sm {
-  from { opacity: 0; transform: translate3d(0, 8px, 0); }
-  to   { opacity: 1; transform: none; }
+@media (max-width: 1100px) {
+  .wb-workspace :is(.filter-bar,.filters,.search-bar,.tab-head) { flex-wrap: wrap; }
+  .wb-workspace :is(.filter-bar,.filters,.search-bar) > * { max-width: 100%; }
 }
-.stats-grid > *,
-.hero-stats > *,
-.entitlement-grid > *,
-.quick-grid > *,
-.coupon-list > *,
-.blocker-list > * {
-  animation: wb-rise-sm .32s var(--wb-ease) both;
+@media (max-width: 760px) {
+  .wb-workspace :is(.coach-page,.advisor-page) .stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+  .wb-workspace :is(.stats-grid,.metric-grid,.summary-grid) > article { min-width: 0; padding: 16px 12px; }
+  .wb-workspace :is(.stats-grid,.metric-grid,.summary-grid) strong { overflow-wrap: anywhere; }
+  .wb-workspace :is(.section-head,.tab-head,.risk-actions,.overdue-head,.overdue-title) { align-items: flex-start; flex-wrap: wrap; }
+  .wb-workspace .el-dialog { width: calc(100% - 24px); }
+  body.wb-portal-active :is(.el-dialog,.el-message-box) { max-width: calc(100vw - 24px); }
+  body.wb-portal-active .el-dialog { display: flex; flex-direction: column; max-height: 90dvh; margin-top: 5dvh; }
+  body.wb-portal-active .el-dialog__body { flex: 1; min-height: 0; overflow: auto; }
+  body.wb-portal-active :is(.el-dialog__header,.el-dialog__footer) { flex-shrink: 0; }
+  .wb-workspace .wb-hero__actions :is(.el-date-editor,.el-input,.el-select) { max-width: 100%; }
+  .wb-workspace :is(.filter-bar,.filters,.search-bar) .el-input { flex: 1 1 180px; }
+  .wb-workspace .el-pagination { justify-content: flex-start; }
 }
-.stats-grid > *:nth-child(1), .hero-stats > *:nth-child(1),
-.entitlement-grid > *:nth-child(1), .quick-grid > *:nth-child(1),
-.coupon-list > *:nth-child(1), .blocker-list > *:nth-child(1) { animation-delay: .02s; }
-.stats-grid > *:nth-child(2), .hero-stats > *:nth-child(2),
-.entitlement-grid > *:nth-child(2), .quick-grid > *:nth-child(2),
-.coupon-list > *:nth-child(2), .blocker-list > *:nth-child(2) { animation-delay: .07s; }
-.stats-grid > *:nth-child(3), .hero-stats > *:nth-child(3),
-.entitlement-grid > *:nth-child(3), .quick-grid > *:nth-child(3),
-.coupon-list > *:nth-child(3), .blocker-list > *:nth-child(3) { animation-delay: .12s; }
-.stats-grid > *:nth-child(4), .hero-stats > *:nth-child(4),
-.entitlement-grid > *:nth-child(4), .quick-grid > *:nth-child(4),
-.coupon-list > *:nth-child(4), .blocker-list > *:nth-child(4) { animation-delay: .17s; }
-.stats-grid > *:nth-child(n+5), .hero-stats > *:nth-child(n+5),
-.entitlement-grid > *:nth-child(n+5), .quick-grid > *:nth-child(n+5),
-.coupon-list > *:nth-child(n+5), .blocker-list > *:nth-child(n+5) { animation-delay: .22s; }
-
-/* 数字落定动效（命中各页统计数字的常见标签） */
-.stats-grid strong, .stats-grid b, .stats-grid .num,
-.hero-stats strong, .hero-stats b, .hero-stats .num {
-  display: inline-block;
-  animation: wb-num .5s var(--wb-ease) both;
-}
-
-/* 这些自定义卡片也给一致的悬停反馈（el-card 已单独处理） */
-.stats-grid > *,
-.hero-stats > *,
-.entitlement-grid > *,
-.quick-grid > * {
-  transition: transform var(--wb-fast) var(--wb-ease), box-shadow var(--wb-fast) var(--wb-ease);
-}
-.stats-grid > *:hover,
-.hero-stats > *:hover,
-.entitlement-grid > *:hover,
-.quick-grid > *:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--wb-shadow-hover);
-}
-
-/* 表格与列表的行悬停已全局处理；这里给「可点击行」加一点位移提示 */
-.el-table__body tr { transition: background var(--wb-fast) var(--wb-ease); }
-
-/* 路由切换：内容淡入（不做位移，避免眩晕） */
-@keyframes wb-fade { from { opacity: 0; } to { opacity: 1; } }
-.el-main > * { animation: wb-fade .22s var(--wb-ease) both; }
-
-@media (prefers-reduced-motion: reduce) {
-  .stats-grid > *, .hero-stats > *, .entitlement-grid > *, .quick-grid > *,
-  .coupon-list > *, .blocker-list > *, .el-main > * { animation: none; }
-  .stats-grid strong, .stats-grid b, .hero-stats strong, .hero-stats b { animation: none; }
-  .stats-grid > *:hover, .hero-stats > *:hover,
-  .entitlement-grid > *:hover, .quick-grid > *:hover { transform: none; }
+@media (max-width: 540px) {
+  .wb-workspace :is(.coach-page,.advisor-page) .stats-grid > article { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .wb-workspace :is(.coach-page,.advisor-page) .stats-grid > article > div { min-width: 0; }
+  .wb-workspace .stats-grid .icon { width: 34px; height: 34px; font-size: 17px; }
 }

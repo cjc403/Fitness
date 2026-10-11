@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 
 public interface MemberFollowUpRepository extends JpaRepository<MemberFollowUpEntity, Long> {
+    java.util.Optional<MemberFollowUpEntity> findByMemberIdAndStaffUserIdAndRequestKey(Long memberId, Long staffUserId, String requestKey);
     List<MemberFollowUpEntity> findByMemberIdOrderByIdDesc(Long memberId);
 
     List<MemberFollowUpEntity> findByMemberIdInOrderByIdDesc(Collection<Long> memberIds);

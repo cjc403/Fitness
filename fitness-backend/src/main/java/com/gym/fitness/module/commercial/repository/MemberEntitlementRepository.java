@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface MemberEntitlementRepository extends JpaRepository<MemberEntitlementEntity, Long> {
+    List<MemberEntitlementEntity> findByMemberIdInOrderByIdDesc(java.util.Collection<Long> memberIds);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select e from MemberEntitlementEntity e where e.id=:id")
     java.util.Optional<MemberEntitlementEntity> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);

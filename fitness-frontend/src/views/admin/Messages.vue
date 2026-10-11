@@ -1,9 +1,9 @@
 <template>
   <div class="msg-page">
-    <div class="page-title">
-      <div><span>MESSAGE CHANNELS</span><h1>消息与渠道</h1><p>站内通知之外，短信与邮件通道的发送与投递记录。当前为模拟通道：<strong>只记录投递，不会真的发出去</strong>。</p></div>
-      <el-button @click="load"><el-icon><Refresh/></el-icon> 刷新</el-button>
-    </div>
+    <WorkspaceHero compact>
+      <template #heading><span>MESSAGE CHANNELS</span><h1>消息与渠道</h1><p>站内通知之外，短信与邮件通道的发送与投递记录。当前为模拟通道：<strong>只记录投递，不会真的发出去</strong>。</p></template>
+      <template #actions><el-button @click="load"><el-icon><Refresh/></el-icon> 刷新</el-button></template>
+    </WorkspaceHero>
 
     <div class="channel-grid">
       <article v-for="c in channels" :key="c.code" :class="['channel-card', c.enabled ? '' : 'off']">
@@ -60,6 +60,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'

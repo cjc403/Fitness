@@ -1,0 +1,41 @@
+{
+  "toVersion": 22,
+  "newTableCount": 5,
+  "historicalCountsAndDigestsEqual": true,
+  "historicalTables": 65,
+  "totalTables": 70,
+  "mismatches": [],
+  "port": 55450,
+  "newTables": [
+    {
+      "name": "training_plan",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "training_plan_event",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "training_plan_exercise",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "training_session",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "training_session_exercise",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ],
+  "fromVersion": 21,
+  "newTablesEmpty": true,
+  "passed": true,
+  "database": "training_migration",
+  "migrationV22Sha256": "D18DC10CA9F89D32226AAAB2F727266AA19998E5B88C66278B9EC3CD1C8FFB9D"
+}

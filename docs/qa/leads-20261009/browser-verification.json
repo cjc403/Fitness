@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-09",
+  "url": "http://127.0.0.1:5174/leads",
+  "database": "isolated leads_qa:55439",
+  "desktopViewport": "1440x900",
+  "rolesExercised": ["SUPER_ADMIN", "SALES"],
+  "passed": true,
+  "checks": [
+    "Headquarters menu, cohort overview and complete venue options",
+    "New lead: changing venues preserves entered fields and refreshes advisor ownership",
+    "Search and contact-task filters return the expected fixture records",
+    "Visit follow-up and future contact time appear in the saved detail",
+    "Independent trial appears in detail and blocks conversion while pending",
+    "Before the trial starts, attended/no-show are disabled and cancellation is enabled",
+    "Cancellation restores the factual visited stage and preserves four audit events",
+    "Advisor login shows only the owned local scope and locks venue/owner in creation",
+    "NEW/LINK conversion forms explain actual receipt registration and verified order linkage",
+    "Plain primary buttons have readable text over a light background",
+    "No browser runtime errors during acceptance after the isolated backend was ready"
+  ],
+  "runtimeErrorsDuringAcceptance": 0,
+  "fictitiousLeadCountAfterBrowserAcceptance": 9,
+  "browserFinancialSubmissions": false,
+  "financialBehaviorEvidence": "http-verification.json",
+  "screenshot": "desktop-workbench.jpg",
+  "realLocalBusinessWrites": false,
+  "mobilePolicy": "User requested desktop-only checks unless explicitly asking for mobile. Earlier mobile captures were completed before this instruction and retained as historical evidence; no further mobile checks were performed."
+}

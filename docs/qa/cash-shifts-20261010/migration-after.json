@@ -1,0 +1,327 @@
+[
+  {
+    "table": "access_grant",
+    "count": 48,
+    "digest": "f6cd5a8327620a12cd43fcacc4278d20"
+  },
+  {
+    "table": "access_record",
+    "count": 8,
+    "digest": "0a60febf4d176f18bfacd1a9da4ef2ce"
+  },
+  {
+    "table": "attendance",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "audit_log",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "body_measurement",
+    "count": 3,
+    "digest": "93e6942bbccbdfeb8b444c790217f844"
+  },
+  {
+    "table": "booking",
+    "count": 106,
+    "digest": "798cdf27f4099cad1222b97cc29e6a3d"
+  },
+  {
+    "table": "business_document",
+    "count": 48,
+    "digest": "27625a0a67d8dc9abe5f558ee854bffc"
+  },
+  {
+    "table": "business_rule",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "card_type",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "cash_shift",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "cash_shift_channel",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "cash_shift_event",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "cash_shift_payment",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "coach_commission_rule",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "coach_settlement",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "contract",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "contract_template",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "coupon_template",
+    "count": 1,
+    "digest": "b68dc98fc861fc49dfffb2a40410b16d"
+  },
+  {
+    "table": "course",
+    "count": 11,
+    "digest": "838de14d25371af9e86048fac3f95df5"
+  },
+  {
+    "table": "course_review",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "course_schedule",
+    "count": 30,
+    "digest": "8ad98ee11ee9d357eae62f694afd816c"
+  },
+  {
+    "table": "cross_venue_service",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "deposit",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "direct_message",
+    "count": 5,
+    "digest": "b6de23a90be9b2c3d9beb3477f3dede1"
+  },
+  {
+    "table": "entitlement_funding",
+    "count": 6,
+    "digest": "1bb58e31936db4bbcf0c53cba9c605d9"
+  },
+  {
+    "table": "entitlement_operation",
+    "count": 26,
+    "digest": "c1e1ce90b166bdb93ad1e89e2e04a31f"
+  },
+  {
+    "table": "entitlement_term_period",
+    "count": 4,
+    "digest": "7c4c77580453e977968fdf95147dcb0b"
+  },
+  {
+    "table": "entitlement_value_account",
+    "count": 24,
+    "digest": "7f304f8aee44b012f03da5d84ac7bc12"
+  },
+  {
+    "table": "entitlement_value_event",
+    "count": 19,
+    "digest": "322a85bc2c16a4e2e27addbd3973fb09"
+  },
+  {
+    "table": "lead_event",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "lead_trial",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "leave_request",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "locker",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "locker_rental",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "marketing_content",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "member",
+    "count": 19,
+    "digest": "b7b666605a3561e4a550219231773632"
+  },
+  {
+    "table": "member_blacklist",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "member_card",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "member_coupon",
+    "count": 1,
+    "digest": "fefb7cb4448d66e0aaef729be80b0b2b"
+  },
+  {
+    "table": "member_entitlement",
+    "count": 24,
+    "digest": "49c69eee595d1aae810c61c1087bc205"
+  },
+  {
+    "table": "member_follow_up",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "member_history",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "member_package",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "member_pause",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "member_points",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "member_profile",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "membership_product",
+    "count": 11,
+    "digest": "99a46b9e9a727e4d6e13718e344f4e04"
+  },
+  {
+    "table": "message_delivery",
+    "count": 4,
+    "digest": "605cfa1a7e4b046bfc945ef0e926b348"
+  },
+  {
+    "table": "notification",
+    "count": 4,
+    "digest": "7e098b6b73b37b1424c360bd7bdd99dd"
+  },
+  {
+    "table": "package_type",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "payment_transaction",
+    "count": 24,
+    "digest": "f685807a76907811948ea73b54b59092"
+  },
+  {
+    "table": "permission",
+    "count": 26,
+    "digest": "6473edbc609511201d997c29d4f1ddbe"
+  },
+  {
+    "table": "private_lesson",
+    "count": 1,
+    "digest": "fc806a105c7c0768e480c2a9df498899"
+  },
+  {
+    "table": "product_venue",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "refund_allocation",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "refund_application",
+    "count": 2,
+    "digest": "caca18d39494ebf1d6870d2039f13fae"
+  },
+  {
+    "table": "refund_audit",
+    "count": 4,
+    "digest": "73c9c1231944c825ba172e6da151b5b2"
+  },
+  {
+    "table": "revoked_auth_session",
+    "count": 15,
+    "digest": "a25c54258d02368c9dd77328ee7b44aa"
+  },
+  {
+    "table": "role",
+    "count": 6,
+    "digest": "185b9a3ef48d8b28b4e1473164e37345"
+  },
+  {
+    "table": "role_permission",
+    "count": 74,
+    "digest": "9c73becec15ff95ced25576a121b270b"
+  },
+  {
+    "table": "room",
+    "count": 2,
+    "digest": "4bd08a49a283cb909ce5e9af04f5037b"
+  },
+  {
+    "table": "sales_lead",
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "table": "sales_order",
+    "count": 24,
+    "digest": "b0398d0656c688f97c2c3d2977429a03"
+  },
+  {
+    "table": "sys_user",
+    "count": 10,
+    "digest": "4a7d96be0cde69c2f9b6f9390f1d6126"
+  },
+  {
+    "table": "venue",
+    "count": 2,
+    "digest": "95fd9657e7635a4739fc4dfdf33c28ee"
+  }
+]

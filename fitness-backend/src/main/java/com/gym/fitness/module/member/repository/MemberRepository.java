@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<MemberEntity, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select m from MemberEntity m where m.id=:id")
+    Optional<MemberEntity> findByIdForUpdate(@Param("id") Long id);
     /** 本门店会员（经营分析与报表用）。 */
     List<MemberEntity> findByVenueIdOrderByIdDesc(Long venueId);
 

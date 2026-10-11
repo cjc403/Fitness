@@ -1,0 +1,28 @@
+{
+  "serverDeployed": false,
+  "passed": true,
+  "port": 5433,
+  "newPermissionCount": 3,
+  "businessTablesUnchanged": true,
+  "cashShiftRecords": 0,
+  "acceptanceSessionLoggedOut": true,
+  "database": "fitness_db",
+  "checks": [
+    {
+      "passed": true,
+      "path": "/cash-shifts/workbench?status=ALL&page=1&size=20"
+    },
+    {
+      "passed": true,
+      "path": "/leads/workbench?stage=ALL&filter=ALL&page=1&size=20"
+    },
+    {
+      "passed": true,
+      "path": "/admin/advisor/retention?filter=ALL"
+    }
+  ],
+  "authenticationMetadataChanged": [
+    "revoked_auth_session",
+    "sys_user"
+  ]
+}

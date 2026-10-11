@@ -1,0 +1,30 @@
+{
+  "temporaryPortsStopped": [
+    5175,
+    8189,
+    9200,
+    55449
+  ],
+  "passed": true,
+  "browserTestSessionsLoggedOut": true,
+  "actualServices": [
+    {
+      "LocalPort": 5433,
+      "OwningProcess": 7612
+    },
+    {
+      "LocalPort": 5173,
+      "OwningProcess": 9240
+    },
+    {
+      "LocalPort": 9091,
+      "OwningProcess": 33316
+    },
+    {
+      "LocalPort": 8080,
+      "OwningProcess": 33316
+    }
+  ],
+  "browserTestTabClosed": true,
+  "temporaryDataRetainedPrivately": true
+}

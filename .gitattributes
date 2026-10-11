@@ -14,3 +14,9 @@
 *.vue text eol=lf
 *.css text eol=lf
 *.html text eol=lf
+
+# 已在本地应用的这三个新增迁移使用 CRLF，归档时必须保存原字节。
+# 禁止在 git add / checkout 时归一化；其他迁移继续按现有 LF 约定。
+fitness-backend/src/main/resources/db/migration/V18__revocable_account_sessions.sql -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+fitness-backend/src/main/resources/db/migration/V21__cash_shifts_and_daily_close.sql -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+fitness-backend/src/main/resources/db/migration/V22__training_plans_and_sessions.sql -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

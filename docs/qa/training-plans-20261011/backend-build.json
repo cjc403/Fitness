@@ -1,0 +1,18 @@
+{
+  "pomSha256": "484692E87C5CDB35DBE00830467CC6EB812A76D0965CB708FE7996D88A4054F2",
+  "jarSha256": "6672D9ED0318F2373662BEE6192BAFB047BF3EC606E1C35180DB7126335754AC",
+  "errors": 0,
+  "tests": 243,
+  "skipped": 13,
+  "executedPassed": 230,
+  "exitCode": 0,
+  "passed": true,
+  "sourceFiles": 290,
+  "oldMigrationCount": 21,
+  "failed": 0,
+  "artifact": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-training-build-20261011-122120\\target\\fitness-backend-1.0.0.jar",
+  "oldMigrationsUnchanged": true,
+  "log": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-training-build-20261011-122120\\final-package.log",
+  "command": "mvn -B clean package",
+  "buildRoot": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-training-build-20261011-122120"
+}

@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "assertionCount": 14,
+  "checks": [
+    "coach menu route visible",
+    "training overview shows API-verified fake archived plan and zero effective training",
+    "coach created correct authorized member draft with strength 3x12x8kg and duration15 target",
+    "member draft hidden; zero own plans and no create or audit controls",
+    "draft edit saved version1 and publish froze content; record control enabled",
+    "existing body panel read one fake measure 68.5kg/19.5 percent without writes",
+    "recorded independent35min effort7 strength actual3x10x8; duration skipped reason retained against immutable target",
+    "list effective count1; member sees only own published target/actual and feedback without employee audit/record/archive",
+    "member four-star feedback persisted with content and edit entry; no employee audit exposed",
+    "coach sees member feedback; void retained snapshots, skip reason, feedback and audited reason",
+    "void excluded from effective count; keyword empty result keeps totals truthful",
+    "manager reads own service-venue plan; no create/edit/record/void/member-feedback controls",
+    "manager archived with explicit reason; immutable history/feedback retained and archive action removed",
+    "HQ service-venue B returns zero; A restores two archived plans and zero effective sessions; selector190x32"
+  ],
+  "consoleErrors": 0,
+  "localOnly": true,
+  "fakeDataOnly": true,
+  "mobileChecked": false,
+  "paginationScope": "single-page control state in browser; multi-page behavior in compiled SFC tests",
+  "screenshot": "member-training-desktop.jpg",
+  "screenshotContainsFakeDataOnly": true
+}

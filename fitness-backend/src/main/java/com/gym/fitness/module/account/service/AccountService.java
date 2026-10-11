@@ -85,6 +85,7 @@ public class AccountService {
         if (id.equals(SecurityUtil.getCurrentUserId())) {
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "不能停用自己的账号");
         }
+        if (!request.getStatus().equals(user.getStatus())) user.revokeSessions();
         user.setStatus(request.getStatus());
         return toEmployee(users.save(user));
     }
@@ -106,6 +107,7 @@ public class AccountService {
         String email = trimToNull(request.getEmail());
         if (phone != null && users.existsByPhoneAndIdNot(phone, id)) throw new BusinessException(ErrorCode.PHONE_ALREADY_EXISTS);
         if (email != null && users.existsByEmailIgnoreCaseAndIdNot(email, id)) throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        if (!roleCode.equals(user.getRole().getCode()) || !venueId.equals(user.getVenueId())) user.revokeSessions();
         user.setRealName(request.getRealName().trim());
         user.setPhone(phone); user.setEmail(email); user.setRoleId(role.getId()); user.setRole(role);
         user.setVenueId(venueId); user.setVenue(venue); user.setCoach("COACH".equals(roleCode));
@@ -118,6 +120,7 @@ public class AccountService {
         ensureStrongPassword(request.getNewPassword());
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         user.setMustChangePassword(true);
+        user.revokeSessions();
         return toEmployee(users.save(user));
     }
 
@@ -171,6 +174,7 @@ public class AccountService {
         ensureStrongPassword(request.getNewPassword());
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         user.setMustChangePassword(true);
+        user.revokeSessions();
         return toMemberAccount(member, users.save(user));
     }
 
@@ -178,6 +182,7 @@ public class AccountService {
     public MemberAccountResponse updateMemberAccountStatus(Long memberId, AccountStatusRequest request) {
         MemberEntity member = findAccessibleMember(memberId);
         SysUserEntity user = requireMemberUser(member);
+        if (!request.getStatus().equals(user.getStatus())) user.revokeSessions();
         user.setStatus(request.getStatus());
         return toMemberAccount(member, users.save(user));
     }
@@ -233,7 +238,7 @@ public class AccountService {
     }
 
     private SysUserEntity findManageableEmployee(Long id) {
-        SysUserEntity target = users.findById(id)
+        SysUserEntity target = users.findByIdForUpdate(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         String targetRole = target.getRole().getCode();
         if ("MEMBER".equals(targetRole)) throw new BusinessException(ErrorCode.USER_NOT_FOUND);
@@ -258,7 +263,7 @@ public class AccountService {
         if (member.getUserId() == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "该会员尚未开通登录账号");
         }
-        return users.findById(member.getUserId()).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        return users.findByIdForUpdate(member.getUserId()).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     private void validateNewAccount(String username, String phone, String email) {

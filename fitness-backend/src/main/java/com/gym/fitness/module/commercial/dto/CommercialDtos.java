@@ -43,6 +43,7 @@ public final class CommercialDtos {
 
     @Data
     public static class RenewalRequest {
+        @NotBlank @Size(max = 100) private String idempotencyKey;
         @Min(1) private Integer additionalDays;
         @Min(1) private Integer additionalUses;
         @NotNull @DecimalMin("0.01") private BigDecimal amount;
@@ -84,8 +85,7 @@ public final class CommercialDtos {
 
     /**
      * 会员端会籍商城的商品视图。为了让会员端与员工端看到的是同一套在售商品（含跨门店），
-     * 这里一并返回场馆名，并由服务端判定 purchasable——会员只能购买本人所属门店的商品
-     * （createSale 的"会员与商品必须属于同一场馆"规则），其余门店的商品只做展示。
+     * 这里一并返回场馆名，并由服务端判定 purchasable：本人门店或声明覆盖本人门店的商品可购买。
      */
     public record MemberProductView(Long id, String name, String productType, String description,
                                     Integer validityDays, Integer totalUses, BigDecimal price,

@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "publicVenuesCode": 0,
+  "serverDeployed": false,
+  "installedJarSha256": "A7985D1B329DAF6B1B57E747758B80A207E4D4D87C87EEE801068BC29BB88E31",
+  "backendPid": 33316,
+  "checkedAt": "2026-10-10T16:23:34.3653464+08:00",
+  "exitCode": 0,
+  "health": "UP",
+  "frontendUrl": "http://localhost:5173/login",
+  "frontendStatus": 200,
+  "command": "scripts/start-fitchain.ps1 -NoBrowser"
+}

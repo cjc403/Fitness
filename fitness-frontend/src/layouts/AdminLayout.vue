@@ -1,19 +1,19 @@
 <template>
-  <el-container class="layout-container">
+  <el-container class="layout-container wb-workspace" :class="`wb-motion--${motionState}`" :data-role="userInfo?.role">
     <el-aside class="aside" :width="collapsed ? '76px' : '232px'">
       <div class="brand"><div class="brand-mark">F</div><div v-if="!collapsed"><strong>FitChain</strong><small>连锁健身管理</small></div></div>
       <div v-if="!collapsed" class="menu-label">运营中心</div>
-      <el-menu :default-active="activeMenu" router class="menu" :collapse="collapsed">
-        <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
+      <div class="navigation-scroll"><el-menu :default-active="activeMenu" router class="menu" :collapse="collapsed">
+        <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path" :aria-label="item.label">
           <el-icon><component :is="item.icon" /></el-icon><template #title>{{ item.label }}</template>
         </el-menu-item>
-      </el-menu>
-      <div class="aside-bottom" @click="collapsed=!collapsed"><el-icon><Fold v-if="!collapsed"/><Expand v-else/></el-icon><span v-if="!collapsed">收起导航</span></div>
+      </el-menu></div>
+      <button class="aside-bottom" type="button" :aria-label="collapsed ? '展开导航' : '收起导航'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><el-icon><Fold v-if="!collapsed"/><Expand v-else/></el-icon><span v-if="!collapsed">收起导航</span></button>
     </el-aside>
-    <el-container>
+    <el-container class="workspace-body">
       <el-header class="header">
         <div class="header-left"><div><span>{{ userInfo?.role === 'SUPER_ADMIN' ? '总部视角' : '当前场馆' }}</span><strong>{{ userInfo?.organizationName || 'FitChain 旗舰中心' }}</strong></div><el-tag size="small" type="success" effect="light">营业中</el-tag></div>
-        <div class="header-right"><el-button text circle><el-icon><Bell /></el-icon></el-button>
+        <div class="header-right"><el-tooltip :content="systemReduced ? '系统已开启减少动态效果，工作台优先遵循系统设置' : '切换工作台动效，不影响任何业务操作'" placement="bottom"><button class="motion-toggle" type="button" :aria-label="`工作台动效：${motionPreference==='reduced' || systemReduced ? '减少' : '标准'}`" :aria-pressed="motionPreference==='reduced'" @click="toggleMotion"><el-icon><MagicStick /></el-icon><span>动效：{{ motionPreference==='reduced' || systemReduced ? '减少' : '标准' }}</span></button></el-tooltip><el-button text circle aria-label="通知"><el-icon><Bell /></el-icon></el-button>
         <el-dropdown @command="handleCommand">
           <span class="user-info"><span class="avatar">{{ (userInfo?.realName || '管').slice(0,1) }}</span><span class="user-name">{{ userInfo?.realName || userInfo?.username }}<small>{{ roleName }}</small></span><el-icon><ArrowDown /></el-icon></span>
           <template #dropdown>
@@ -33,14 +33,42 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/modules/auth'
 import { ElMessage } from 'element-plus'
-import { ArrowDown, Bell, ChatDotRound, Collection, CreditCard, Expand, Fold, Odometer, OfficeBuilding, Tickets, TrendCharts, User, UserFilled } from '@element-plus/icons-vue'
+import { ArrowDown, Bell, ChatDotRound, Collection, CreditCard, Expand, Fold, MagicStick, Odometer, OfficeBuilding, Tickets, TrendCharts, User, UserFilled } from '@element-plus/icons-vue'
 import AssistantPanel from '@/components/AssistantPanel.vue'
 import { ROLE_NAMES } from '@/utils/auth'
 import { isMenuVisible } from '@/utils/accessControl.mjs'
+import { normalizeMotionPreference, resolveMotionState } from '@/utils/workspaceAppearance.mjs'
+import { workspaceMotionKey } from '@/utils/workspaceMotion'
+
+const motionStorageKey = 'fitchain.workspace.motion'
+const motionMedia = window.matchMedia('(prefers-reduced-motion: reduce)')
+const systemReduced = ref(motionMedia.matches)
+const pageHidden = ref(document.hidden)
+const motionPreference = ref(normalizeMotionPreference((() => { try { return localStorage.getItem(motionStorageKey) } catch { return null } })()))
+const motionState = computed(() => resolveMotionState(motionPreference.value, systemReduced.value, pageHidden.value))
+provide(workspaceMotionKey, computed(() => motionState.value === 'full'))
+const syncSystemMotion = () => { systemReduced.value = motionMedia.matches }
+const syncVisibility = () => { pageHidden.value = document.hidden }
+const toggleMotion = () => {
+  motionPreference.value = motionPreference.value === 'standard' ? 'reduced' : 'standard'
+  try { localStorage.setItem(motionStorageKey, motionPreference.value) } catch { /* Optional appearance storage; the setting still works for this session. */ }
+}
+watchEffect(() => { document.body.dataset.wbMotion = motionState.value })
+onMounted(() => {
+  document.body.classList.add('wb-portal-active')
+  motionMedia.addEventListener('change', syncSystemMotion)
+  document.addEventListener('visibilitychange', syncVisibility)
+})
+onUnmounted(() => {
+  motionMedia.removeEventListener('change', syncSystemMotion)
+  document.removeEventListener('visibilitychange', syncVisibility)
+  document.body.classList.remove('wb-portal-active')
+  delete document.body.dataset.wbMotion
+})
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -59,6 +87,10 @@ const menuItems = [
   { path: '/chat', label: '站内消息', icon: ChatDotRound, roles: ['SUPER_ADMIN', 'MANAGER', 'COACH', 'RECEPTION', 'SALES'] },
   { path: '/accounts', label: '员工账号', icon: UserFilled, permission: 'ACCOUNT_MANAGE' },
   { path: '/members', label: '会员管理', icon: User, permission: 'MEMBER_READ' },
+  { path: '/retention', label: '续费与回访', icon: ChatDotRound, permission: 'MEMBER_READ', roles: ['SALES', 'MANAGER', 'SUPER_ADMIN'] },
+  { path: '/leads', label: '潜客与体验课', icon: UserFilled, permission: 'LEAD_READ', roles: ['SALES', 'MANAGER', 'SUPER_ADMIN'] },
+  { path: '/cash-shifts', label: '交班与日结', icon: CreditCard, permission: 'CASH_SHIFT_READ', roles: ['RECEPTION', 'MANAGER', 'SUPER_ADMIN'] },
+  { path: '/training-plans', label: '训练计划', icon: UserFilled, permission: 'TRAINING_PLAN_READ', roles: ['COACH', 'MANAGER', 'SUPER_ADMIN'] },
   { path: '/commercial', label: '会籍与商业', icon: CreditCard, permission: 'PRODUCT_READ' },
   { path: '/courses', label: '课程与排课', icon: Collection, permission: 'COURSE_READ' },
   { path: '/schedule-week', label: '周课表', icon: Tickets, permission: 'COURSE_READ' },
@@ -86,49 +118,37 @@ const handleCommand = (command: string) => {
 </script>
 
 <style scoped>
-.layout-container {
-  height: 100vh; background: #f5f7fb;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 72px; background: rgba(255,255,255,.94); border-bottom: 1px solid #e8edf5; padding: 0 30px;
-}
-.header-left{display:flex;align-items:center;gap:12px}.header-left div span,.header-left div strong{display:block}.header-left div span{color:#98a1b1;font-size:11px}.header-left div strong{margin-top:3px;color:#273248;font-size:14px}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-.user-info {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 9px; color:#374258; outline:none;
-}
-.avatar{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#2868ff,#72a1ff);color:#fff;font-weight:800}.user-name{font-size:13px;font-weight:700}.user-name small{display:block;margin-top:2px;color:#9aa3b2;font-size:10px;font-weight:400}.aside{position:relative;background:#111a2e;border-right:none;transition:width .2s;overflow:hidden}.brand{height:82px;display:flex;align-items:center;gap:12px;padding:0 18px;color:#fff}.brand-mark{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#3877ff,#75a4ff);font-size:21px;font-weight:900}.brand strong,.brand small{display:block;white-space:nowrap}.brand strong{font-size:18px;letter-spacing:.3px}.brand small{margin-top:3px;color:#7f8aa2;font-size:10px}.menu-label{padding:15px 23px 8px;color:#64718b;font-size:10px;letter-spacing:1.4px}.menu{border:0;background:transparent}.menu :deep(.el-menu-item){height:49px;margin:5px 11px;border-radius:11px;color:#929db2}.menu :deep(.el-menu-item:hover){background:#192641;color:#fff}.menu :deep(.el-menu-item.is-active){background:linear-gradient(90deg,#2768ff,#3b78f7);color:#fff;box-shadow:0 8px 20px rgba(39,104,255,.25)}.aside-bottom{position:absolute;left:14px;right:14px;bottom:16px;display:flex;align-items:center;gap:12px;padding:12px;color:#77839a;font-size:12px;cursor:pointer}.header-right{gap:8px}.main{background:#f5f7fb;padding:28px 32px;overflow:auto}@media(max-width:720px){.aside{width:76px!important}.brand>div:last-child,.menu-label,.aside-bottom span,.menu :deep(.el-menu-item span){display:none}.main{padding:20px 16px}.header{padding:0 16px}.user-name{display:none}}
-
-/* ===== 侧边栏动漫风点缀（与进入界面同一套冰蓝语言；纯装饰，不影响功能）===== */
-/* 选中项：品牌蓝渐变 + 左侧发光竖条 */
-:deep(.el-menu-item.is-active){
-  background:linear-gradient(90deg,rgba(64,132,224,.32),rgba(64,132,224,.06)) !important;
-  box-shadow:inset 3px 0 0 #6aa8ff, 0 0 18px rgba(90,150,255,.22);
-}
-:deep(.el-menu-item.is-active)::after{
-  content:"";position:absolute;left:0;top:18%;bottom:18%;width:3px;border-radius:0 3px 3px 0;
-  background:linear-gradient(180deg,#8fc2ff,#3f80e0);
-  box-shadow:0 0 10px rgba(120,180,255,.75);
-}
-:deep(.el-menu-item){position:relative}
-/* 底部区域：极淡网点纹（只在留白处） */
-.aside-bottom{position:relative;overflow:hidden}
-.aside-bottom::before{
-  content:"";position:absolute;inset:-20px;pointer-events:none;
-  background-image:radial-gradient(rgba(190,222,255,.6) 1px,transparent 1.5px);
-  background-size:6px 6px;opacity:.12;
-}
-.aside-bottom>*{position:relative}
+.layout-container { height: 100dvh; min-height: 0; background: #eff5fc; }
+.workspace-body { min-width: 0; min-height: 0; }
+.aside { position: relative; display: flex; flex-direction: column; flex: none; min-height: 0; border-right: 1px solid #283c57; background: radial-gradient(ellipse at 20% 5%,#244f78 0%,transparent 45%),linear-gradient(165deg,#152b46,#101b31 65%); transition: width .2s; overflow: hidden; }
+.aside::before { content: ''; position: absolute; right: -55px; bottom: 20px; width: 200px; height: 200px; border: 1px solid #80bbfa21; border-radius: 50%; box-shadow: 0 0 0 22px #70b0f408,0 0 0 45px #70b0f406; pointer-events: none; }
+.brand { position: relative; flex: none; min-height: 94px; display: flex; align-items: center; gap: 12px; padding: 0 20px; color: #f4faff; }
+.brand-mark { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid #a6d2ff80; border-radius: 14px 6px 14px 6px; background: linear-gradient(135deg,#4b8de6,#80baff); box-shadow: 0 0 24px #559be629; font-size: 24px; font-weight: 800; }
+.brand strong,.brand small { display: block; white-space: nowrap; }
+.brand strong { font-size: 19px; letter-spacing: .4px; }.brand small { margin-top: 5px; font-size: 10px; color: #9ab1ce; letter-spacing: 1px; }
+.menu-label { flex: none; padding: 10px 24px 12px; color: #9cb7d4; font-size: 10px; letter-spacing: 2px; }
+.navigation-scroll { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #46617c transparent; }
+.menu { border: 0; background: transparent; }
+.menu :deep(.el-menu-item) { position: relative; height: 48px; margin: 5px 12px; border: 1px solid transparent; border-radius: 11px; color: #a7bad2; font-size: 13px; transition: background .18s,color .18s; }
+.menu :deep(.el-menu-item:hover) { background: #37618f30; color: #f2f8ff; }
+.menu :deep(.el-menu-item.is-active) { color: #fff; background: linear-gradient(90deg,#376baf80,#487cac21); border-color: #89bafa33; box-shadow: inset 3px 0 0 #95c8ff,0 4px 16px #0a142327; }
+.menu :deep(.el-menu-item.is-active::after) { content: '✧'; position: absolute; right: 12px; color: #afd7ff; font-size: 17px; pointer-events: none; }
+.menu.el-menu--collapse { width: 76px; }
+.menu.el-menu--collapse :deep(.el-menu-item) { width: 52px; padding: 0 !important; }
+.menu.el-menu--collapse :deep(.el-menu-tooltip__trigger) { padding: 0 !important; display: flex; align-items: center; justify-content: center; }
+.menu.el-menu--collapse :deep(.el-menu-item::after) { display: none; }
+.aside-bottom { position: relative; flex: none; display: flex; align-items: center; justify-content: flex-start; gap: 10px; margin: 14px 12px; padding: 13px 16px; border: 1px solid #8abaf526; border-radius: 10px; background: #2139577a; color: #afc5dd; font: inherit; font-size: 11px; cursor: pointer; }
+.aside-bottom:hover { color: #fff; background: #30547a7a; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; height: 70px; padding: 0 30px; border-bottom: 1px solid #dce7f4; background: linear-gradient(90deg,#ffffffed,#f5faffed); }
+.header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.header-left div span,.header-left div strong { display: block; }.header-left div span { font-size: 10px; color: #6e8bab; letter-spacing: 1px; }.header-left div strong { margin-top: 4px; font-size: 14px; color: #234565; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.motion-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 10px; border: 1px solid #d6e4f5; border-radius: 20px; background: #f4f9ff; color: #4e729a; font: inherit; font-size: 11px; cursor: pointer; }
+.motion-toggle:hover { background: #e6f1ff; }.motion-toggle[aria-pressed="true"] { background: #edf1f7; color: #61758d; }
+.user-info { cursor: pointer; display: flex; align-items: center; gap: 10px; color: #365574; }
+.avatar { display: grid; place-items: center; width: 37px; height: 37px; border: 2px solid #fff; border-radius: 12px; background: linear-gradient(130deg,#387ce7,#90bffb); box-shadow: 0 0 0 1px #cfe0f4; color: #fff; font-weight: 800; }
+.user-name { font-size: 13px; font-weight: 700; }.user-name small { display: block; margin-top: 4px; color: #7890aa; font-size: 10px; font-weight: 400; }
+.main { position: relative; min-width: 0; min-height: 0; padding: 26px 30px 36px; overflow: auto; background: radial-gradient(ellipse at 100% 0,#d7e9ff6b,transparent 42%),radial-gradient(ellipse at 0 100%,#e6e2ff40,transparent 45%),#eff5fc; }
+@media (max-width: 1100px) { .main { padding: 22px; }.header { padding: 0 22px; }.header-right { gap: 8px; } }
+@media (max-width: 720px) { .aside { width: 76px !important; }.brand { padding: 0 17px; min-height: 78px; }.brand>div:not(.brand-mark),.menu-label,.aside-bottom span,.menu :deep(.el-menu-item span) { display: none; }.aside-bottom { justify-content: center; padding: 13px; }.main { padding: 16px 12px 25px; }.header { padding: 0 12px; height: 64px; }.user-name { display: none; }.header-right { gap: 4px; }.header-left .el-tag { display: none; }.motion-toggle { padding: 7px; }.motion-toggle span { display: none; }.header-left div strong { font-size: 12px; }.header-left div span { font-size: 9px; } }
 </style>

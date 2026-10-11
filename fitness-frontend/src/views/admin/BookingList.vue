@@ -1,6 +1,9 @@
 <template>
   <div class="page-shell">
-    <div class="page-title"><div><span class="eyebrow">OPERATIONS</span><h1>预约与签到</h1><p>{{ canWriteBooking ? '集中管理会员约课、取消与到店签到' : '查看本场馆预约并完成到店签到' }}</p></div><el-button v-if="canWriteBooking" type="primary" size="large" @click="openCreate"><el-icon><Plus /></el-icon> 新增预约</el-button></div>
+    <WorkspaceHero compact>
+      <template #heading><span class="eyebrow">OPERATIONS</span><h1>预约与签到</h1><p>{{ canWriteBooking ? '集中管理会员约课、取消与到店签到' : '查看本场馆预约并完成到店签到' }}</p></template>
+      <template #actions><el-button v-if="canWriteBooking" type="primary" size="large" @click="openCreate"><el-icon><Plus /></el-icon> 新增预约</el-button></template>
+    </WorkspaceHero>
     <div class="stats-row"><div><span>待上课</span><strong>{{ counts.BOOKED }}</strong></div><div><span>候补中</span><strong>{{ counts.WAITLISTED }}</strong></div><div><span>已签到</span><strong>{{ counts.ATTENDED }}</strong></div><div><span>请假/爽约</span><strong>{{ counts.LEAVE+counts.NO_SHOW }}</strong></div><div><span>总记录</span><strong>{{ bookings.length }}</strong></div></div>
     <el-alert v-if="overdue.length" type="warning" :closable="false" class="overdue-bar">
       <template #title><div class="overdue-head"><span>有 <strong>{{ overdue.length }}</strong> 条预约已结束但未核销 —— 这些记录会一直挡住会员申请退款</span><el-button v-if="canCheckIn" type="warning" size="small" :loading="overdueLoading" @click="doResolveOverdue">一键核销</el-button></div></template>
@@ -20,6 +23,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { computed,onMounted,reactive,ref,watch } from 'vue';import { ElMessage,ElMessageBox,type FormInstance,type FormRules } from 'element-plus';import { Plus,Search } from '@element-plus/icons-vue';import { cancelBooking,checkIn,createBooking,listBookings,markNoShow,listOverdueBookings,resolveOverdueBookings,type Booking,type OverdueBooking } from '@/api/modules/booking';import { listMembers,type Member } from '@/api/modules/member';import { listSchedules,type Schedule } from '@/api/modules/course'
 import { hasPermission } from '@/utils/auth'
 import { listEntitlements,type Entitlement } from '@/api/modules/commercial'

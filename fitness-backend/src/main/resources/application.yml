@@ -106,3 +106,8 @@ fitness:
       from: no-reply@fitchain.local
     cleanup-cron: "0 30 3 * * *"
     reminder-cron: "0 0 9 * * *"
+
+# Local development and the production reverse proxy use loopback by default.
+# Explicit SERVER_ADDRESS can enable a different deployment topology.
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}

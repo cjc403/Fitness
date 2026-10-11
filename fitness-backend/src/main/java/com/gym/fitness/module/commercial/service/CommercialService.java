@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,6 +26,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CommercialService {
     private final MembershipProductRepository products;
+    private final com.fasterxml.jackson.databind.ObjectMapper json;
+    private final com.gym.fitness.module.auth.repository.SysUserRepository users;
     private final com.gym.fitness.module.commercial.repository.ProductVenueRepository productVenues;
     private final SalesOrderRepository orders;
     private final MemberEntitlementRepository entitlements;
@@ -56,8 +57,7 @@ public class CommercialService {
 
     /**
      * 会员端会籍商城的商品列表：**与员工端同一套在售商品**（含其他门店），
-     * 但由服务端标记 purchasable——会员只能购买本人所属门店的商品，
-     * 因为 createSale 要求"会员与商品必须属于同一场馆"。其他门店的商品只展示、不可下单。
+     * 但由服务端标记 purchasable——会员可购买所属门店商品及声明覆盖本人门店的跨店商品。
      */
     @Transactional(readOnly = true)
     public List<MemberProductView> listMemberShopProducts() {
@@ -159,7 +159,11 @@ public class CommercialService {
 
     @Transactional
     public OrderResponse createSale(SaleRequest request) {
+        lockOperator();
         MemberEntity member = accessibleMember(request.getMemberId());
+        member = values.lockMemberServices(member.getId());
+        if (SecurityUtil.hasRole("MEMBER") && !Objects.equals(member.getUserId(), SecurityUtil.getCurrentUserId()))
+            throw new BusinessException(ErrorCode.NOT_FOUND);
         venueLock.acquire(member.getVenueId());
         // 幂等：同一操作者用同一个键重试只会落一单（连点、超时重发都不会多开一张卡）。
         // 放在场馆锁之后，保证并发下也只有一个请求能看到"不存在已有订单"。
@@ -173,7 +177,9 @@ public class CommercialService {
             return enrichOrders(List.of(replay.get())).get(0);
         }
         values.assertBookableMember(member.getId());
-        MembershipProductEntity product = accessibleProduct(request.getProductId());
+        MembershipProductEntity product = SecurityUtil.hasRole("MEMBER")
+                ? products.findById(request.getProductId()).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND))
+                : accessibleProduct(request.getProductId());
         // 跨店通用：商品可以声明"适用门店"，会员所属门店在其中之一即可购买；
         // 未声明适用门店时维持原规则（仅限商品所属门店）。
         boolean sameVenue = member.getVenueId().equals(product.getVenueId());
@@ -198,10 +204,10 @@ public class CommercialService {
             }
         } else {
             // 用券时实收金额一律由服务端按分计算，不接受前端传值
-            Long computed = couponService.evaluateUsable(couponId, member.getId(), member.getVenueId(), priceCents);
+            Long computed = couponService.evaluateUsable(couponId, member.getId(), product.getVenueId(), priceCents);
             if (computed == null) {
                 throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "优惠券不可用："
-                        + couponService.unusableReason(couponId, member.getId(), member.getVenueId(), priceCents));
+                        + couponService.unusableReason(couponId, member.getId(), product.getVenueId(), priceCents));
             }
             discountCents = computed;
             paid = com.gym.fitness.module.finance.service.Money.yuan(priceCents - discountCents);
@@ -228,16 +234,34 @@ public class CommercialService {
 
     /** 幂等指纹：同一键配不同内容要能识别出来，避免"用旧键改了内容"被静默复用。 */
     private String saleFingerprint(SaleRequest request) {
-        String raw = request.getMemberId() + "|" + request.getProductId() + "|"
-                + (request.getPaidAmount() == null ? "" : request.getPaidAmount().toPlainString()) + "|"
-                + request.getPaymentMethod().trim().toUpperCase(Locale.ROOT) + "|"
-                + (request.getRemark() == null ? "" : request.getRemark().trim());
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(raw.getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+        return requestFingerprint("SALE",request.getMemberId(),request.getProductId(),canonicalAmount(request.getPaidAmount()),
+                request.getPaymentMethod().trim().toUpperCase(Locale.ROOT),request.getRemark(),request.getMemberCouponId());
+    }
+
+    private void lockOperator() {
+        // NO KEY UPDATE still serializes this operator's requests while allowing advisor/host
+        // foreign-key KEY SHARE checks. FOR UPDATE here can deadlock a trial holding venue.
+        if (entityManager.getEntityManagerFactory().unwrap(org.hibernate.engine.spi.SessionFactoryImplementor.class)
+                .getJdbcServices().getDialect() instanceof org.hibernate.dialect.PostgreSQLDialect) {
+            if (entityManager.createNativeQuery("SELECT id FROM sys_user WHERE id=:id FOR NO KEY UPDATE")
+                    .setParameter("id", SecurityUtil.getCurrentUserId()).getResultList().isEmpty())
+                throw new BusinessException(ErrorCode.UNAUTHORIZED);
+            return;
         }
+        users.findByIdForUpdate(SecurityUtil.getCurrentUserId()).orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+    }
+
+    private String renewalFingerprint(Long id, RenewalRequest request) {
+        return requestFingerprint("RENEW",id,request.getAdditionalDays(),request.getAdditionalUses(),canonicalAmount(request.getAmount()),
+                request.getPaymentMethod().trim().toUpperCase(Locale.ROOT),request.getNote());
+    }
+
+    private String canonicalAmount(BigDecimal amount) {return amount==null?null:amount.stripTrailingZeros().toPlainString();}
+
+    /** Ordered JSON fields keep field boundaries unambiguous even when free text contains separators. */
+    private String requestFingerprint(Object... fields) {
+        try {return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes(fields)));}
+        catch (Exception e) {throw new IllegalStateException(e);}
     }
 
     @Transactional
@@ -288,7 +312,15 @@ public class CommercialService {
 
     @Transactional
     public EntitlementResponse renew(Long id, RenewalRequest request) {
+        lockOperator();
         MemberEntitlementEntity item = accessibleEntitlement(id);
+        String fingerprint = renewalFingerprint(id, request);
+        var replay = orders.findByOperatorIdAndIdempotencyKey(SecurityUtil.getCurrentUserId(), request.getIdempotencyKey());
+        if (replay.isPresent()) {
+            if (!fingerprint.equals(replay.get().getRequestFingerprint()))
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "该幂等键已用于不同的续费内容，请重新提交");
+            return enrichEntitlements(List.of(item)).get(0);
+        }
         if ("FROZEN".equals(item.getStatus())) throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "请先解冻再续费");
         if (List.of("REFUNDED", "TRANSFERRED").contains(item.getStatus())) {
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "该权益不能续费");
@@ -302,6 +334,10 @@ public class CommercialService {
                 ? com.gym.fitness.module.finance.service.EntitlementValueService.today() : item.getValidUntil().plusDays(1);
         SalesOrderEntity order = paidOrder("RENEW", member, product, request.getAmount(),
                 request.getPaymentMethod(), request.getNote());
+        order.setVenueId(item.getVenueId());
+        order.setIdempotencyKey(request.getIdempotencyKey());
+        order.setRequestFingerprint(fingerprint);
+        orders.saveAndFlush(order);
         String before = item.getStatus();
         item.setValidUntil(termStart.plusDays(addedDays - 1L));
         if (item.getRemainingUses() != null) {
@@ -465,8 +501,10 @@ public class CommercialService {
             return toAccess(accessRecords.save(record), member, null);
         }
         LocalDate today = LocalDate.now();
+        final Long servingVenue = scanVenue;
         MemberEntitlementEntity available = entitlements.findByMemberIdAndStatusOrderByValidUntilAsc(member.getId(), "ACTIVE")
-                .stream().filter(item -> !today.isBefore(item.getValidFrom()) && !today.isAfter(item.getValidUntil()))
+                .stream().filter(item -> crossVenue.usableAt(item.getVenueScope(), item.getVenueId(), servingVenue))
+                .filter(item -> !today.isBefore(item.getValidFrom()) && !today.isAfter(item.getValidUntil()))
                 .filter(item -> {
                     MembershipProductEntity product = products.findById(item.getProductId()).orElse(null);
                     return product != null && Boolean.TRUE.equals(product.getAccessAllowed())
@@ -481,7 +519,7 @@ public class CommercialService {
         entityManager.refresh(available);
         values.assertMutable(available);
         values.refreshTime(available);
-        if(!"ACTIVE".equals(available.getStatus())||!Objects.equals(available.getMemberId(),member.getId())||today.isBefore(available.getValidFrom())||today.isAfter(available.getValidUntil())||(available.getRemainingUses()!=null&&available.getRemainingUses()<1)){
+        if(!crossVenue.usableAt(available.getVenueScope(),available.getVenueId(),scanVenue)||!Boolean.TRUE.equals(products.findById(available.getProductId()).orElseThrow().getAccessAllowed())||!"ACTIVE".equals(available.getStatus())||!Objects.equals(available.getMemberId(),member.getId())||today.isBefore(available.getValidFrom())||today.isAfter(available.getValidUntil())||(available.getRemainingUses()!=null&&available.getRemainingUses()<1)){
             record.setResult("DENIED");record.setReason("入场权益已变化，请重新核验");return toAccess(accessRecords.save(record),member,null);
         }
         record.setEntitlementId(available.getId());
@@ -565,7 +603,7 @@ public class CommercialService {
         order.setOrderType(type);
         order.setMemberId(member.getId());
         order.setProductId(product.getId());
-        order.setVenueId(member.getVenueId());
+        order.setVenueId(product.getVenueId());
         order.setOriginalAmount(product.getPrice());
         order.setPaidAmount(paid);
         order.setRefundedAmount(BigDecimal.ZERO);

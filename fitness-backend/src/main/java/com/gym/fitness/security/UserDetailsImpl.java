@@ -26,6 +26,8 @@ public class UserDetailsImpl implements UserDetails {
     private String organizationName;
     private List<String> permissions;
     private boolean mustChangePassword;
+    private long sessionVersion;
+    private String sessionId;
     private boolean enabled = true;
     private boolean accountNonExpired = true;
     private boolean accountNonLocked = true;

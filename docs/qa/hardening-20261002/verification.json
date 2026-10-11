@@ -1,0 +1,252 @@
+{
+  "verifiedAt": "2026-10-02T10:27:22.378596+00:00",
+  "scope": "Local source and isolated databases only; original running user processes and online unchanged",
+  "backendH2": {
+    "tests": 150,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": [
+      {
+        "name": "com.gym.fitness.AuthenticationSecurityIntegrationTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.ChatPrivacyIntegrationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.CommercialBoundaryIntegrationTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.FinanceMoneyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.FinanceReportIntegrationTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.FitnessApplicationIntegrationTest",
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.PrivateTrainingIntegrationTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.RefundFinanceIntegrationTest",
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "backendPostgreSQL16": {
+    "tests": 150,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": [
+      {
+        "name": "com.gym.fitness.AuthenticationSecurityIntegrationTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.ChatPrivacyIntegrationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.CommercialBoundaryIntegrationTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.FinanceMoneyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.FinanceReportIntegrationTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.FitnessApplicationIntegrationTest",
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.PrivateTrainingIntegrationTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.gym.fitness.RefundFinanceIntegrationTest",
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "backendSourceMatchesBuiltCopy": true,
+  "postgresProductionSourceMatchesH2": true,
+  "frontend": {
+    "tests": 50,
+    "failed": 0,
+    "typecheckAndBuild": "passed",
+    "node": "22.22.2",
+    "vite": "7.3.6"
+  },
+  "deploymentUnitTests": 16,
+  "mavenOSV": {
+    "mapped": 105,
+    "unmapped": 0,
+    "affectedPackages": 0,
+    "advisories": 0,
+    "source": "https://api.osv.dev"
+  },
+  "npmAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "productionProfileIsolated": {
+    "migrationVersions": "V1-V18",
+    "hibernateDDL": "validate",
+    "health": "UP",
+    "apiDocsHTTP": 404,
+    "boundAddress": "127.0.0.1"
+  },
+  "migration": {
+    "file": "V18__revocable_account_sessions.sql",
+    "realDatabasesApplied": false,
+    "sha256": "d59699d5f8f16a11c29f4650b1e70bf774920e7757c16bd878d8af97c8033925"
+  },
+  "jarSHA256": "f52f2988330cf2edbdcf4c45279f8323875e43dd005dc2bda59a4e4dba1fbe28",
+  "frontendPackageLockSHA256": "c2f046d78570fe7b40ce9a26e5a9fd8fc9d5030ada20846e6fbc602b59e2d2ce",
+  "logsDirectory": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-hardening-7c15679f8bb6453db655a4d42f9393c6",
+  "frontendSourceSHA256": {
+    "src/App.vue": "f1ed9feac064becfb201b803a704b9c1fdcafd72502fa7ba363369438ef5ed34",
+    "src/env.d.ts": "424faf9241dd699dda995b367ed36665732da1e6ec1f33b2fd40394488ecac92",
+    "src/main.ts": "a48ea6937eaea17c6926b870842f2f112254a9cb7138a68cc10a046e4f00059e",
+    "src/components/AssistantPanel.vue": "62248cbe77f2f6b9c4aafb15c94b0784f8197fc8edc2358144869a48dbf57308",
+    "src/components/BodyMeasurePanel.vue": "b0b5f5cb27cdf019c071703ab4ecd42b9e8ed34b259f90aecea3a6358cfc5d22",
+    "src/components/ChatPanel.vue": "b3eb8c84efed381f3cd23f13cb14b6a666e3c82ac6f08a15660f0472d096fc32",
+    "src/components/FinanceReportPanel.vue": "7ae53fb0c81c3cf60c5057225a05cd35b4d739711f354448b0d5db727e41a837",
+    "src/components/RefundPanel.vue": "d05e19a0bbbd87da92cb3b3dd33ef4b07098052766f9f308894149b193603e62",
+    "src/components/TrainingPanel.vue": "aefe2b9b2a7079bec037a296b44dd05dcba09a511fe17d44d3a5ae111b80aba6",
+    "src/components/WorkspaceHero.vue": "90db2f6698dd391d50a538d6e6668cf000059e49c9d801aca326c51be4838bf7",
+    "src/layouts/AdminLayout.vue": "00a8a99055ceabcbb70df5ccdabff3736df569b120f386de026453119ac9179f",
+    "src/router/index.ts": "8657f26bef613abad7b7d4333ffd8b3a5fbaddc2912bd24b0883bef72fd537a4",
+    "src/styles/polish.css": "bcda5654478f0bc43693ea94cd5cd46171ae0ba528e028b4898a8fff1cad2ab1",
+    "src/utils/accessControl.d.mts": "f2eef11487540b90179ebda11fcd60f9944e5feec8931527ef298be7bc75d2bf",
+    "src/utils/accessControl.d.ts": "f2eef11487540b90179ebda11fcd60f9944e5feec8931527ef298be7bc75d2bf",
+    "src/utils/accessControl.mjs": "e271fc611af614c558ae222314eaac49b8e85ec2562e145dee197442f0318e86",
+    "src/utils/auth.ts": "81ab86ab68fe7cb9b6e70ab187bff833ac47484cfb3a453af68889b8dd6c2a0b",
+    "src/utils/financeUi.d.mts": "3fc3f96d250c992b3964a7a96ad9fec2ec084c2a8d9ac88ded41c54a85e84fab",
+    "src/utils/financeUi.d.ts": "a44cc72c259346df32d59e8c982556c5ce4ae9c8883f3ccedc09c0d969ce3a09",
+    "src/utils/financeUi.mjs": "9fe40ddccb849a7f53d7a61459bc922b702517e4cb3710a62934deac4e1404c4",
+    "src/utils/request.ts": "3c0bb4c396c8d756bf368ae5050bba218c650ce0698a5a54ccdf7c8d8af8ade5",
+    "src/utils/storage.ts": "65ae0e388852bfe06ce38aea3b0479a870707208ddea057f6088c880d2d29ec8",
+    "src/utils/workspaceAppearance.d.mts": "74366fd47f9a44f73ff2b843a78b5b51009338792cd6a85932f83924ee22c520",
+    "src/utils/workspaceAppearance.mjs": "0dc02345d9752fe42684861d3cf0e216dcca174d417111759290359a1936901d",
+    "src/utils/workspaceMotion.ts": "8ed0d040456630677ff7d42d44b9b396a2fb493cbe459e0c029d4a968bdb5587",
+    "src/views/AccessDenied.vue": "b8f06676381dc8729d1e24a25f5bf7851271e8e40f5d5e2042d7b87ebb60f71c",
+    "src/views/ChangePassword.vue": "067050272bd95eff7bc3111cc23056cd24d2f90fa97c59cee38c61e069f90052",
+    "src/views/Login.vue": "931f759ba558fbc08d77358457eb789edb39fc3ff0ad49772bb327d412dc56e1",
+    "src/views/Register.vue": "04663cf9c9f75b1cc2d2aa4537ebacab93d2fb59aaa8b4469da3898a5abe0e81",
+    "src/views/admin/Analytics.vue": "43fdc43bc4bda015d8a040b1a06c26b74abcc345a76af12fa5f2171ae1b5609f",
+    "src/views/admin/BookingList.vue": "6910db9ecc3752bfdcce187e5e106700e551675af83446100f8e540de538dcec",
+    "src/views/admin/Chat.vue": "f16264738b49cb63eefabeea16484395c0c3feeffed65586052b7789606d3b58",
+    "src/views/admin/CommercialCenter.vue": "3a26b0e9a38776c2b500a79e8faf8111de39d51050a9e57b0b834081285f3a6f",
+    "src/views/admin/CourseManagement.vue": "3df6ad36c67069b25e2f4d0a9cc4d8a7b151e0438297dba40c37528bd8acd349",
+    "src/views/admin/Dashboard.vue": "b8dea95dacc09904f73628822102bb8620715bdb318251557aa51764875dc8b4",
+    "src/views/admin/EmployeeAccounts.vue": "9528c59036e3dbd6bf98c7d4a09cd58201ea49dd9674431ad94b9c1b3f7f328a",
+    "src/views/admin/MemberList.vue": "fd1e09527b96b47960abf36ce64bb27e4ee3d0e7a508e3c1881fa3384cd95242",
+    "src/views/admin/Messages.vue": "8e81586c96e1eb664c84c1465b04fa780b8798eccc116637b79a6d7d49ff2c14",
+    "src/views/admin/ScheduleWeek.vue": "a31a5fc46c9af5d4326a029966429740b7effa001e0c46a7754993b8d8ff0ed3",
+    "src/views/admin/VenueList.vue": "a802ee4a7df6ec77c6fc02e9627fd9a7d649301b9326876c9022c34cda33a723",
+    "src/views/advisor/AdvisorWorkbench.vue": "4dea31dcc40e80bff68d715d1799f014cd35908240d84a3ade625a4ec33e09bd",
+    "src/views/coach/CoachWorkbench.vue": "65a7b8cbad0730109afbce3a4016e8d26de03605b59419daf093a443c3f4eccf",
+    "src/views/member/MemberHome.vue": "dbf750c9ca1fd586d15dfebce7dd8685109d04372d8dcffbcc975ada9a9dd313",
+    "src/store/modules/auth.ts": "f000883daebb17aadf75de6154782aa1d377a70d9f3fe332bd8c71434b76cb0f",
+    "src/api/modules/account.ts": "ec4d3c852adbac7e962453c0abf6c0f3fe8edf615e4bfe7a9143121ef63a5a7c",
+    "src/api/modules/advisor.ts": "d056c8166737ae4ad743ba5fc5780a583875659fdeb141bd4f69bc0b9a9de999",
+    "src/api/modules/analytics.ts": "d7b6033d3af0ff9bf055fffea0f82d571777fa1acc675acbb24a84153311b1c8",
+    "src/api/modules/assistant.ts": "45f817fc418f1bb83a15408ad48057a0c536044712b4ec8575b5cc40b8874bef",
+    "src/api/modules/auth.ts": "846f95f5e6b64b5b91a9c729e5be769bf3dfe6990e360e028ab57d1dd1875ce4",
+    "src/api/modules/bodyMeasurement.ts": "3d1db7945fa6eff210a5ecb5edef10f8b878e0f00628ab8d5e85096509b5592f",
+    "src/api/modules/booking.ts": "2b5805a6423cd61e99bd062eb0feb8a68a40f6f93dd0be306f07b45d28eac20e",
+    "src/api/modules/chat.ts": "604b74b7e8544054ce102ad2180a8c06a9d538b5c04dad6233c3a0b5585c97da",
+    "src/api/modules/coach.ts": "8b76278f0c7598f01c21e674bcc48d6bab46eca0b375651e5169830482c500d4",
+    "src/api/modules/commercial.ts": "32ad9b38f5af465b935eedf7c1e43c9f42f65599b1699168c3708bdb3544f70a",
+    "src/api/modules/coupon.ts": "46711622a58e75b3c320a40eb5330369dd586089a2cf238669aae795dd435faf",
+    "src/api/modules/course.ts": "fe0eeec0788bffa3e32000cf1637b7bac3417ac87cb3c265147e5602586f11fa",
+    "src/api/modules/finance.ts": "819eab1f9adb8d55ba459f132cc00fc989ec06355c3aa147589dac159ca55520",
+    "src/api/modules/member.ts": "36fcde7dd44146b2c54e84117acdfe8a2f0375386cdd851a7ec8972d70e00d60",
+    "src/api/modules/memberPortal.ts": "b69b096bd925394f5370e9014836d7c6688266d2a308376b3dc207f64098c6fd",
+    "src/api/modules/messages.ts": "95325d55eedde2ad35d703fe14d8732989ff2d93ee6cf1becefe2f306992944c",
+    "src/api/modules/notification.ts": "f6c97d6396e300dd29e7d667bf87d86c47a45eea4eac47175ff424337f28e52a",
+    "src/api/modules/report.ts": "07e2e310a94006f4f30bd87ad2a2de934f9c08cad59ddb9eb8a80e8ef36857d4",
+    "src/api/modules/review.ts": "3308b7776914de4be756c12f1a756d7ac3c016d6bb2c1bb9303ef2cbe8d86aaa",
+    "src/api/modules/room.ts": "40baa2a639b9910ec23596366d3a9514e068fa5e9c7a191b877169a272eb385f",
+    "src/api/modules/training.ts": "1d9a9bd56a670bd89def115cd5b25c12c64f2b2cb00c366346b3de8027b54fba",
+    "src/api/modules/venue.ts": "23f4b00940d02ba433e3688435f30b0cf50409dddf5ba40e1cb18aacce35b661"
+  },
+  "frontendBuildLog": "frontend-final-build.log",
+  "browser": {
+    "target": "isolated localhost production build",
+    "rolesTestedInBrowser": [
+      "SUPER_ADMIN"
+    ],
+    "otherRoles": "covered by API/behavior regression tests",
+    "errors": 0,
+    "warnings": 0,
+    "persistentLogoutRecords": 2
+  },
+  "temporaryServersStopped": true
+}

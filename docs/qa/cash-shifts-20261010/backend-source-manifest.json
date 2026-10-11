@@ -1,0 +1,1082 @@
+[
+  {
+    "path": "src/main/java/com/gym/fitness/common/constant/ErrorCode.java",
+    "sha256": "FC1E25BB2122531FFDDE01BDDDDC874C2454E7F9D136C74F89360EFEB0883ACE"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/common/exception/BusinessException.java",
+    "sha256": "8683461981DF8A889CEFAC03A41FD11A662D2ABF7F3B4DA05FA2D7A143EFDC0A"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/common/exception/GlobalExceptionHandler.java",
+    "sha256": "E2B98752433D12CC591175EEDC166C31350952C518CC68B295275B2B2A35109B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/common/export/XlsxBuilder.java",
+    "sha256": "454903446E690B0AF322C0E782AEBDCF3286183992DBBCFB42F57DE700AEB039"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/common/response/PageResult.java",
+    "sha256": "71A52B58D5F94778EC8405325AA2ABB24AFDCA3DCDCE930171910BD4738064F5"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/common/response/Result.java",
+    "sha256": "BC41243B9A6BD10BD346D84C8242BB04DBCCCA1DEF870997CE410170C123379E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/common/util/SecurityUtil.java",
+    "sha256": "28E53E501DF72EEDF772E043EE9A8DE7B212CB5C7F951805B8CAB00A11C86C32"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/common/util/VenueMutationLock.java",
+    "sha256": "0048CA045F6BF40B52B4C7728EDA33B59E78E8718C29C3BC6F2BBB7300B705EB"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/AiProperties.java",
+    "sha256": "56DF1D4E0194FF846824B4205BC9347D39493209C6A1DB2C0AA1048AC71F4129"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/BusinessMetricsConfig.java",
+    "sha256": "E82998C17C6B516D6F8603AB5FDFF01F56B4F29F7D552342F5EEB08B31B010FC"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/CommercialSampleDataInitializer.java",
+    "sha256": "BADB8A439DE9F197A1156BDE1456AF921C0151D0B9FD915576B7CD0E5374D86F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/DemoDataInitializer.java",
+    "sha256": "42D00279CEC731F358A425B253550076E8CD59B1692019B44605754CDA8E4A26"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/OpenApiConfig.java",
+    "sha256": "6AFDE23141271F07EE1C8EE2E35AB5B2B14CF4C6F4ECB5B2BBAB825F43D28CC6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/OperationsSchedulingConfig.java",
+    "sha256": "1078F17763A348F8B830C76BDCCCBAE801E6ACF29281591502248D81A82BD4D8"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/ProductionAdminInitializer.java",
+    "sha256": "DEFE9511EE9BAB77FB1334AC3FB148F75E71E429AEA138C588450163018BCFD5"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/ProductionSampleDataInitializer.java",
+    "sha256": "1C4C83C31C8A6DCF687989B9F7716267423AA377A7A39663C71041AA88585BCB"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/SecurityConfig.java",
+    "sha256": "2B219B05C1EE1E574C1BC0E9B847E3A52AB4434360A24BEC8706A156A316A4D8"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/config/WebMvcConfig.java",
+    "sha256": "BF5482C664E664CA2726566165918AB82732B8EC8E10E804B3116AA0E3EAF2A0"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/FitnessApplication.java",
+    "sha256": "9751B68117D365901C9CCC4EAAFF66543889D17EFF2F0779612C326DE0D536DC"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/controller/AccountController.java",
+    "sha256": "177D60ADCCFA01D3F0C59ACF25654AB44DCAF97166D8B5ECCC91A7D72D0183A6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/dto/AccountStatusRequest.java",
+    "sha256": "33B8D621D8DCAFDC73B41F3347A6BBD00803D2BE3AF7F728884925CD19D8984C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/dto/EmployeeAccountRequest.java",
+    "sha256": "D643A5902CDB31A974489707D5861C482D998AFB3A0B8F09B62E8687440789F0"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/dto/EmployeeAccountResponse.java",
+    "sha256": "141FCC3A2C736F81328F99A6EF8D7E21A7CB1C9725400C1E1C463247E0AAD6F8"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/dto/EmployeeAccountUpdateRequest.java",
+    "sha256": "74CC4720EDB7E0B87AB36BF9A2F32BDF835F7BE02136FB2FADB7C1D8E47D557E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/dto/MemberAccountRequest.java",
+    "sha256": "D95F30223A6940F04F968E4B423A1061A69321DCA69847A2AC25BE7C51D3CD8F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/dto/MemberAccountResponse.java",
+    "sha256": "A6D29195D0F164972262E0D4EDC6ECDD01A01CC066C38A98A7D7963043F676A7"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/dto/MemberRegistrationRequest.java",
+    "sha256": "EEC7E69F8D13C694D644A25E4D64DEC559BCFD140429BAF3D9D5BA2F358705C4"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/dto/PasswordResetRequest.java",
+    "sha256": "B3C956514AD98F3B8689552892DA90570A0BFD05132FE2B9C4AA05A50822FAAA"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/account/service/AccountService.java",
+    "sha256": "493738900FCF4A949E068EAF9289B7250252B35732C4DB3600E4C751108D29F6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/analytics/controller/AnalyticsController.java",
+    "sha256": "723DEA100ECE6EE32D3B839F4581260D103B7442F1A976018D5A36D58EF0B2C1"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/analytics/dto/AnalyticsDtos.java",
+    "sha256": "5B5F981291BF4485756CF01E79C612B1679C0274E502B087A241551A6691960B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/analytics/service/AnalyticsService.java",
+    "sha256": "45D81BC7BFFE31E833D6846D505DDE1701AE8D2FB8C015F3733E773A1F01A4E6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/analytics/service/RiskScoring.java",
+    "sha256": "C13B6BF873EB45FA0835951E2849ABF7AAEF2310AA1E07AAED8AD549C9FAE7D0"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/assistant/controller/AssistantController.java",
+    "sha256": "6F5E379BF68F0EBD385D6F89FC02DC53B4CC710BB7145FA743C3BD0C14304C5B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/assistant/dto/AssistantReply.java",
+    "sha256": "488ADD3641830103C93E3A4F2723B2815D5C867C7AA86DAA859305A3E682BEA7"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/assistant/dto/ChatRequest.java",
+    "sha256": "07EF2EA0D6C2296EAB0BC4953A2ECA4B6B754D37344363D3F840648D3F46A932"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/assistant/service/AiRateLimiter.java",
+    "sha256": "B7E3C3CC14F91F0E8B2DCCCC210072555897A9B0531D996FE4E481D6F313F83F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/assistant/service/AssistantService.java",
+    "sha256": "85C994D6BA737A7C227D37B559C6D6E11A486A9BF1144496584CB3537AF5A53C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/assistant/service/DeepSeekClient.java",
+    "sha256": "D172CEA43EBC527F94A990F74D8F5B827FD64577A229389389C0C7728B46FD27"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/controller/AuthController.java",
+    "sha256": "F96A0F781DA7C649529B6BA2FF9A5F1A647423D073ED20CB39042A07002B5879"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/dto/ChangePasswordRequest.java",
+    "sha256": "E5D079076CBFAD969304D435D4DEB844E4AB7949271C5DAC6392FD50EA3BA839"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/dto/LoginRequest.java",
+    "sha256": "C99470D7EEE7E0CAF74A93A2B948467B1791430FAFB6D776CB2BC6CF6AB31C7C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/dto/LoginResponse.java",
+    "sha256": "9C3A9E1EC4DE27EC2B3C15E414B5FFD66EE4F58B129DCC9881107BA24C16E6B2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/dto/LogoutRequest.java",
+    "sha256": "140243E9515C2E5E2855CA50967FE91D00E83A417247F1856C03CE9B087693F1"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/dto/RefreshTokenRequest.java",
+    "sha256": "465B6270447570469CE14D3ED2326AB80DE7C0C199364ECBA671D1101A06E6E2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/entity/RevokedAuthSessionEntity.java",
+    "sha256": "0BBFC58A35343660DA82A5791A7C9542CEE30A9C4A211C036D26D72587A3571E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/entity/SysUserEntity.java",
+    "sha256": "C9EF42DB708CFF453FFA88AB241BF13090B1B77C66EBAEB9CE4395F0A703DEED"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/repository/RevokedAuthSessionRepository.java",
+    "sha256": "309BA2B4647B752334C18782120D27AA8E7AB61313FE75C2F57E1FDD2939E9D6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/repository/SysUserRepository.java",
+    "sha256": "91742D21115A8D2C007296283C60A62A5FAD7DEEC4107D9515AF87AD4CC03861"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/service/AuthService.java",
+    "sha256": "D86752651321D339C85789B84C4099975B66366D1808406D336152A57BE4BD16"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/auth/service/impl/AuthServiceImpl.java",
+    "sha256": "B56BF7CB9F5D2F685FED43D8312F0781D1D10326AA9CD246EFB72D8C3FD1BF99"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/booking/controller/BookingController.java",
+    "sha256": "A0C4F9832DAEB722798686A9B52EB9C9DCDA93CB78616D3381F7F24AB566BE4B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/booking/dto/BookingRequest.java",
+    "sha256": "1DC3318BFA49A1EF7BEA48D1ABF7BACB83572DB2EAB8A1AEEB691B645F9B2031"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/booking/dto/BookingResponse.java",
+    "sha256": "FD99F87E7AA47880B0AAD96A634C464B0E662AF00A87566E4F049030AE28E34D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/booking/entity/BookingEntity.java",
+    "sha256": "5BA572E2890E0B27E619F07FB3CA32154728D782A48CEE10DE30DDF619DEE31F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/booking/repository/BookingRepository.java",
+    "sha256": "A1671C0A70FC3C9794E480DB7FD0A515E23EF80F2C21BCC8DCF972BA770B9C64"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/booking/service/BookingOverdueService.java",
+    "sha256": "9AA174852A0E5912372A9EA63FB51B223D75E3803236373D24F801A5D1C6349B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/booking/service/BookingService.java",
+    "sha256": "F841151690C41D0B1D56CFD032275F5D87CE3FEA2A26EB7C4CA70C9EA5400F2C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/booking/service/OverdueBookingStartupCheck.java",
+    "sha256": "42175F577BEDC1FE0F00051EA895D8063A0F0EC7D37633F8D5E5BA18837DD7F0"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/controller/CashShiftController.java",
+    "sha256": "DF0FAC5944F6C9D0378ADE18A4C67AB0D84FFDFA5C3FD8EB4AFA6824BE0E4C00"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/dto/CashShiftDtos.java",
+    "sha256": "E54532A67130FA27C44C55DFA0046555F965017697080E5A6E5B9F52E834DED9"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/entity/CashShiftChannelEntity.java",
+    "sha256": "247F399650D0E53FA74E1A52933D9867CA3EAD5CCF1A04DB7868364733FF2B01"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/entity/CashShiftEntity.java",
+    "sha256": "FD2A520C4D385DB3EF9CA18C41FE9A9C06BEBBC0894EE5B8A2880267ACE67B16"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/entity/CashShiftEventEntity.java",
+    "sha256": "ED05A8D9CF63636E3FC7969BDCAF231C77E6C5D7FAEC132E6D47A75CC8688738"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/entity/CashShiftPaymentEntity.java",
+    "sha256": "2124746667D8B8761A76AA5943D0CF8E63C0569607C1734BBEECB499538B860B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/repository/CashShiftChannelRepository.java",
+    "sha256": "EDC91EE519EBCEAB1C7337C8EA6F6998E04CD3E3C900E917F373692AF8E95B77"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/repository/CashShiftEventRepository.java",
+    "sha256": "BBCDB6C3811E0CA440EC2033A4267D2ACACC0BF056068BC295CA367879B9A0CA"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/repository/CashShiftPaymentRepository.java",
+    "sha256": "6813529FD07D1603E6FC481DD0EC3D5FF81E28BC930B3B0825763BFFE26FCD8D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/repository/CashShiftRepository.java",
+    "sha256": "76CC66B2A5B0C7EE9D78DFB87F94F8E1B8620763DEE4BD59803394FD397AE5B2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/service/CashShiftLedger.java",
+    "sha256": "C9FFDB3E53B42CDCC69112F5A8422E85E4FF4BA0D53CF3BAA4B49F49ABFDE573"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/service/CashShiftScope.java",
+    "sha256": "9A3248080F4B868B3606FA117E547085E447F029DC1FAF4E47A20EA95652708E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/cashshift/service/CashShiftService.java",
+    "sha256": "D695157681AB5CA36755B8AE511006CC18650819CFC1E7283C56C80CF288EB36"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/chat/controller/ChatController.java",
+    "sha256": "0F2E850B665BC48D9A3BB771E24CB30BC272519609BA1D5FFCBE812DB8975A2B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/chat/dto/ChatDtos.java",
+    "sha256": "69970C30D719A9680FAF43320B03D7BA3928B92CC54956CB7AD944EBD03E7C70"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/chat/entity/DirectMessageEntity.java",
+    "sha256": "BAC843ACAC5CA7547EBF103E35B07EA6C067AD3B98B9F84565E65EC7B6B81B6C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/chat/repository/DirectMessageRepository.java",
+    "sha256": "0FD284ED693504865CC9537A9C94825C1E0103FA88042E6BF57BAE0E0E48A1CE"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/chat/service/ChatService.java",
+    "sha256": "A1220324BDBA584A95718DF51208FA6EEE0F587B4871FAD4230DB2D795C1DDAC"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/controller/CommercialController.java",
+    "sha256": "38FD3D66E5CA498C6754CBE18FC6F5E34C85703BD227D786317BA024F8D2C230"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/controller/CrossVenueController.java",
+    "sha256": "2DB9BB87EF07FBE6A230A3C153FD44CABB324D0C8B990E578FAEE0AEBBCA392A"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/controller/CrossVenueSettlementController.java",
+    "sha256": "8DD368DBA26070D272C252DEDE92F8A90E35E56E09749039772A341024B7FC18"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/dto/CommercialDtos.java",
+    "sha256": "4785654F63F18D9EB173FF0D38742AF0B66C30AB0F102A028F06631894F09465"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/AccessGrantEntity.java",
+    "sha256": "8B109F73FF6C9CB65007A6A35A0771559B683C15F9459E45710FD88E0C00EA6D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/AccessRecordEntity.java",
+    "sha256": "06ECE4B684DF8336F7B2C0CC495F88335DF898286976D99BDCB071284F725D94"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/BusinessDocumentEntity.java",
+    "sha256": "C26E4226E727C3239EE470D19A39EA6DBFF4045ED48B17EC9B466BA3420A7A28"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/CrossVenueServiceEntity.java",
+    "sha256": "D7917C0C614EA94471C90E7E0B6033B04D55D9C4E64062282B7761C1AC6435E9"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/EntitlementOperationEntity.java",
+    "sha256": "FAFA949AF27EB2BEBEF88937779C15CF3FC032FD0198227E55D838B2E97C3E13"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/MemberEntitlementEntity.java",
+    "sha256": "F3693FF19256A17DFED99B14B2C4B256A8F70F11C4A1C71108372A30774063DE"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/MembershipProductEntity.java",
+    "sha256": "1C14F9683620094707C89213C133595F2FEDE68A36F3D278FBB5871A206FCB70"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/PaymentTransactionEntity.java",
+    "sha256": "E240C6D6373B7DA669BCD83794B6C659089D51AD6D10CFFF09562AB4AFF479FC"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/ProductVenueEntity.java",
+    "sha256": "4FC56488AD2BA56043A0ED5093A8718356C6C9B24BF2B2685833D698834B81DC"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/entity/SalesOrderEntity.java",
+    "sha256": "CDB6800FB23D88640CABAD4E3E5FF14A2452601A531E6064DBDB429411BFB346"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/AccessGrantRepository.java",
+    "sha256": "882FE907254FB648BEE4B3BA26EBC72C4C80DAA1208A424954BBD2F89984A2C0"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/AccessRecordRepository.java",
+    "sha256": "A1E60F520F2C8F02465BF6380D2E83F1AB3D33238B006F2B50B8867C9B4FED94"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/BusinessDocumentRepository.java",
+    "sha256": "EF91E3E5BBF2C0C615CDDBCF06C13D494EBDB7B128DBF4E0DE0779B0D1024FF6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/CrossVenueServiceRepository.java",
+    "sha256": "874677FBC4563AE1555BE7599A396FE825BB9EB8A74C6C8DBBED12BC56242DE2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/EntitlementOperationRepository.java",
+    "sha256": "533B5D2886402C5F113303DF630CECF6B3B5DB0A2E6BA2564B2DE7FF55798632"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/MemberEntitlementRepository.java",
+    "sha256": "91E4F546F9A91B68C529A7C5E0002CD00DE8F9C9FCA0A96E0840F9EBB07DDE18"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/MembershipProductRepository.java",
+    "sha256": "283820B165DA58C9734C229B4FCE0820472502B312DDD7E4AA01D53A19CAAF63"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/PaymentTransactionRepository.java",
+    "sha256": "35C0B808900BB064A20830C56A3847CFF419B42197F206D30D21C91FFE646C3B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/ProductVenueRepository.java",
+    "sha256": "720CB4BFBD365BF9E35A687FF6F7D9DA519C800CD90ED76E631366B88357CE01"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/repository/SalesOrderRepository.java",
+    "sha256": "D49A408ECAEF6635AA0569B18665D8B3CA7DA24DCA64F30BC2B94042B0897622"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/service/CommercialService.java",
+    "sha256": "285BD977284FDB65216A6B10D016FF064CC70690819C90944C9D82E760D86910"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/service/CrossVenueService.java",
+    "sha256": "B50A19CB8231137AB46829CFC8AE9FBB5F3675881F5D01E20D94F8CD92CA5DEB"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/commercial/service/CrossVenueSettlementService.java",
+    "sha256": "F6CCE12A48DC377F9170A3F0C39EC12794E051F37F7A17975A845001993C5217"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/coupon/controller/CouponController.java",
+    "sha256": "16B6DD4B8C552A7C85E3192538EDBC4CC3FD0ED34F001183431274FC0D6A098F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/coupon/dto/CouponDtos.java",
+    "sha256": "69C5E8791CCA5915DAE3FE2360B2D933A68E2C95B1548B8ED91F0FEFA99C322D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/coupon/entity/CouponTemplateEntity.java",
+    "sha256": "CA3AE48DBEABB1962F9C980BFD92D7BEA74750689AF4ECBB6C77BF8EB54E7C2E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/coupon/entity/MemberCouponEntity.java",
+    "sha256": "EB130F6CEB31433FA722E5273AFE5CA4A53B0E882337F1121F1EC1EF0A279FE6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/coupon/repository/CouponTemplateRepository.java",
+    "sha256": "CC56260867FBD2C1B3BD955C47C9F35EFDF3D6BB5D636DE563D19C42BCE5F3EF"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/coupon/repository/MemberCouponRepository.java",
+    "sha256": "480C2E40299790339D66F66272D9F262D9D066B1EDE374E85D38246A9E7E14F1"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/coupon/service/CouponService.java",
+    "sha256": "6A96FF94F102CB6124B68A0FDD79D8DA5E7FEDFBF6A7C165000EE4C03DC1FD9D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/controller/CoachWorkbenchController.java",
+    "sha256": "8D7B52377B344A1A64C1B9CE0334CD96F201AB111C24520E091D63FD01F5CEED"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/controller/CourseController.java",
+    "sha256": "7A8882B5FABBFB804674972322E14EF1849B5F05A5DE11656B57EEABC4A6EB1A"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/controller/RoomController.java",
+    "sha256": "0F97F0FA5B135663AE8309B73A4CEAA8690600DD02FA7FCB3F83988AAE4E7B31"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/dto/CoachWorkbenchResponse.java",
+    "sha256": "7723CB2D4172AD81D78B3F034FA779351747975C36FBB8B25F4379F08E93DD6D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/dto/CourseRequest.java",
+    "sha256": "5610CCCE2CC5FCF56F9D927499AAFB68A1AFC98A95DD7FF494BE2B1949691978"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/dto/RoomDtos.java",
+    "sha256": "58DD736A018BF1C5A5D795E457B48B15FA1BE90EF719C2FC4F3868ACC7EB0683"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/dto/ScheduleBatchRequest.java",
+    "sha256": "9828A9F9670B79886A09A17DE00B879964F6257029663B8B496034514FC49048"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/dto/ScheduleBatchResult.java",
+    "sha256": "E4C90C7F50DE17A1C683ECC8A66D357D22EA3D63BAD5E3134F548B99708CACF0"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/dto/ScheduleRequest.java",
+    "sha256": "52262C55582F76D047819BBAF771B67D92B09AF78BE4EC7362A6A7EFF4649373"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/dto/ScheduleUpdateRequest.java",
+    "sha256": "6EAB26A0534D450E4A53E01F847109E3D7C28571297451E6EB4D6A160EF12353"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/entity/CourseEntity.java",
+    "sha256": "5C2947F48E70252BD399DC93A43A0F52E021805003DA1B575B3DCD34D3D1393C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/entity/CourseScheduleEntity.java",
+    "sha256": "8D201BB4315124517BE6C145AA8ACD07873829E076338A0ABF2CDABBF89F4274"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/entity/RoomEntity.java",
+    "sha256": "1ED7B9B94B9E69CD5F21E9C8518B606A39720A101F49A35D91E350955D24E048"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/repository/CourseRepository.java",
+    "sha256": "8C8B0B375605D1DD884560AEFD51DA9C8763136A17B3CD4D749F2CA270101B95"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/repository/CourseScheduleRepository.java",
+    "sha256": "58027B3AD6BF86DB85E814C2B33541A63311DE0EFF6FDA3F5C495FBEE3DF2272"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/repository/RoomRepository.java",
+    "sha256": "91DB3E99C22BDF0D2B2959B383B1598D49A07A88F1BCFA52B13D95EC1EE8053D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/service/CoachWorkbenchService.java",
+    "sha256": "6F9432D939389C33EF977053EB2460853402A0B49873F928FB0A0C4E3147E079"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/service/CourseService.java",
+    "sha256": "29211D4FF515F3FA9692C68BBBCC0EB91BAC5769D73579183FFB01B6FA8B2F36"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/course/service/RoomService.java",
+    "sha256": "691FC5CFD4921E97F448775E82AE939BE39770C57364E87DCFC039880E9ADB55"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/controller/FinanceController.java",
+    "sha256": "D9D6870408FF2C40E8F9F03BA49B9E9DCF6D8E9362BC6C70BE4EE2A76A4F1730"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/controller/FinanceReportController.java",
+    "sha256": "6605FD05A8466B11C25F7AD5F2EFA3B877266D21873DA088A802278978BF869F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/dto/FinanceDtos.java",
+    "sha256": "8301461504AA337DB9E9D92A511C65766236045D2F0408D63CD9C0550A5D9DDE"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/entity/EntitlementFundingEntity.java",
+    "sha256": "6306A0CCF34096871D09DA9A1F6BDBC3DCF5C18BEBEDB2FCEADD21AF06AB454C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/entity/EntitlementTermPeriodEntity.java",
+    "sha256": "9D222FEEC7E6F447398388E3A5A194FF588D96BF14AADDA9C854B44D439BCF1B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/entity/EntitlementValueAccountEntity.java",
+    "sha256": "91F7C464D9CBFC4917E2E3966C8D348D068D84529B5B4DA5CB210CC76E798063"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/entity/EntitlementValueEventEntity.java",
+    "sha256": "D8810CEA390449B77418D9A378D039C556E8F13A98B59DA266A2755220560830"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/entity/RefundAllocationEntity.java",
+    "sha256": "8D8F6BCFB0A5BC2E513C02479A47EC348AC6C60D50B5B3BD6D51282195C80361"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/entity/RefundApplicationEntity.java",
+    "sha256": "71F04C2700CA32B7DD5CDB3452C7C7CB3246834FDE2D0680C4C81D381C6F4CE6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/entity/RefundAuditEntity.java",
+    "sha256": "0BF2CD9F3551FD3A906C7A5C99186076289F07A47D42CEC53EB36AF21FFC65A8"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/repository/EntitlementFundingRepository.java",
+    "sha256": "88408053B6B046E63714C603487D61CFA9142676DB77731D942107D526F5BCE7"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/repository/EntitlementTermPeriodRepository.java",
+    "sha256": "EC9BA1280F9FC141826E8ACF06022DD80BF7EB484C04359FE48080EA9A7576CE"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/repository/EntitlementValueAccountRepository.java",
+    "sha256": "7EA706BEDA326A07A13C88D8513619B6B8EC32DCC5A83E86118FDF9A6E74E4EF"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/repository/EntitlementValueEventRepository.java",
+    "sha256": "007E085ED4DD1A226EB82622E46FBC7B542B51C09C74399DA6102BE5E02BEDA6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/repository/RefundAllocationRepository.java",
+    "sha256": "583B46F59F75ACEF33F0458BDB18BF8ABFFF6111BA64E85A0018503964B56C3E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/repository/RefundApplicationRepository.java",
+    "sha256": "B37525C49312BE87E59CFACDF3D9D697D6CB6A0066F160439B1CB7F654B6A954"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/repository/RefundAuditRepository.java",
+    "sha256": "CE359FCD98D714CBA772B8548EBEB51FC31EA195D256D879524E453F62BEA44E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/service/Csv.java",
+    "sha256": "C243E1EC76E3E8881AE4EA15AFC4D4F2565D0122DA02A1F8E0EE3DBF56D2C8B2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/service/EntitlementValueService.java",
+    "sha256": "05C659A1A4C273337C0296E2D8E46C127C02CE1606F53192151CC9702DBD5363"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/service/FinanceReportService.java",
+    "sha256": "1B634E6D8B70299C617FE77AC673DAD111BD0D4DE38214E049E118BBC79DABE4"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/service/FundingAllocator.java",
+    "sha256": "23BF2F6F5E1EDDADDA563A253B7115DDD9E61FDBAF3F1D1D8E7FBF826A2E7994"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/service/Money.java",
+    "sha256": "927404DBB2E1791D70E5531D1052F91DB36381B69DDCBCEAECF553A633562E6B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/finance/service/RefundService.java",
+    "sha256": "2845D848B72FFBE5F008FA26216FF025E2C1A8C1B0AD71229DEC845357975842"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/controller/LeadController.java",
+    "sha256": "23F877F138841BE9B6E17DF3E7B55CC79AB3464877DA87E2281C0028E391FC4A"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/dto/LeadDtos.java",
+    "sha256": "BC3D5530F3B769E5D091767559549CAD903A443C73F22003C87E5D461EF14A17"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/entity/LeadEventEntity.java",
+    "sha256": "9192DBAF6F77402CB795DE76AB393F0877D29F4B627524EF09B8B95E3CE34146"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/entity/LeadTrialEntity.java",
+    "sha256": "33A691B873089D2133282FD2AC1F165F95AA294BCC51CB65ED4D7A8B27386D87"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/entity/SalesLeadEntity.java",
+    "sha256": "D2B959CD2906B10DDAB14C45B43E1585FD6E870F268944C365EDC947466301C9"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/repository/LeadEventRepository.java",
+    "sha256": "5909B444D9AC1DCF758A20419F09279E7B9FF09B65BC7BDAAC197077023C66A2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/repository/LeadLookupRepository.java",
+    "sha256": "DA15F398CF716D015E8C8535F4089AD1284332A1A2221DEA1EF977F4E2759CD8"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/repository/LeadTrialRepository.java",
+    "sha256": "709683734C1AA61480FD05CE38CAC6FAB32E942166BD89364A3089F35EFAFE4C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/repository/SalesLeadRepository.java",
+    "sha256": "A0E75446464271A15D7943319A446861C675B2F3D7F0898FE2EC8F424E8190B5"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/lead/service/LeadService.java",
+    "sha256": "9A6A09C0E18305D63516D4CF0D7E37AB6E1D27EB0BEB817396BFF06C8D36E87D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/controller/AdvisorController.java",
+    "sha256": "7AF08DADC846046176EE25E34C2A7DEB247EDD546BFA1ABE59D9E3F2B33F4AEC"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/controller/BodyMeasurementController.java",
+    "sha256": "5AC8406E774ECC016B352AD291B63198C293DAC8F2A4A3714AF4D221233A2DBE"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/controller/MemberController.java",
+    "sha256": "B5AEFEC72CA43B4B034E5949CED9D43DD0206861D84461EDCF4A87079E417B8F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/controller/MemberPortalController.java",
+    "sha256": "34FDE66F24153128AA24305870E2A9A9E52B5DBEC6802219EF318F79B9B6BBBC"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/AdvisorDtos.java",
+    "sha256": "F8F851A5D3541B95A30A7459DBDBD9461728F6C1B93340C8A0524D81DB5FCFCA"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/BodyMeasurementDtos.java",
+    "sha256": "1F99DD715B6D93FEA2C62EECFFA6E43BC9DA7D7AE95004AFFA637A91D75D1754"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/CourseRecommendationResponse.java",
+    "sha256": "AD9D0C42FFBD6B571A0800608137F112D87E02BD0A83B332D575FBCD6CC5B8A5"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/MemberBookingResponse.java",
+    "sha256": "D54F2D4708C5D655A5474FB4FFA62C96AA7F4F27E748C534DDB2A54695F144A2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/MemberPortalProfileResponse.java",
+    "sha256": "FA9C32BF7A1AE4D565EE1FF6221FD867636AA06895EC7643412A1F934412AB3E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/MemberPurchaseRequest.java",
+    "sha256": "A654D521230F400A9EE2F548B28941EBB530944BFF55DFEDCF327BF0C24B0607"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/MemberRequest.java",
+    "sha256": "893C61D9DB5047097EE7522AD5A68E8728E3FD589EB2E69EC3FB525A23E02768"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/MemberResponse.java",
+    "sha256": "5FD5D5A4EB66409FA34D5D29566C3EEA3FE330DE1D386F19EBDA38369D99B23F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/MemberScheduleResponse.java",
+    "sha256": "E30CD1814BD279CF44BA9FDC8E66A1900F999A8C795FB68CCD12251030AA0265"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/dto/RecommendationRequest.java",
+    "sha256": "E1607943ED7B952BBFC2F52FC3045E246FF0346E53C6A87A3E62DB35F1FCF42D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/entity/BodyMeasurementEntity.java",
+    "sha256": "46C360995DA4975E26CD3013012C05ED9C0FF7D7650A581E9822085C684BF8AF"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/entity/MemberEntity.java",
+    "sha256": "1B0DA2967FB968F18E8FDE815F4677474997D9E33291BF08B25BEBD313BCF69B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/entity/MemberFollowUpEntity.java",
+    "sha256": "96993D4A59A950130E9DA31C94578C383A817F0C1DA8FC044B16F96371644AFA"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/repository/BodyMeasurementRepository.java",
+    "sha256": "0120FBDE21E2ED333E2FC9F37E32101E6297A217EC5891D442EC2EE0BA84943F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/repository/MemberFollowUpRepository.java",
+    "sha256": "250C5CE5D99C6F8F0591D8EC6EA7127B48B12099578BBEC1690A2B307F24B7D4"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/repository/MemberRepository.java",
+    "sha256": "140B6C3541E8D83F764932BDED747D6FC7E6CFC6C9F4C74E08E6B9629F065C1F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/service/AdvisorService.java",
+    "sha256": "658F3CC9A001AA93E43B9A0AFBDF9DDE6762E1B1A7BE6A44319D0962AD94A987"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/service/BodyMeasurementService.java",
+    "sha256": "774404ED965F59237812462E65B39483925B0569AB5206F8724C91634B9A6705"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/service/CourseRecommendationService.java",
+    "sha256": "6FAC0630D7C645D6DB504EDA0CA493D712D51F192392BF424728E51E415F04CB"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/service/MemberPortalService.java",
+    "sha256": "4AA6FCB927BB003150071CE422009C7B80A2083BE50E7B1276C1FB607EFABB3C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/service/MemberService.java",
+    "sha256": "6393F0DC8357FB4162A82BD8AA7BFFBC963A14AE9834A6DB23DADC4F7B5E66D3"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/member/service/RetentionService.java",
+    "sha256": "E5A1B63673DBA38902FC9CCFA2BA252E1C63AA37242EB9CF5E6AF04234DDEAA5"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/message/channel/EmailMessageChannel.java",
+    "sha256": "60EA7DAD5F58086583C6F2F0D43135B09629A9F885E88F41AF33047EDBB68526"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/message/channel/MessageChannel.java",
+    "sha256": "A8642FF105F4D5338E5F8B305EFBB4E264180129F11CC35BACC9F5F6B1A03319"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/message/channel/SmsMessageChannel.java",
+    "sha256": "5E99AF432D8A99FC567EE30A344D4548C6B360DEAE74D48D2AAF177CED0463A3"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/message/controller/MessageController.java",
+    "sha256": "1EDC99F62BC333ADFBD5E94FDC749CE866C6F773541B1135A395379030FFC22A"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/message/dto/MessageDtos.java",
+    "sha256": "A51B20F3EE12E1FFDBF09E2651D462A84CC592962D41DED4AC8C1DF34285939C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/message/entity/MessageDeliveryEntity.java",
+    "sha256": "37A8BCB2DDCC5812B822838CF94BC952891B65B0612A75D24BA013EA37374213"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/message/repository/MessageDeliveryRepository.java",
+    "sha256": "1F8659FD89A9C9CA76EEBC75A432A4CD3F2A2175F72A430F85F07F80335B123C"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/message/service/MessageDispatchService.java",
+    "sha256": "9151AF359228F18837120CF706C394F036F86D37C792C3F3C7352B9934FF6D39"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/notice/controller/NotificationController.java",
+    "sha256": "D1C6ACC763563EB660E331208CE25B48373E9D28297CC7681DC711A4DCDC7989"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/notice/dto/NotificationDtos.java",
+    "sha256": "B32D2B1C405C3F12C0BBEFC757E2E171C57060CF5B4FC4EEAE3110B31C8967E9"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/notice/entity/NotificationEntity.java",
+    "sha256": "E379797F7DF9988570017F0B4CB1171947C446490CF05215DA0A96DE5FDC6A1F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/notice/repository/NotificationRepository.java",
+    "sha256": "1FEE02252B16545A2D82A634CB69D1A09B71498CDED2B97F737C95E91595505F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/notice/service/NotificationService.java",
+    "sha256": "58445854AFF91A36F3D3492AD6D518139A638F41A59612AE6AD7AA065C4E96D6"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/operations/job/OperationsJobs.java",
+    "sha256": "6C45B3FE6D0B6A6D56BB90BB83147BB678398F6193C94ED207A6D90C3010407B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/operations/service/OperationsService.java",
+    "sha256": "EB4CDA64EA69744EE94424C5D4F7CF3B189D9FB4779F8A0DCB2B6B421F03DF37"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/organization/controller/VenueController.java",
+    "sha256": "6BF7419DCECDEAF28350D1E5E9738347793258D455459BD9C21715BCE87A208A"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/organization/dto/VenueRequest.java",
+    "sha256": "C140FE934AD679BB56D74C4E137F362CB882C1B0D05DE7EB457715D614824780"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/organization/dto/VenueResponse.java",
+    "sha256": "ACEB27AEAA4B9644B1DD579DAE03A2A9F70B03DD87C209AC191DB6A98C1E9AE5"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/organization/entity/RoleEntity.java",
+    "sha256": "2C77E67CC6E3E938367B31B87CD164D063C253F8753274E643DCE83691401356"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/organization/entity/VenueEntity.java",
+    "sha256": "07CC141113C9C06B23FBB35472FDB4AC6E47B9E6F4490724312F5ACA77A4FAAF"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/organization/repository/RoleRepository.java",
+    "sha256": "56F9AF75253CB98E1AFD50FA99315AB90F65A727BC7BF309C10B20394B567F53"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/organization/repository/VenueRepository.java",
+    "sha256": "C19C3D1F0FE79360FE88BCBF77CEA14024933052B2F970AE65851A88F04B374A"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/organization/service/VenueService.java",
+    "sha256": "4B2B83D4758F9EE3D6DEC4F2270C3A9E26CD9E15B41772E65CB5368B80F8BBF9"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/report/controller/ReportController.java",
+    "sha256": "525ED578771748D0787A90BC6CE9B3054041D7AFBD0E4A875698773A2E711486"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/report/service/ReportService.java",
+    "sha256": "8F2387A9A2836F1B55CDE6F1C9B333709615AA9409B8CC3FC8640226E47F1BC1"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/review/controller/ReviewController.java",
+    "sha256": "99C7E81BDA4A3374DF6426B6E67A67B6FA41DDF2E3DC069B432EC464AA678E4E"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/review/dto/ReviewDtos.java",
+    "sha256": "80DF7EF82306D337BF5FC115C77F0D6C7BE4D1FF4E7BA7209B31D315A609CE8D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/review/entity/CourseReviewEntity.java",
+    "sha256": "01612260ADF9BE3B4D1B22BAC50D1A2F9E8C449D8E59FDE64DBC2F5301E0C776"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/review/repository/CourseReviewRepository.java",
+    "sha256": "2364D8DC31BDC1D18723B79D2A5B86B080D50A6F639F7EF5D24F60F81B9E9009"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/review/service/ReviewService.java",
+    "sha256": "BFE0CDB142E21107121772E83427DBEE3ED9FDCB2BCE7891E088522CCD4EB173"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/controller/TrainingController.java",
+    "sha256": "070A6BFE828ED78994A0F4A8CE53911C55FF33563FC36F12DED0ED0A126A1FE1"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/dto/TrainingDtos.java",
+    "sha256": "4A404E7307CA4E34AD7194354773B32A94A0EB5666C6D11F6AE1933E0A1A370D"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/entity/CoachSettlementEntity.java",
+    "sha256": "C1A8C03054A49F3928E37841C660E59F10B73683A38C2DCBDE09F3925268BFB2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/entity/CommissionRuleEntity.java",
+    "sha256": "254079F0CF9F0F334995542D4DDE6F949DE6D0A096F9E335E6435B2EA357411B"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/entity/PrivateLessonEntity.java",
+    "sha256": "B8DCF7029CEBA3E0A643A8727BE14D391DEFD2FD0D603B8B5E769F68C035D101"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/repository/CoachSettlementRepository.java",
+    "sha256": "81F3C9FB9A92E2F6E00DBA2ED1091D41CD187762313AD8790957EDDD3472F246"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/repository/CommissionRuleRepository.java",
+    "sha256": "3D25C54918A2F338775571E10AF3FC87E538433037453CCCE4D4C4E753238598"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/repository/PrivateLessonRepository.java",
+    "sha256": "C2353676E49AAC62AD99785C71BB8F5839A05C08DAEF9FBE2730CF8E86B36682"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/module/training/service/TrainingService.java",
+    "sha256": "46425B4155EAAFB277AAABF614CD0CED7EAFB9589E6FDF8C9B4D04C929C49739"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/security/DatabaseUserDetailsService.java",
+    "sha256": "CB65F37142FBBE8BE5933482EC648EC9377948F56A1D166AB8BA64D018D08A12"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/security/JwtAuthenticationFilter.java",
+    "sha256": "6628E8738D3F2A942E9545162E437D93FB3F4838533A9518262C09C8E08E5944"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/security/JwtTokenProvider.java",
+    "sha256": "033F51DFAB2E65FC78EE2CCB5F6F1485E7469F857B2757A961E8C97D189829F2"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/security/PasswordChangeRequiredFilter.java",
+    "sha256": "FCEA2FA044F91F357D6A44ADADBE597CD40002763E9782DA44AD9921DD7B219F"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/security/RolePermissionCatalog.java",
+    "sha256": "C880DFEB19BF4C068272E38E58626C40DEE2A6EA0F2AAEEB517B2668FC71A547"
+  },
+  {
+    "path": "src/main/java/com/gym/fitness/security/UserDetailsImpl.java",
+    "sha256": "FBEB1B3897C9A61581A1EE98C521ADE9DD235241353A9B58D889F950BA70C75C"
+  },
+  {
+    "path": "src/main/resources/application-dev.yml",
+    "sha256": "B7605DFA66FA96AD5024A8F6FC6F2991CFE952FC5E40F976C1BE565801488799"
+  },
+  {
+    "path": "src/main/resources/application-prod.yml",
+    "sha256": "B446060B0D1E130F127729B0A302C33565EE80C1C536653999E9813EF0260459"
+  },
+  {
+    "path": "src/main/resources/application.yml",
+    "sha256": "DDD723D85DFF4A033CACFF0EB6C5F48D320682C1DF54BB589B57ACF742CA12B9"
+  },
+  {
+    "path": "src/main/resources/db/migration/V1__init_schema.sql",
+    "sha256": "1C039F8D758A8A4D6B6F046B77D38126C5011CD436631FBCB25E0863BB9DE71E"
+  },
+  {
+    "path": "src/main/resources/db/migration/V10__idempotent_sales_qr_grant_notifications.sql",
+    "sha256": "85A99F8291CB86A394445EF19B89CDBDFF6EB1ABCE65004C804C0BF79EA47ED5"
+  },
+  {
+    "path": "src/main/resources/db/migration/V11__coupons_and_course_reviews.sql",
+    "sha256": "F8E49B30FB13879727D3B63892E7F001C383F2A4570CCF01ABE1D1317EF7F1E4"
+  },
+  {
+    "path": "src/main/resources/db/migration/V12__rooms_and_advisor_follow_ups.sql",
+    "sha256": "2F57C9A6DA3FE7ED1F9CCE97254D1ADABBDEFABF09BDDD34CAE38550E37FDC9B"
+  },
+  {
+    "path": "src/main/resources/db/migration/V13__body_measurements_and_training_goal.sql",
+    "sha256": "18A0013ACE6F2F90D5352CE7E529085387A65EA635889863A9AB5874190E9E77"
+  },
+  {
+    "path": "src/main/resources/db/migration/V14__message_deliveries.sql",
+    "sha256": "011BF3475B228CD2DF504E4856EFEDA0F29B67FF07EA720C088665F1D1EA7B44"
+  },
+  {
+    "path": "src/main/resources/db/migration/V15__cross_venue_scope.sql",
+    "sha256": "76A507B9C1636D7DC506EAC5C50F689E71906680AC291C6CD21019DF725E864C"
+  },
+  {
+    "path": "src/main/resources/db/migration/V16__direct_messages.sql",
+    "sha256": "863905977802CE0BA7552527D2041A5FC064A7FB6D1A64B36EB3E4AFC25F5D94"
+  },
+  {
+    "path": "src/main/resources/db/migration/V17__cross_venue_settlement.sql",
+    "sha256": "01AAE30F8D76D22A2B7ED43844E3D615533472209B3EB3358BB1E9D227BC57B9"
+  },
+  {
+    "path": "src/main/resources/db/migration/V18__revocable_account_sessions.sql",
+    "sha256": "D59699D5F8F16A11C29F4650B1E70BF774920E7757C16BD878D8AF97C8033925"
+  },
+  {
+    "path": "src/main/resources/db/migration/V19__member_follow_up_outcomes.sql",
+    "sha256": "A078C2A0D147F4FBFBF7A2A7B149DF27B1DA11DEBCD3A530510AB58620EAD500"
+  },
+  {
+    "path": "src/main/resources/db/migration/V2__seed_admin_user.sql",
+    "sha256": "20390AA67B02C70F2ECFD6E1417ECAD4B3EA4E2E4C41C380B8C4346DF559A3DA"
+  },
+  {
+    "path": "src/main/resources/db/migration/V20__leads_and_trial_appointments.sql",
+    "sha256": "4F60A47C4DC5A01985762D99791444B71D9309C93AA31097FF761BA4FA80C355"
+  },
+  {
+    "path": "src/main/resources/db/migration/V21__cash_shifts_and_daily_close.sql",
+    "sha256": "6DB037CDC47EAF52E2B5A6DD56CE00ED4A32D1FD66A1995AE06117699AAC742B"
+  },
+  {
+    "path": "src/main/resources/db/migration/V3__course_booking_enhancements.sql",
+    "sha256": "A23C59BF835A91AE76845C460C3FCCDC555EB7F7D569FFCABAF53D87B6DDABD0"
+  },
+  {
+    "path": "src/main/resources/db/migration/V4__rbac_permissions_and_indexes.sql",
+    "sha256": "372EAE2B35787313EA3EB8BE138996BE4F4D04B669C8BE735A1B96CE6DFDFD49"
+  },
+  {
+    "path": "src/main/resources/db/migration/V5__disable_insecure_default_admin.sql",
+    "sha256": "1E3BC4A75E1737A7AB4C766ED8199088B0B2586F83B1DE0CF3BB53034C0F8B9E"
+  },
+  {
+    "path": "src/main/resources/db/migration/V6__account_lifecycle.sql",
+    "sha256": "7B610586EF34D1B8E9019FE9DFFF7A39485B29480283553C2CC4156D1FAC12F6"
+  },
+  {
+    "path": "src/main/resources/db/migration/V7__commercial_core.sql",
+    "sha256": "6BA0830BBB8920572D25E0E29EA757C2EF8E41A973949546813A45B06E7AEF0E"
+  },
+  {
+    "path": "src/main/resources/db/migration/V8__private_training.sql",
+    "sha256": "E8CFA4622843CCA39C287F405E567994B559060D90F4F6202AD2AF9B0277C197"
+  },
+  {
+    "path": "src/main/resources/db/migration/V9__refund_value_accounting.sql",
+    "sha256": "F5C036C89AA0B0531E61E3F1A8D07EA7CC65081068F022B716DEC21784BAE256"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/AuthenticationSecurityIntegrationTest.java",
+    "sha256": "6D6C905065E117B16B9B4F9136D5FA5C13828E26651D72C192A02227DCD1A3AD"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/BusinessTimezoneTest.java",
+    "sha256": "A7C15BD181F89EA27A36FAF85ED1DF2BB2A9A7C7AD150E14EC49685FEE6393D8"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/CashShiftIntegrationTest.java",
+    "sha256": "AB061678FA881082B2E66E96F2BABF9DF04496C8A7C34C6AD4E326A3DE41163F"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/ChatPrivacyIntegrationTest.java",
+    "sha256": "8875F6FB918DAC6EA3CC3C95CC99CD02DBF3A498B5B44D17D369709C141B31AD"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/CommercialBoundaryIntegrationTest.java",
+    "sha256": "703E56793068F18A53F485E022616927142A81F49356EACB3B27FA33291FF7EC"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/FinanceMoneyTest.java",
+    "sha256": "A30B55B5E50D036D21B42975FAD8DE393A8ACEC7B94EF0D4A4BDB857DEE9B7D7"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/FinanceReportIntegrationTest.java",
+    "sha256": "DBFA12DEB62062E0253E64093B4C55F04F08949BCA2D26C2DA8374D8E2F8616B"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/FitnessApplicationIntegrationTest.java",
+    "sha256": "CDF408D918DCCA6AB111BABE257667EC72F48F9FF6C59D38EAEF21F8F03BAD3E"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/LeadIntegrationTest.java",
+    "sha256": "68EF6DF1D7EE4B2A1F88E32F3B4843EE80F3BDE956E7E257DA2A33D7C19084A2"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/PrivateTrainingIntegrationTest.java",
+    "sha256": "5BFBB1105607EFFD5A0888E48D66CD6496E150F9AB0A6C8D6A606851C005D56E"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/RefundFinanceIntegrationTest.java",
+    "sha256": "FB358D86FC3F1A9AB2C5E83CDB9C4571069B327F2FA8624B22416F900A06680D"
+  },
+  {
+    "path": "src/test/java/com/gym/fitness/RetentionIntegrationTest.java",
+    "sha256": "CB8A6483D456A2C52386D69B77B4BB61619CF80BE60DD6087BCC20A96FDC15A5"
+  }
+]

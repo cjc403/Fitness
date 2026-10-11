@@ -42,6 +42,7 @@ public class CouponService {
     private final MemberCouponRepository memberCoupons;
     private final MembershipProductRepository products;
     private final MemberRepository members;
+    private final com.gym.fitness.module.commercial.service.CrossVenueService crossVenue;
 
     // ---------------------------------------------------------------- 模板
 
@@ -190,7 +191,9 @@ public class CouponService {
         assertVenue(member.getVenueId());
         MembershipProductEntity product = products.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
-        if (!product.getVenueId().equals(member.getVenueId())) {
+        if (!SecurityUtil.hasRole("MEMBER")) assertVenue(product.getVenueId());
+        if (!product.getVenueId().equals(member.getVenueId())
+                && !crossVenue.declaredScope(product.getId()).contains(member.getVenueId())) {
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "会员与商品必须属于同一场馆");
         }
         long priceCents = Money.cents(product.getPrice());
@@ -199,7 +202,7 @@ public class CouponService {
         }
         List<CouponQuote.Option> options = new ArrayList<>();
         for (MemberCouponEntity coupon : memberCoupons.findByMemberIdOrderByIdDesc(member.getId())) {
-            if (evaluate(coupon, member.getId(), member.getVenueId(), priceCents) != null) continue;
+            if (evaluate(coupon, member.getId(), product.getVenueId(), priceCents) != null) continue;
             long discount = discountOf(coupon, priceCents);
             options.add(new CouponQuote.Option(coupon.getId(), templateName(coupon),
                     discount, Money.yuan(priceCents - discount)));

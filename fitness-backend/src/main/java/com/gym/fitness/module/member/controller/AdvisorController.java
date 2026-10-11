@@ -16,6 +16,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdvisorController {
     private final AdvisorService service;
+    private final com.gym.fitness.module.member.service.RetentionService retentionService;
+
+    @GetMapping("/advisor/retention")
+    @PreAuthorize("hasAnyRole('SALES','MANAGER','SUPER_ADMIN')")
+    public Result<RetentionWorkbench> retention(@RequestParam(defaultValue = "ALL") String filter,
+                                                @RequestParam(required = false) String keyword) {
+        return Result.success(retentionService.workbench(filter, keyword));
+    }
 
     /** 会员归属人下拉：会籍顾问 / 教练。 */
     @GetMapping("/advisors")

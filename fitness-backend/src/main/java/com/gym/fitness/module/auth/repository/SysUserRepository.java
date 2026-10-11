@@ -14,6 +14,10 @@ public interface SysUserRepository extends JpaRepository<SysUserEntity, Long> {
     @Query("select u from SysUserEntity u where u.id=:id")
     Optional<SysUserEntity> findByIdForUpdate(@Param("id") Long id);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from SysUserEntity u where u.username=:username")
+    Optional<SysUserEntity> findByUsernameForUpdate(@Param("username") String username);
+
     Optional<SysUserEntity> findByUsername(String username);
 
     boolean existsByUsernameIgnoreCase(String username);

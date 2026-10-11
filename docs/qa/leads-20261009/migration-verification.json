@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-09",
+  "from": 19,
+  "to": 20,
+  "success": true,
+  "historicalTables": 58,
+  "historicalRowsAndHashesUnchanged": true,
+  "newTables": [
+    {
+      "table": "lead_event",
+      "count": 0
+    },
+    {
+      "table": "lead_trial",
+      "count": 0
+    },
+    {
+      "table": "sales_lead",
+      "count": 0
+    }
+  ],
+  "health": "UP",
+  "startedWithUTC": true,
+  "profile": "prod",
+  "database": "migration_qa:55439"
+}

@@ -1,0 +1,33 @@
+{
+  "phase": "clone",
+  "passed": true,
+  "flywayLatest": "21|t",
+  "newTables": [
+    {
+      "table": "cash_shift",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "cash_shift_channel",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "cash_shift_event",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "cash_shift_payment",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ],
+  "historicalTableCount": 61,
+  "totalTables": 65,
+  "historicalTablesUnchanged": true,
+  "changedHistoricalTables": [],
+  "testedJarSha256": "A7985D1B329DAF6B1B57E747758B80A207E4D4D87C87EEE801068BC29BB88E31",
+  "health": "UP"
+}

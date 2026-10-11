@@ -28,32 +28,39 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useAuthStore } from '@/store/modules/auth'
 import { chat, getAssistantStatus, type AssistantTurn } from '@/api/modules/assistant'
 import { ChatDotRound, Close, Promotion } from '@element-plus/icons-vue'
 const open = ref(false); const input = ref(''); const loading = ref(false); const bodyRef = ref<HTMLElement>()
+const authStore = useAuthStore()
+const sessionGeneration = authStore.sessionGeneration
+let disposed = false
+const isCurrentView = () => !disposed && authStore.sessionGeneration === sessionGeneration
 const source = ref('正在检测服务')
 const messages = ref([{ role: 'bot', text: '你好！我是你的健身房运营助手。会员、排课、预约和经营数据方面的问题都可以问我。' }])
 const suggestions = ref(['如何新增会员？', '如何安排一节课程？', '如何为会员预约？'])
-const scroll = () => nextTick(() => { if (bodyRef.value) bodyRef.value.scrollTop = bodyRef.value.scrollHeight })
+const scroll = () => nextTick(() => { if (isCurrentView() && bodyRef.value) bodyRef.value.scrollTop = bodyRef.value.scrollHeight })
 const ask = (text: string) => { input.value = text; send() }
 const send = async () => {
-  const text = input.value.trim(); if (!text || loading.value) return
+  const text = input.value.trim(); if (!isCurrentView() || !text || loading.value) return
   const history: AssistantTurn[] = messages.value.slice(1).slice(-6).map(item => ({
     role: item.role === 'bot' ? 'assistant' : 'user',
-    content: item.text
+    content: item.text.slice(0, 500)
   }))
   messages.value.push({ role: 'user', text }); input.value = ''; loading.value = true; scroll()
-  try { const res = await chat(text, history); messages.value.push({ role: 'bot', text: res.data.answer }); suggestions.value = res.data.suggestions; source.value = res.data.source }
-  catch { messages.value.push({ role: 'bot', text: '暂时无法处理这个问题，请稍后再试。' }) }
-  finally { loading.value = false; scroll() }
+  try { const res = await chat(text, history); if (!isCurrentView()) return; messages.value.push({ role: 'bot', text: res.data.answer }); suggestions.value = res.data.suggestions; source.value = res.data.source }
+  catch { if (isCurrentView()) messages.value.push({ role: 'bot', text: '暂时无法处理这个问题，请稍后再试。' }) }
+  finally { if (isCurrentView()) { loading.value = false; scroll() } }
 }
 onMounted(async () => {
   try {
     const res = await getAssistantStatus()
+    if (!isCurrentView()) return
     source.value = res.data.configured ? `DeepSeek · ${res.data.model}` : '本地知识库'
-  } catch { source.value = '本地知识库' }
+  } catch { if (isCurrentView()) source.value = '本地知识库' }
 })
+onBeforeUnmount(() => { disposed = true })
 </script>
 
 <style scoped>

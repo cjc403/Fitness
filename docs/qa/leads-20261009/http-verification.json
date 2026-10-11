@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-09",
+  "database": "isolated leads_qa on55439",
+  "appPort": 8188,
+  "checks": [
+    "New permissions are returned by real login",
+    "Consultation creates a separate lead without an immediate membership",
+    "Recorded visit advances the factual lead stage",
+    "Independent trial reservation appears in lead detail",
+    "Pending trial must be resolved before conversion",
+    "Started trial outcome is recorded through HTTP",
+    "Identical conversion retry returns one actual sale",
+    "Actual entitlement is funded by the linked conversion order",
+    "Member is created without overwriting or automatically opening a login account",
+    "Changed conversion payload cannot reuse an old idempotency key",
+    "Only verified newly paid member orders appear as conversion candidates",
+    "Existing actual sale can be linked without creating another membership or order",
+    "Failed over-price sale rolls back the new member and leaves lead unconverted",
+    "Lost lead keeps its auditable contact history",
+    "Cohort overview counts eight leads and two real conversions",
+    "Filtering and pagination do not change channel denominators",
+    "Owning advisor sees the same scoped cohort through a separate actual login"
+  ],
+  "passed": 17,
+  "mainLeadId": 1,
+  "bookedLeadId": 2,
+  "todayLeadId": 3,
+  "conversionOrderId": 1,
+  "linkedOrderId": 2,
+  "summary": {
+    "totalLeads": 8,
+    "newThisMonth": 8,
+    "todayFollowUps": 1,
+    "overdueFollowUps": 0,
+    "todayTrials": 1,
+    "convertedLeads": 2,
+    "conversionRate": 25.0
+  },
+  "channels": [
+    {
+      "source": "WALK_IN",
+      "total": 2,
+      "visited": 1,
+      "trialCompleted": 0,
+      "converted": 0,
+      "conversionRate": 0.0
+    },
+    {
+      "source": "REFERRAL",
+      "total": 2,
+      "visited": 0,
+      "trialCompleted": 0,
+      "converted": 0,
+      "conversionRate": 0.0
+    },
+    {
+      "source": "DOUYIN",
+      "total": 2,
+      "visited": 1,
+      "trialCompleted": 1,
+      "converted": 1,
+      "conversionRate": 50.0
+    },
+    {
+      "source": "WECHAT",
+      "total": 1,
+      "visited": 0,
+      "trialCompleted": 0,
+      "converted": 1,
+      "conversionRate": 100.0
+    },
+    {
+      "source": "OTHER",
+      "total": 1,
+      "visited": 0,
+      "trialCompleted": 0,
+      "converted": 0,
+      "conversionRate": 0.0
+    }
+  ],
+  "testFixtureTimeShift": true,
+  "realLocalBusinessWrites": false
+}

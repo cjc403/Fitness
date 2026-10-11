@@ -30,6 +30,7 @@ public class DatabaseUserDetailsService implements UserDetailsService {
         details.setOrganizationName(user.getVenue().getName());
         details.setEnabled("ACTIVE".equalsIgnoreCase(user.getStatus()));
         details.setMustChangePassword(Boolean.TRUE.equals(user.getMustChangePassword()));
+        details.setSessionVersion(user.currentSessionVersion());
         return details;
     }
 }

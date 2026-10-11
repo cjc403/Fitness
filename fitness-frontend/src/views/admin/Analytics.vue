@@ -1,14 +1,14 @@
 <template>
   <div class="analytics-page">
-    <div class="page-title">
-      <div><span>BUSINESS INSIGHT</span><h1>经营分析</h1><p>教练绩效、会员消费与到店、会员流失风险（评分规则可解释，不用大模型）。</p></div>
-      <div class="actions">
+    <WorkspaceHero compact>
+      <template #heading><span>BUSINESS INSIGHT</span><h1>经营分析</h1><p>教练绩效、会员消费与到店、会员流失风险（评分规则可解释，不用大模型）。</p></template>
+      <template #actions><div class="actions">
         <el-date-picker v-model="range" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始" end-placeholder="结束" style="width:260px" @change="load"/>
         <el-button @click="quick(30)">近 30 天</el-button>
         <el-button @click="quick(90)">近 90 天</el-button>
         <el-button @click="load"><el-icon><Refresh/></el-icon> 刷新</el-button>
-      </div>
-    </div>
+      </div></template>
+    </WorkspaceHero>
 
     <el-alert v-if="loadError" type="error" :closable="false" show-icon :title="loadError" style="margin-bottom:16px" />
     <div class="metric-grid" v-loading="loading">
@@ -53,6 +53,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { computed, onMounted, ref } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import {

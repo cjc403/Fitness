@@ -1,0 +1,77 @@
+{
+  "passed": true,
+  "runtime": {
+    "installedJarMatches": true,
+    "frontendUrl": "http://localhost:5173/login",
+    "backendPid": 33316,
+    "startupExit": 0,
+    "health": "UP"
+  },
+  "qaServicesStopped": true,
+  "sharedCredentialSectionUnchanged": true,
+  "frontend": {
+    "tests": 131,
+    "sourceHashCount": 5,
+    "assetHashCount": 69,
+    "buildExit": 0,
+    "failed": 0,
+    "passed": 131
+  },
+  "gitHead": "b75b1ee",
+  "backend": {
+    "sourceFiles": 270,
+    "jarSha256": "A7985D1B329DAF6B1B57E747758B80A207E4D4D87C87EEE801068BC29BB88E31",
+    "pgFocusedPassed": 26,
+    "expectedPgOnlySkipped": 6,
+    "executedPassed": 213,
+    "total": 219,
+    "failures": 0
+  },
+  "realBusinessTestWrites": false,
+  "feature": "前台交班与日结",
+  "limitations": [
+    "全量后端默认H2，PG只执行交班专项26项",
+    "真实支付平台尚未接入，交班为登记资金的人工核对",
+    "当前只验桌面",
+    "线上仅沿用2026-10-02历史验收，本轮未连接服务器"
+  ],
+  "mobileChecked": false,
+  "pushed": false,
+  "committed": false,
+  "backup": {
+    "oldJarSha256": "ADE6A0BB117DAD1CD64C78E211B25CFAF4C7E5990B17E325CB85C575C6922C1A",
+    "databaseDump": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\cash-shifts-20261010\\fitness_db-20261010-162219.dump",
+    "dumpSha256": "CBEB0178ADF441EDC48E12034074CF986B7211947D74BC54004193723D86D5EE",
+    "oldJar": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\cash-shifts-20261010\\backend-before-20261010-162219.jar"
+  },
+  "desktopChecks": 19,
+  "completedAt": "2026-10-10T16:25:26.6431549+08:00",
+  "independentReviews": "Approved",
+  "localOnly": true,
+  "desktopConsoleErrors": 0,
+  "httpAssertions": 23,
+  "actualDatabase": {
+    "version": 21,
+    "newTablesEmpty": 4,
+    "tables": 65,
+    "authenticationMetadataChanged": [
+      "revoked_auth_session",
+      "sys_user"
+    ],
+    "businessTablesUnchangedAfterRead": true,
+    "historicalTablesUnchanged": 61
+  },
+  "serverDeployed": false,
+  "evidenceFiles": [
+    "backend-build.json",
+    "migration-proof.json",
+    "http-workflow.json",
+    "desktop-workflow.json",
+    "frontend-build.json",
+    "review-gate.json",
+    "activation-migration-proof.json",
+    "local-read.json",
+    "startup-proof.json",
+    "cleanup-proof.json"
+  ]
+}

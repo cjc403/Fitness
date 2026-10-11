@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-09T19:24:14.1116141+08:00",
+  "database": "fitness_db:5433",
+  "role": "SUPER_ADMIN",
+  "leadRead": true,
+  "leadWrite": true,
+  "workbenchPassed": true,
+  "optionsPassed": true,
+  "oldRetentionReadPassed": true,
+  "totalLeads": 0,
+  "venueOptions": 2,
+  "health": "UP",
+  "artifactHashMatches": true,
+  "businessTestWrites": false,
+  "authenticationCheckWrites": "Ordinary verification logins and scoped logouts only; preservation digest was captured before authentication",
+  "onlineUpdated": false
+}

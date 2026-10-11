@@ -19,7 +19,7 @@ $postgresPort = 5433
 $postgresDatabase = 'fitness_db'
 $postgresUser = 'fitness_user'
 $backendHealthUrl = 'http://127.0.0.1:9091/actuator/health'
-$backendApiUrl = 'http://127.0.0.1:8080/api-docs'
+$backendApiUrl = 'http://127.0.0.1:8080/api/v1/auth/venues'
 $frontendUrl = 'http://localhost:5173/login'
 
 New-Item -ItemType Directory -Path $logsRoot -Force | Out-Null
@@ -85,6 +85,18 @@ function Test-BackendHealth {
     try {
         $response = Invoke-RestMethod -Uri $backendHealthUrl -TimeoutSec 3
         return $response.status -eq 'UP'
+    } catch {
+        return $false
+    }
+}
+
+function Test-BackendApi {
+    try {
+        # Production disables API documentation. Check the read-only login venues API instead.
+        $response = Invoke-RestMethod -Uri $backendApiUrl -TimeoutSec 5
+        return $null -ne $response -and
+            ($response.PSObject.Properties.Name -contains 'code') -and
+            $response.code -eq 0 -and $response.data -is [array]
     } catch {
         return $false
     }
@@ -307,11 +319,16 @@ try {
     $bundledJavaHome = Join-Path $projectRoot '.tools\jdk-17'
     $java = Resolve-Executable (Join-Path $bundledJavaHome 'bin\java.exe') 'java' 'Java 17'
     $maven = Resolve-Executable (Join-Path $projectRoot '.tools\maven\bin\mvn.cmd') 'mvn.cmd' 'Maven'
-    $node = Resolve-Executable $null 'node.exe' 'Node.js 18+'
+    $node = Resolve-Executable $null 'node.exe' 'Node.js 20.19+ or 22.12+'
     $npm = Resolve-Executable $null 'npm.cmd' 'npm'
     $nodeVersion = (& $node '--version').Trim()
-    if ($nodeVersion -notmatch '^v(\d+)\.' -or [int]$Matches[1] -lt 18) {
-        throw "Node.js 18 or newer is required; detected $nodeVersion."
+    if ($nodeVersion -notmatch '^v(\d+)\.(\d+)\.(\d+)') {
+        throw "Cannot identify Node.js version: $nodeVersion."
+    }
+    $detectedNodeVersion = [version]$nodeVersion.TrimStart('v')
+    if (-not (($detectedNodeVersion.Major -eq 20 -and $detectedNodeVersion -ge [version]'20.19.0') -or
+            $detectedNodeVersion -ge [version]'22.12.0')) {
+        throw "Vite 7 requires Node.js 20.19+ (20.x) or 22.12+; detected $nodeVersion."
     }
     if (Test-Path -LiteralPath $bundledJavaHome -PathType Container) { $env:JAVA_HOME = $bundledJavaHome }
     $javaCheck = Start-Process -FilePath $java -ArgumentList '-version' -WindowStyle Hidden -Wait -PassThru
@@ -337,7 +354,7 @@ try {
 
     Write-Event '[6/6] Running final end-to-end checks...' Yellow
     if (-not (Test-BackendHealth)) { throw 'Final backend health check failed.' }
-    if (-not (Test-Url $backendApiUrl 5)) { throw 'Backend started, but the API documentation endpoint is unreachable.' }
+    if (-not (Test-BackendApi)) { throw 'Backend health is UP, but the public venues API is unavailable or returned an invalid response.' }
     if (-not (Test-Url $frontendUrl 5)) { throw 'Frontend started, but the login page is unreachable.' }
     Write-Event 'FitChain is ready: http://localhost:5173/login' Cyan
     Write-Host "Startup log: $startupLog" -ForegroundColor DarkGray

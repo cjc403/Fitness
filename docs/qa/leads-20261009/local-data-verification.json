@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-09",
+  "versionBefore": 20,
+  "versionAfter": 20,
+  "initialV20AlreadyAppliedByLauncher": true,
+  "tables": 61,
+  "allCountsAndDigestsUnchanged": true,
+  "beforeAuthentication": true,
+  "testLeadRowsInRealDatabase": 0,
+  "health": "UP"
+}

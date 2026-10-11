@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-03",
+  "feature": "member retention and follow-up",
+  "backend_full_h2_tests": { "passed": 164, "failed": 0, "build": "success" },
+  "backend_isolated_postgresql_feature_tests": { "passed": 14, "failed": 0 },
+  "frontend_node_tests": { "passed": 69, "failed": 0, "build": "success" },
+  "migration": {
+    "isolated_v18_to_v19_history_preserved": true,
+    "isolated_hibernate_validate": true,
+    "local_version": 19,
+    "local_success": true
+  },
+  "utc_jvm_http_check": {
+    "follow_up_and_payment_times_match_shanghai": true,
+    "renewed_member_increment": 1,
+    "renewal_net_increment": 100,
+    "same_request_replays_original_record": true
+  },
+  "browser_isolated": {
+    "advisor_search_save_history": true,
+    "manager_advisor_overview": true,
+    "mobile_viewport": [390, 844],
+    "mobile_document_width": 390,
+    "mobile_dialog_overflow": false
+  },
+  "local_runtime": {
+    "startup_all_checks": true,
+    "health": "UP",
+    "authenticated_retention_get": true,
+    "member_order_note_user_counts_preserved": true,
+    "account_password_status_session_digest_preserved": true
+  },
+  "cloud_accessed_or_deployed": false,
+  "scope_note": "Full suite ran on H2; PostgreSQL ran the 14 feature/timezone cases and separate migration/HTTP checks. Test writes were restricted to isolated databases."
+}

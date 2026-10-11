@@ -1,0 +1,136 @@
+{
+  "approvedShiftId": 2,
+  "dailyNet": 660,
+  "selectPlaceholderWidth": 136,
+  "roles": [
+    "RECEPTION",
+    "MANAGER",
+    "SUPER_ADMIN"
+  ],
+  "passed": true,
+  "approvedActualNet": 500,
+  "approvedSystemNet": 500,
+  "backendPort": 8189,
+  "database": "cash_qa",
+  "screenshots": [
+    {
+      "path": "desktop-overview.jpg",
+      "sha256": "18CC2D245BFFD81FE96B82743E9E0E018080CA751700825B6E2550935E2CA235"
+    },
+    {
+      "path": "desktop-audit.jpg",
+      "sha256": "3D41FD9B7F692B9CE2E524C09CC3084081A402C8B6B754BF9B126827A41D6609"
+    }
+  ],
+  "frontendPort": 5175,
+  "viewportWidth": 1920,
+  "mobileChecked": false,
+  "hqSelfSubmittedShiftId": 3,
+  "realBusinessTestWrites": false,
+  "scrollWidth": 1920,
+  "consoleErrors": 0,
+  "checks": [
+    {
+      "passed": true,
+      "name": "frontdesk-route-and-permission"
+    },
+    {
+      "passed": true,
+      "name": "initial-actuals-blank"
+    },
+    {
+      "passed": true,
+      "name": "explicit-zero-for-every-channel"
+    },
+    {
+      "passed": true,
+      "name": "difference-reason-required"
+    },
+    {
+      "passed": true,
+      "name": "frontdesk-submit490-of-system500"
+    },
+    {
+      "passed": true,
+      "name": "manager-return-reason-required"
+    },
+    {
+      "passed": true,
+      "name": "returned-fixed-one-payment-snapshot"
+    },
+    {
+      "passed": true,
+      "name": "original-submitter-correction500"
+    },
+    {
+      "passed": true,
+      "name": "before-after-amount-and-note-audit"
+    },
+    {
+      "passed": true,
+      "name": "manager-independent-approve"
+    },
+    {
+      "passed": true,
+      "name": "logout-clears-financial-data"
+    },
+    {
+      "passed": true,
+      "name": "hq-complete-two-venue-options"
+    },
+    {
+      "passed": true,
+      "name": "hq-switch-clears-old-venue-data"
+    },
+    {
+      "passed": true,
+      "name": "hq-concrete-venue-open-and-zero-submit"
+    },
+    {
+      "passed": true,
+      "name": "hq-cannot-review-own-submission"
+    },
+    {
+      "passed": true,
+      "name": "status-filter-preserves-daily-net660"
+    },
+    {
+      "passed": true,
+      "name": "final-select-wrapper180-placeholder136"
+    },
+    {
+      "passed": true,
+      "name": "final-desktop-no-horizontal-overflow"
+    },
+    {
+      "passed": true,
+      "name": "final-console-no-errors"
+    }
+  ],
+  "method": "CUA desktop browser actions plus isolated SQL readback",
+  "selectWrapperWidth": 180,
+  "auditEvents": 5,
+  "finalSourceHashes": [
+    {
+      "path": "fitness-frontend/src/api/modules/cashShifts.ts",
+      "sha256": "f8254df8992816aba7e66e675d35d641d71e4a7351d02ef3f874751c689b4e33"
+    },
+    {
+      "path": "fitness-frontend/src/views/admin/CashShiftCenter.vue",
+      "sha256": "d79213e97bc85992b7c0adf939c6d3759b0c5ee195fc1fb7a9a6e4b97420ff2c"
+    },
+    {
+      "path": "fitness-frontend/src/router/index.ts",
+      "sha256": "7c4a1fa488222a71be357a46abf21ffa9372e83790eea0fbdec1f9d30fcf319c"
+    },
+    {
+      "path": "fitness-frontend/src/layouts/AdminLayout.vue",
+      "sha256": "4eb314c222094869491a455a951cc4db40d7080530339d187194c961f6dc5118"
+    },
+    {
+      "path": "fitness-frontend/src/utils/request.ts",
+      "sha256": "e699706cd161c96eb3a2892f7b6cb78de69b7a097c391733edcac4632517a0d8"
+    }
+  ],
+  "generatedAt": "2026-10-10T16:18:24.7633213+08:00"
+}

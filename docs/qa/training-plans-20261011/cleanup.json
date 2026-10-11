@@ -1,0 +1,15 @@
+{
+  "qaServicesStopped": true,
+  "actualBackendHealth": "UP",
+  "deletedUserFiles": false,
+  "qaPorts": [
+    55450,
+    8190,
+    9201,
+    5176
+  ],
+  "passed": true,
+  "actualFrontendStatus": 200,
+  "realPostgresPreserved": true,
+  "qaBrowserClosed": true
+}

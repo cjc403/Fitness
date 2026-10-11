@@ -1,0 +1,12 @@
+{
+  "credentialSectionSha256": "C38E5CA37219F37D1AE4050DF4D5F8CFAB054D05A6B026C708C6FF5DC1720E66",
+  "passed": true,
+  "updated": [
+    "AGENTS.md",
+    "README.md",
+    "docs/当前功能与待办.md",
+    "docs/教练训练计划与执行记录_20261011.md",
+    "outside-repository-handoff-sections0and10"
+  ],
+  "sharedCredentialSectionUnchanged": true
+}

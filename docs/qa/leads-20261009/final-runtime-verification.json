@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-09T19:30:12.3002952+08:00",
+  "health": "UP",
+  "frontendUrl": "http://localhost:5173/login",
+  "frontendHttpStatus": 200,
+  "frontendBind": "Existing IPv6 loopback ::1; checked the launcher localhost URL",
+  "actualPortsPresent": [
+    8080,
+    9091,
+    5173,
+    5433
+  ],
+  "qaListenersRemaining": 0,
+  "onlineUpdated": false
+}

@@ -1,0 +1,31 @@
+{
+  "historicalTableCount": 61,
+  "phase": "local",
+  "flywayLatest": "21|t",
+  "historicalTablesUnchanged": true,
+  "passed": true,
+  "newTables": [
+    {
+      "table": "cash_shift",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "cash_shift_channel",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "cash_shift_event",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "cash_shift_payment",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ],
+  "changedHistoricalTables": [],
+  "totalTables": 65
+}

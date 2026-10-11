@@ -39,8 +39,8 @@ public class AuthController {
     
     @Operation(summary = "用户登出")
     @PostMapping("/logout")
-    public Result<Void> logout() {
-        authService.logout();
+    public Result<Void> logout(@Valid @RequestBody(required = false) com.gym.fitness.module.auth.dto.LogoutRequest request) {
+        authService.logout(request == null ? null : request.refreshToken());
         return Result.success();
     }
     
@@ -66,8 +66,7 @@ public class AuthController {
     @Operation(summary = "修改本人密码")
     @PostMapping("/change-password")
     @PreAuthorize("isAuthenticated()")
-    public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        authService.changePassword(request);
-        return Result.success();
+    public Result<LoginResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return Result.success("密码修改成功", authService.changePassword(request));
     }
 }

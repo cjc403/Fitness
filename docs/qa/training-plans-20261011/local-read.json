@@ -1,0 +1,24 @@
+{
+  "businessDataUnchanged": true,
+  "actualVersion": 22,
+  "passed": true,
+  "actualTableCount": 70,
+  "trainingDataEmpty": true,
+  "localOnly": true,
+  "realBusinessTestWrites": false,
+  "assertions": 6,
+  "authenticationMetadataChanged": [
+    "revoked_auth_session",
+    "sys_user"
+  ],
+  "actualDatabase": "fitness_db",
+  "serverAccessed": false,
+  "checks": [
+    "new permissions served by running backend",
+    "actual training plans empty, real summary zero",
+    "existing read /leads/workbench",
+    "existing read /cash-shifts/workbench",
+    "existing read /admin/advisor/retention",
+    "only own acceptance session logged out"
+  ]
+}

@@ -1,0 +1,809 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-11",
+  "envelope": "existing Result<T> {code,message,data,timestamp,success}",
+  "frontendRoot": "/v1/training-plans",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/v1/training-plans/students",
+      "permission": "TRAINING_PLAN_WRITE",
+      "request": null,
+      "response": "PageView<Student>",
+      "query": {
+        "keyword": "optional string",
+        "page": "1 default",
+        "size": "20 default, max100"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/training-plans/workbench",
+      "permission": "TRAINING_PLAN_READ",
+      "request": null,
+      "response": "Workbench",
+      "query": {
+        "venueId": "HQ only optional; other roles same venue only",
+        "status": "ALL default; DRAFT/ACTIVE/ARCHIVED",
+        "keyword": "optional string max100",
+        "page": "1 default",
+        "size": "20 default max100"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/training-plans/{id}",
+      "permission": "TRAINING_PLAN_READ",
+      "request": null,
+      "response": "Detail",
+      "query": {
+        "sessionPage": "1 default",
+        "sessionSize": "20 default max100"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/training-plans",
+      "permission": "TRAINING_PLAN_WRITE",
+      "request": "Create",
+      "response": "Detail",
+      "query": {}
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/training-plans/{id}/draft",
+      "permission": "TRAINING_PLAN_WRITE",
+      "request": "Draft",
+      "response": "Detail",
+      "query": {}
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/training-plans/{id}/publish",
+      "permission": "TRAINING_PLAN_WRITE",
+      "request": "Transition",
+      "response": "Detail",
+      "query": {}
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/training-plans/{id}/archive",
+      "permission": "TRAINING_PLAN_ARCHIVE",
+      "request": "Transition",
+      "response": "Detail",
+      "query": {}
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/training-plans/{id}/sessions",
+      "permission": "TRAINING_PLAN_WRITE",
+      "request": "RecordSession",
+      "response": "Detail",
+      "query": {}
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/training-plans/{id}/booking-options",
+      "permission": "TRAINING_PLAN_WRITE",
+      "request": null,
+      "response": "BookingOption[]",
+      "query": {
+        "performedOn": "required yyyy-MM-dd"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/training-plans/{id}/sessions/{sessionId}/void",
+      "permission": "TRAINING_PLAN_WRITE",
+      "request": "Transition",
+      "response": "Detail",
+      "query": {}
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/member/training-plans",
+      "permission": "MEMBER_SELF_SERVICE",
+      "request": null,
+      "response": "Workbench",
+      "query": {
+        "status": "ALL default",
+        "page": "1 default",
+        "size": "20 default max100"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/member/training-plans/{id}",
+      "permission": "MEMBER_SELF_SERVICE",
+      "request": null,
+      "response": "Detail",
+      "query": {
+        "sessionPage": "1 default",
+        "sessionSize": "20 default max100"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/member/training-plans/{id}/sessions/{sessionId}/feedback",
+      "permission": "MEMBER_SELF_SERVICE",
+      "request": "Feedback",
+      "response": "Detail",
+      "query": {}
+    }
+  ],
+  "dtos": {
+    "ExerciseInput": [
+      {
+        "name": "name",
+        "type": "String"
+      },
+      {
+        "name": "mode",
+        "type": "String"
+      },
+      {
+        "name": "sets",
+        "type": "Integer"
+      },
+      {
+        "name": "reps",
+        "type": "Integer"
+      },
+      {
+        "name": "weightKg",
+        "type": "BigDecimal"
+      },
+      {
+        "name": "minutes",
+        "type": "Integer"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      }
+    ],
+    "Create": [
+      {
+        "name": "memberId",
+        "type": "Long"
+      },
+      {
+        "name": "title",
+        "type": "String"
+      },
+      {
+        "name": "goal",
+        "type": "String"
+      },
+      {
+        "name": "startDate",
+        "type": "LocalDate"
+      },
+      {
+        "name": "endDate",
+        "type": "LocalDate"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      },
+      {
+        "name": "exercises",
+        "type": "List<ExerciseInput>"
+      },
+      {
+        "name": "idempotencyKey",
+        "type": "String"
+      }
+    ],
+    "Draft": [
+      {
+        "name": "title",
+        "type": "String"
+      },
+      {
+        "name": "goal",
+        "type": "String"
+      },
+      {
+        "name": "startDate",
+        "type": "LocalDate"
+      },
+      {
+        "name": "endDate",
+        "type": "LocalDate"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      },
+      {
+        "name": "exercises",
+        "type": "List<ExerciseInput>"
+      },
+      {
+        "name": "expectedVersion",
+        "type": "Long"
+      },
+      {
+        "name": "idempotencyKey",
+        "type": "String"
+      }
+    ],
+    "Transition": [
+      {
+        "name": "expectedVersion",
+        "type": "Long"
+      },
+      {
+        "name": "idempotencyKey",
+        "type": "String"
+      },
+      {
+        "name": "reason",
+        "type": "String"
+      }
+    ],
+    "SessionExerciseInput": [
+      {
+        "name": "exerciseId",
+        "type": "Long"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "sets",
+        "type": "Integer"
+      },
+      {
+        "name": "reps",
+        "type": "Integer"
+      },
+      {
+        "name": "weightKg",
+        "type": "BigDecimal"
+      },
+      {
+        "name": "minutes",
+        "type": "Integer"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      }
+    ],
+    "RecordSession": [
+      {
+        "name": "expectedVersion",
+        "type": "Long"
+      },
+      {
+        "name": "idempotencyKey",
+        "type": "String"
+      },
+      {
+        "name": "performedOn",
+        "type": "LocalDate"
+      },
+      {
+        "name": "durationMinutes",
+        "type": "Integer"
+      },
+      {
+        "name": "effort",
+        "type": "Integer"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      },
+      {
+        "name": "bookingId",
+        "type": "Long"
+      },
+      {
+        "name": "exercises",
+        "type": "List<SessionExerciseInput>"
+      }
+    ],
+    "Feedback": [
+      {
+        "name": "expectedVersion",
+        "type": "Long"
+      },
+      {
+        "name": "idempotencyKey",
+        "type": "String"
+      },
+      {
+        "name": "rating",
+        "type": "Integer"
+      },
+      {
+        "name": "content",
+        "type": "String"
+      }
+    ],
+    "PageView": [
+      {
+        "name": "records",
+        "type": "List<T>"
+      },
+      {
+        "name": "total",
+        "type": "long"
+      },
+      {
+        "name": "page",
+        "type": "int"
+      },
+      {
+        "name": "size",
+        "type": "int"
+      }
+    ],
+    "Student": [
+      {
+        "name": "id",
+        "type": "Long"
+      },
+      {
+        "name": "realName",
+        "type": "String"
+      },
+      {
+        "name": "memberNo",
+        "type": "String"
+      },
+      {
+        "name": "venueId",
+        "type": "Long"
+      },
+      {
+        "name": "trainingGoal",
+        "type": "String"
+      },
+      {
+        "name": "trainingGoalNote",
+        "type": "String"
+      }
+    ],
+    "VenueView": [
+      {
+        "name": "id",
+        "type": "Long"
+      },
+      {
+        "name": "name",
+        "type": "String"
+      }
+    ],
+    "Summary": [
+      {
+        "name": "draftPlans",
+        "type": "long"
+      },
+      {
+        "name": "activePlans",
+        "type": "long"
+      },
+      {
+        "name": "archivedPlans",
+        "type": "long"
+      },
+      {
+        "name": "sessionsThisMonth",
+        "type": "long"
+      }
+    ],
+    "Workbench": [
+      {
+        "name": "summary",
+        "type": "Summary"
+      },
+      {
+        "name": "plans",
+        "type": "PageView<PlanSummary>"
+      },
+      {
+        "name": "venues",
+        "type": "List<VenueView>"
+      }
+    ],
+    "PlanSummary": [
+      {
+        "name": "id",
+        "type": "Long"
+      },
+      {
+        "name": "memberId",
+        "type": "Long"
+      },
+      {
+        "name": "memberName",
+        "type": "String"
+      },
+      {
+        "name": "memberNo",
+        "type": "String"
+      },
+      {
+        "name": "coachId",
+        "type": "Long"
+      },
+      {
+        "name": "coachName",
+        "type": "String"
+      },
+      {
+        "name": "venueId",
+        "type": "Long"
+      },
+      {
+        "name": "venueName",
+        "type": "String"
+      },
+      {
+        "name": "title",
+        "type": "String"
+      },
+      {
+        "name": "goal",
+        "type": "String"
+      },
+      {
+        "name": "startDate",
+        "type": "LocalDate"
+      },
+      {
+        "name": "endDate",
+        "type": "LocalDate"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "version",
+        "type": "long"
+      },
+      {
+        "name": "exerciseCount",
+        "type": "long"
+      },
+      {
+        "name": "sessionCount",
+        "type": "long"
+      },
+      {
+        "name": "lastSessionOn",
+        "type": "LocalDate"
+      },
+      {
+        "name": "canEdit",
+        "type": "boolean"
+      },
+      {
+        "name": "canPublish",
+        "type": "boolean"
+      },
+      {
+        "name": "canArchive",
+        "type": "boolean"
+      },
+      {
+        "name": "canRecord",
+        "type": "boolean"
+      },
+      {
+        "name": "canViewBody",
+        "type": "boolean"
+      }
+    ],
+    "ExerciseView": [
+      {
+        "name": "id",
+        "type": "Long"
+      },
+      {
+        "name": "position",
+        "type": "int"
+      },
+      {
+        "name": "name",
+        "type": "String"
+      },
+      {
+        "name": "mode",
+        "type": "String"
+      },
+      {
+        "name": "sets",
+        "type": "Integer"
+      },
+      {
+        "name": "reps",
+        "type": "Integer"
+      },
+      {
+        "name": "weightKg",
+        "type": "BigDecimal"
+      },
+      {
+        "name": "minutes",
+        "type": "Integer"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      }
+    ],
+    "SessionExerciseView": [
+      {
+        "name": "exerciseId",
+        "type": "Long"
+      },
+      {
+        "name": "name",
+        "type": "String"
+      },
+      {
+        "name": "mode",
+        "type": "String"
+      },
+      {
+        "name": "position",
+        "type": "int"
+      },
+      {
+        "name": "sets",
+        "type": "Integer"
+      },
+      {
+        "name": "reps",
+        "type": "Integer"
+      },
+      {
+        "name": "weightKg",
+        "type": "BigDecimal"
+      },
+      {
+        "name": "minutes",
+        "type": "Integer"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      },
+      {
+        "name": "targetSets",
+        "type": "Integer"
+      },
+      {
+        "name": "targetReps",
+        "type": "Integer"
+      },
+      {
+        "name": "targetWeightKg",
+        "type": "BigDecimal"
+      },
+      {
+        "name": "targetMinutes",
+        "type": "Integer"
+      }
+    ],
+    "SessionView": [
+      {
+        "name": "id",
+        "type": "Long"
+      },
+      {
+        "name": "planId",
+        "type": "Long"
+      },
+      {
+        "name": "version",
+        "type": "long"
+      },
+      {
+        "name": "performedOn",
+        "type": "LocalDate"
+      },
+      {
+        "name": "durationMinutes",
+        "type": "int"
+      },
+      {
+        "name": "effort",
+        "type": "Integer"
+      },
+      {
+        "name": "note",
+        "type": "String"
+      },
+      {
+        "name": "bookingId",
+        "type": "Long"
+      },
+      {
+        "name": "courseName",
+        "type": "String"
+      },
+      {
+        "name": "status",
+        "type": "String"
+      },
+      {
+        "name": "voidReason",
+        "type": "String"
+      },
+      {
+        "name": "coachName",
+        "type": "String"
+      },
+      {
+        "name": "createdAt",
+        "type": "LocalDateTime"
+      },
+      {
+        "name": "feedbackRating",
+        "type": "Integer"
+      },
+      {
+        "name": "feedbackContent",
+        "type": "String"
+      },
+      {
+        "name": "feedbackAt",
+        "type": "LocalDateTime"
+      },
+      {
+        "name": "canVoid",
+        "type": "boolean"
+      },
+      {
+        "name": "canFeedback",
+        "type": "boolean"
+      },
+      {
+        "name": "exercises",
+        "type": "List<SessionExerciseView>"
+      }
+    ],
+    "EventView": [
+      {
+        "name": "id",
+        "type": "Long"
+      },
+      {
+        "name": "type",
+        "type": "String"
+      },
+      {
+        "name": "actorName",
+        "type": "String"
+      },
+      {
+        "name": "createdAt",
+        "type": "LocalDateTime"
+      },
+      {
+        "name": "reason",
+        "type": "String"
+      },
+      {
+        "name": "sessionId",
+        "type": "Long"
+      }
+    ],
+    "Detail": [
+      {
+        "name": "plan",
+        "type": "PlanSummary"
+      },
+      {
+        "name": "exercises",
+        "type": "List<ExerciseView>"
+      },
+      {
+        "name": "sessions",
+        "type": "PageView<SessionView>"
+      },
+      {
+        "name": "events",
+        "type": "List<EventView>"
+      },
+      {
+        "name": "eventTotal",
+        "type": "long"
+      }
+    ],
+    "BookingOption": [
+      {
+        "name": "id",
+        "type": "Long"
+      },
+      {
+        "name": "courseName",
+        "type": "String"
+      },
+      {
+        "name": "startTime",
+        "type": "LocalDateTime"
+      }
+    ]
+  },
+  "roles": {
+    "COACH": [
+      "TRAINING_PLAN_READ",
+      "TRAINING_PLAN_WRITE",
+      "TRAINING_PLAN_ARCHIVE"
+    ],
+    "MANAGER": [
+      "TRAINING_PLAN_READ",
+      "TRAINING_PLAN_ARCHIVE"
+    ],
+    "SUPER_ADMIN": [
+      "TRAINING_PLAN_READ",
+      "TRAINING_PLAN_ARCHIVE"
+    ],
+    "MEMBER": [
+      "MEMBER_SELF_SERVICE"
+    ]
+  },
+  "rules": {
+    "version": "new plan/session version0; draft/publish/archive/record increments plan; feedback/void increments session. All existing writes require expectedVersion. No auto retry of new versions.",
+    "idempotency": "memberId+actorId+key unique; 8-80 ASCII letters/digits/_/-; permission and relation before lookup; SHA256 operation+target IDs+canonical JSON (sorted object keys, normalized decimals, trim only title/name/note/reason/content, preserve enum/key strings and array order). Same payload retry returns current original object including later archived/voided state; changed payload 2600. CREATE replay additionally authorizes the original plan against refreshed current coach/service venue before returning detail.",
+    "memberPrivacy": "DRAFT omitted and by-id forbidden; events=[],eventTotal=0,venues=[],canEdit/canPublish/canArchive/canRecord=false; only own plans Member self-history stays readable when profile is inactive/blacklisted, but canFeedback=false and both new/past successful feedback keys are denied before deduplication; member state is refreshed after its row lock.",
+    "archive": "COACH own related plan; MANAGER service venue and HQ readable plan may archive with reason, including after coach reassignment; no additional edit/record/void rights Supervisor archive explicitly allows inactive/blacklisted profiles and lost coach relationships, with current supervisor venue scope and reason.",
+    "canViewBody": "UI visibility only: HQ true, accessible COACH true, MEMBER self true, MANAGER iff member home venue matches own. Existing body measurement permissions unchanged.",
+    "history": "sessions paged default20 max100 includes COMPLETED/VOIDED; counts,last date,month stats exclude VOIDED; audit latest100 with eventTotal",
+    "independentSession": "bookingId and courseName null identify independent record; frontend label 独立训练记录",
+    "duplicatePlanNames": "allowed; session exerciseIds must each appear exactly once",
+    "numbers": "JSON numbers remain numeric, nullable absent values remain null. Input Integer/Long fields require integer JSON tokens, no silent fractional truncation.",
+    "goals": [
+      "FAT_LOSS",
+      "MUSCLE_GAIN",
+      "POSTURE",
+      "ENDURANCE",
+      "GENERAL"
+    ],
+    "planStatus": [
+      "DRAFT",
+      "ACTIVE",
+      "ARCHIVED"
+    ],
+    "sessionStatus": [
+      "COMPLETED",
+      "VOIDED"
+    ],
+    "exerciseStatus": [
+      "DONE",
+      "SKIPPED"
+    ]
+  },
+  "errors": {
+    "businessHTTP": 200,
+    "paramBusinessCode": 1001,
+    "scopeBusinessCode": 1003,
+    "conflictBusinessCode": 2600,
+    "beanValidationHTTP": 400,
+    "roleAuthorizationHTTP": 403
+  },
+  "pgTest": {
+    "systemProperty": "training.test.pgurl",
+    "exactAllowedJdbc": "jdbc:postgresql://127.0.0.1:55450/training_junit",
+    "defaultSkippedTests": 7,
+    "schema": "Flyway enabled + Hibernate validate, no create-drop"
+  }
+}

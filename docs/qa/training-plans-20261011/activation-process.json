@@ -1,0 +1,18 @@
+{
+  "oldPid": 28236,
+  "realBusinessTestWrites": false,
+  "newPid": 2460,
+  "passed": true,
+  "sourceMatched": true,
+  "serverUpdated": false,
+  "backup": {
+    "dumpSha256": "F91FD817E7BC1D88DFD9E6A1B83C5873B7DA8B929368C5F61C38BBD41AE4690F",
+    "oldJar": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\training-plans-20261011\\backend-before-20261011-171308.jar",
+    "oldJarSha256": "9E0F22265394488AB88E4B50D970D89471E54A39DBDF2512CC72D049C5C9A780",
+    "dump": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\training-plans-20261011\\fitness_db-20261011-171308.dump"
+  },
+  "health": "UP",
+  "testedArtifact": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-training-build-20261011-122120\\target\\fitness-backend-1.0.0.jar",
+  "installedJarSha256": "6672D9ED0318F2373662BEE6192BAFB047BF3EC606E1C35180DB7126335754AC",
+  "localOnly": true
+}

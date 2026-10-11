@@ -1,0 +1,101 @@
+{
+  "date": "2026-10-09",
+  "feature": "Feature 2: leads and independent trial appointments",
+  "status": "complete-and-active-locally",
+  "localEntry": "http://localhost:5173/leads",
+  "backend": {
+    "command": "mvn -B clean package",
+    "database": "isolated H2",
+    "tests": 193,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "buildSuccess": true,
+    "log": "%TEMP%/fitchain-leads-build-20261009/leads-final-clean-package.log"
+  },
+  "postgresFeatureTests": {
+    "tests": 29,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "database": "isolated leads_junit:55439, PostgreSQL18.6",
+    "log": "%TEMP%/fitchain-leads-review-fix-20261009/precision-green-pg.log",
+    "scope": "LeadIntegrationTest only; not the full 193-test suite"
+  },
+  "frontend": {
+    "command": "node --test tests/*.test.mjs",
+    "tests": 92,
+    "failures": 0,
+    "skipped": 0,
+    "buildCommand": "npm run build (vue-tsc and Vite)",
+    "buildExitCode": 0,
+    "testLog": ".superpowers/sdd/2026-10-09-leads/frontend-final-tests.log",
+    "buildLog": ".superpowers/sdd/2026-10-09-leads/frontend-final-build.log",
+    "existingWarning": "Main bundle exceeds the Vite 500kB warning threshold"
+  },
+  "independentReview": {
+    "passedAfterFixes": true,
+    "reports": [
+      "frontend-review.md",
+      "backend-review.md",
+      "final-review.md"
+    ],
+    "closedFindings": [
+      "Session privacy clearing",
+      "Complete headquarters venue selector",
+      "Scoped bounded lookup queries",
+      "Product state/price race after venue lock",
+      "Microsecond time precision compatibility"
+    ]
+  },
+  "http": {
+    "passed": 17,
+    "evidence": "http-verification.json",
+    "database": "isolated leads_qa:55439"
+  },
+  "browser": {
+    "passed": true,
+    "evidence": "browser-verification.json",
+    "futureLayoutChecks": "Desktop only unless user explicitly requests mobile"
+  },
+  "migration": {
+    "from": 19,
+    "to": 20,
+    "passed": true,
+    "historicalTablesUnchanged": 58,
+    "evidence": "migration-verification.json",
+    "database": "isolated migration_qa:55439"
+  },
+  "actualLocalActivation": {
+    "passed": true,
+    "versionBefore": 20,
+    "versionAfter": 20,
+    "initialV20AlreadyAppliedByUserLauncher": true,
+    "jarSha256": "2AE22EF9C4F44EF9E5B7807DE28C8D38EDFFA104ED9709845D501147DA7EFAF8",
+    "all61TableCountsAndDigestsUnchangedBeforeAuthentication": true,
+    "actualLeadRows": 0,
+    "health": "UP",
+    "launcherExitCode": 0,
+    "evidence": [
+      "local-activation.json",
+      "local-data-verification.json",
+      "local-api-verification.json"
+    ],
+    "authenticationWrites": "Ordinary verification logins and scoped logouts only, after preservation snapshots",
+    "businessTestWrites": false
+  },
+  "onlineUpdated": false,
+  "committedOrPushed": false,
+  "nextFeaturesStarted": false,
+  "finalRuntime": {
+    "passed": true,
+    "evidence": "final-runtime-verification.json",
+    "realServicesRetained": true,
+    "isolatedServicesStopped": true
+  },
+  "handoff": {
+    "updated": true,
+    "credentialSectionUnchanged": true,
+    "evidence": "handoff-verification.json"
+  }
+}

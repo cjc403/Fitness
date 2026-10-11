@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 // 由 Lombok 生成构造注入：跨店分摊记账（见 CrossVenueSettlementService）
 public class TrainingService {
     private final com.gym.fitness.module.commercial.service.CrossVenueSettlementService crossVenueSettlement;
+    private final com.gym.fitness.module.commercial.service.CrossVenueService crossVenue;
     private final PrivateLessonRepository lessons;
     private final CommissionRuleRepository rules;
     private final CoachSettlementRepository settlements;
@@ -75,7 +76,7 @@ public class TrainingService {
         try {reserve(booking,schedule,null);return true;}catch(BusinessException ineligible){return false;}
     }
     private boolean validPackage(MemberEntitlementEntity e,BookingEntity b,CourseScheduleEntity s,LocalDate date) {
-        return Objects.equals(e.getMemberId(),b.getMemberId())&&Objects.equals(e.getVenueId(),s.getVenueId())&&"ACTIVE".equals(e.getStatus())&&e.getRemainingUses()!=null&&!date.isBefore(e.getValidFrom())&&!date.isAfter(e.getValidUntil())&&"PRIVATE_PACKAGE".equals(values.productType(e));
+        return Objects.equals(e.getMemberId(),b.getMemberId())&&crossVenue.usableAt(e.getVenueScope(),e.getVenueId(),s.getVenueId())&&"ACTIVE".equals(e.getStatus())&&e.getRemainingUses()!=null&&!date.isBefore(e.getValidFrom())&&!date.isAfter(e.getValidUntil())&&"PRIVATE_PACKAGE".equals(values.productType(e));
     }
     private int available(MemberEntitlementEntity e) {return e.getRemainingUses()==null?0:e.getRemainingUses()-e.getReservedUses();}
     private BigDecimal unitPrice(MemberEntitlementEntity e) {
@@ -115,7 +116,7 @@ public class TrainingService {
         var member=members.findById(l.getMemberId()).orElseThrow();
         if(!"ACTIVE".equals(member.getStatus())||Boolean.TRUE.equals(member.getBlacklistFlag()))throw failure("会员状态异常，请联系店长核实签课");
         var e=lockedCredit(l.getEntitlementId());
-        if(!Objects.equals(e.getMemberId(),l.getMemberId())||e.getReservedUses()<1||e.getRemainingUses()==null||e.getRemainingUses()<1||!List.of("ACTIVE","EXPIRED").contains(e.getStatus()))throw failure("课包权益异常，请联系店长");
+        if(!crossVenue.usableAt(e.getVenueScope(),e.getVenueId(),l.getVenueId())||!Objects.equals(e.getMemberId(),l.getMemberId())||e.getReservedUses()<1||e.getRemainingUses()==null||e.getRemainingUses()<1||!List.of("ACTIVE","EXPIRED").contains(e.getStatus()))throw failure("课包权益异常，请联系店长");
         l.setUnitPrice(values.consume(e,"LESSON:"+l.getId(),unitPrice(e)));
         // 跨店服务分摊：卡是别店卖的、课在本店上的，记一笔供内部结算（只记账，不动钱）
         crossVenueSettlement.recordLesson(l,e,l.getUnitPrice());
@@ -220,14 +221,17 @@ public class TrainingService {
         return rows.stream().filter(s->SecurityUtil.isSuperAdmin()||Objects.equals(s.getVenueId(),SecurityUtil.getCurrentOrganizationId())).map(this::settlementResponse).toList();
     }
     private BookingEntity lockedBooking(Long id) {
-        Long venueId=bookings.findVenueId(id).orElseThrow(()->failure("预约不存在"));assertVenue(venueId);venueLock.acquire(venueId);
+        Long venueId=bookings.findVenueId(id).orElseThrow(()->failure("预约不存在"));
+        if(SecurityUtil.hasRole("MEMBER"))bookings.findByIdAndMemberId(id,currentMemberId()).orElseThrow(()->failure("预约不存在"));
+        else assertVenue(venueId);
+        venueLock.acquire(venueId);
         Long sid=bookings.findScheduleId(id).orElseThrow(()->failure("预约不存在"));schedules.findByIdForUpdate(sid).orElseThrow(()->failure("排课不存在"));return bookings.findById(id).orElseThrow();
     }
     private PrivateLessonEntity requiredLesson(Long bookingId){return lessons.findByBookingId(bookingId).orElseThrow(()->failure("该预约是历史未关联记录，不会自动消课"));}
     private MemberEntitlementEntity lockedCredit(Long id){var e=entitlements.findByIdForUpdate(id).orElseThrow(()->failure("课包不存在"));entityManager.refresh(e);values.assertMutable(e);return e;}
     private SysUserEntity coachLock(Long id){var u=users.findByIdForUpdate(id).orElseThrow(()->failure("教练不存在"));if(!"COACH".equals(u.getRole().getCode()))throw failure("所选账号不是教练");return u;}
     private Long currentMemberId(){return members.findByUserId(SecurityUtil.getCurrentUserId()).orElseThrow(()->failure("账号未绑定会员")).getId();}
-    private void assertScope(PrivateLessonEntity l){assertVenue(l.getVenueId());if(SecurityUtil.hasRole("MEMBER")&&!Objects.equals(currentMemberId(),l.getMemberId()))throw failure("消课记录不存在");if(SecurityUtil.hasRole("COACH")&&!Objects.equals(SecurityUtil.getCurrentUserId(),l.getCoachId()))throw failure("消课记录不存在");}
+    private void assertScope(PrivateLessonEntity l){if(SecurityUtil.hasRole("MEMBER")){if(!Objects.equals(currentMemberId(),l.getMemberId()))throw failure("消课记录不存在");}else assertVenue(l.getVenueId());if(SecurityUtil.hasRole("COACH")&&!Objects.equals(SecurityUtil.getCurrentUserId(),l.getCoachId()))throw failure("消课记录不存在");}
     private void assertVenue(Long id){if(!SecurityUtil.isSuperAdmin()&&!Objects.equals(id,SecurityUtil.getCurrentOrganizationId()))throw failure("记录不存在或不属于本门店");}
     private void managerOnly(){if(!SecurityUtil.isSuperAdmin()&&!SecurityUtil.hasRole("MANAGER"))throw failure("仅总部管理员和店长可办理此操作");}
     private BusinessException failure(String message){return new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED,message);}

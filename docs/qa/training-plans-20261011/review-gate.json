@@ -1,0 +1,14 @@
+{
+  "declinedRulings": [
+    "no claim of universal inherited booking/schedule deadlock freedom",
+    "mobile excluded by user"
+  ],
+  "critical": 0,
+  "minor": 1,
+  "overall": "overall-review.md",
+  "backend": "backend-review-round2.md",
+  "important": 0,
+  "minorRuling": "bounded queries tracked; optimize on observed latency",
+  "passed": true,
+  "frontend": "frontend-review-round2.md"
+}

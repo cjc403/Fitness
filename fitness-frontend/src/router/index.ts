@@ -66,6 +66,30 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: '会员管理', requiresAuth: true, permissions: ['MEMBER_READ'] }
       },
       {
+        path: 'training-plans',
+        name: 'TrainingPlanCenter',
+        component: () => import('@/views/admin/TrainingPlanCenter.vue'),
+        meta: { title: '训练计划', requiresAuth: true, permissions: ['TRAINING_PLAN_READ'], roles: ['COACH', 'MANAGER', 'SUPER_ADMIN'] }
+      },
+      {
+        path: 'cash-shifts',
+        name: 'CashShiftCenter',
+        component: () => import('@/views/admin/CashShiftCenter.vue'),
+        meta: { title: '交班与日结', requiresAuth: true, permissions: ['CASH_SHIFT_READ'], roles: ['RECEPTION', 'MANAGER', 'SUPER_ADMIN'] }
+      },
+      {
+        path: 'leads',
+        name: 'LeadCenter',
+        component: () => import('@/views/admin/LeadCenter.vue'),
+        meta: { title: '潜客与体验课', requiresAuth: true, permissions: ['LEAD_READ'], roles: ['SALES', 'MANAGER', 'SUPER_ADMIN'] }
+      },
+      {
+        path: 'retention',
+        name: 'RetentionCenter',
+        component: () => import('@/views/admin/RetentionCenter.vue'),
+        meta: { title: '续费与回访', requiresAuth: true, permissions: ['MEMBER_READ'], roles: ['SALES', 'MANAGER', 'SUPER_ADMIN'] }
+      },
+      {
         path: 'commercial',
         name: 'CommercialCenter',
         component: () => import('@/views/admin/CommercialCenter.vue'),

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SalesOrderRepository extends JpaRepository<SalesOrderEntity, Long> {
+    List<SalesOrderEntity> findByMemberIdInAndOrderTypeAndPaidAtBetween(java.util.Collection<Long> memberIds, String orderType, LocalDateTime from, LocalDateTime to);
     /** 某人开的单（顾问业绩）。 */
     List<SalesOrderEntity> findByOperatorIdOrderByIdDesc(Long operatorId);
     List<SalesOrderEntity> findAllByOrderByCreatedAtDesc();

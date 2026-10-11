@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "schedule")
+    List<BookingEntity> findByMemberIdInOrderByBookedAtDesc(java.util.Collection<Long> memberIds);
 
     /** 该会员是否在该教练的某条排课上有过预约（教练学员判定用）。 */
     @org.springframework.data.jpa.repository.Query("select count(b) > 0 from BookingEntity b "
@@ -16,6 +18,7 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
     Optional<Long> findVenueId(@org.springframework.data.repository.query.Param("id") Long id);
     @org.springframework.data.jpa.repository.Query("select b.scheduleId from BookingEntity b where b.id=:id")
     Optional<Long> findScheduleId(@org.springframework.data.repository.query.Param("id") Long id);
+    List<BookingEntity> findBySchedule_VenueIdAndSchedule_CoachIdOrderByBookedAtDesc(Long venueId, Long coachId);
     List<BookingEntity> findAllByOrderByBookedAtDesc();
     List<BookingEntity> findBySchedule_VenueIdOrderByBookedAtDesc(Long venueId);
     boolean existsByScheduleIdAndMemberIdAndStatusNot(Long scheduleId, Long memberId, String status);

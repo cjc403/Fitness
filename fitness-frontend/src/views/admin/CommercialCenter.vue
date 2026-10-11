@@ -1,6 +1,9 @@
 <template>
   <div class="commercial" v-loading="loading">
-    <div class="page-head"><div><span>COMMERCIAL OPERATIONS</span><h1>会籍与商业中心</h1><p>从商品销售、支付开卡到权益履约、退款开票与入场核销的一体化业务闭环。</p></div><el-button @click="loadAll"><el-icon><Refresh/></el-icon> 刷新</el-button></div>
+    <WorkspaceHero compact>
+      <template #heading><span>COMMERCIAL OPERATIONS</span><h1>会籍与商业中心</h1><p>从商品销售、支付开卡到权益履约、退款开票与入场核销的一体化业务闭环。</p></template>
+      <template #actions><el-button @click="loadAll"><el-icon><Refresh/></el-icon> 刷新</el-button></template>
+    </WorkspaceHero>
     <div class="summary-grid">
       <article><small>本月净收款</small><strong>¥{{ money(overview.monthRevenue) }}</strong><span>{{ overview.monthOrders }} 笔订单</span></article>
       <article><small>生效中权益</small><strong>{{ overview.activeEntitlements }}</strong><span>会员卡与课包</span></article>
@@ -111,13 +114,14 @@
       <template #footer><el-button @click="issueDialog=false">取消</el-button><el-button type="primary" :loading="couponSaving" @click="submitIssue">确认发放</el-button></template>
     </el-dialog>
 
-    <el-dialog v-model="renewVisible" title="会员续费" width="500px"><el-form label-width="100px"><el-form-item label="顺延天数"><el-input-number v-model="renewForm.additionalDays" :min="1" style="width:100%"/></el-form-item><el-form-item label="增加次数"><el-input-number v-model="renewForm.additionalUses" :min="0" style="width:100%"/></el-form-item><el-form-item label="实收金额"><el-input-number v-model="renewForm.amount" :min="0.01" :precision="2" style="width:100%"/></el-form-item><el-form-item label="支付方式"><el-select v-model="renewForm.paymentMethod" style="width:100%"><el-option label="微信" value="WECHAT"/><el-option label="支付宝" value="ALIPAY"/><el-option label="银行卡" value="CARD"/><el-option label="现金" value="CASH"/></el-select></el-form-item></el-form><template #footer><el-button @click="renewVisible=false">取消</el-button><el-button type="primary" @click="submitRenew">确认续费</el-button></template></el-dialog>
+    <el-dialog v-model="renewVisible" title="会员续费" width="500px"><el-form label-width="100px"><el-form-item label="顺延天数"><el-input-number v-model="renewForm.additionalDays" :min="1" style="width:100%"/></el-form-item><el-form-item label="增加次数"><el-input-number v-model="renewForm.additionalUses" :min="0" style="width:100%"/></el-form-item><el-form-item label="实收金额"><el-input-number v-model="renewForm.amount" :min="0.01" :precision="2" style="width:100%"/></el-form-item><el-form-item label="支付方式"><el-select v-model="renewForm.paymentMethod" style="width:100%"><el-option label="微信" value="WECHAT"/><el-option label="支付宝" value="ALIPAY"/><el-option label="银行卡" value="CARD"/><el-option label="现金" value="CASH"/></el-select></el-form-item></el-form><template #footer><el-button @click="renewVisible=false">取消</el-button><el-button type="primary" :loading="renewSubmitting" :disabled="renewSubmitting" @click="submitRenew">确认续费</el-button></template></el-dialog>
 
     <el-dialog v-model="transferVisible" title="会员转卡" width="480px"><el-form label-width="90px"><el-form-item label="转给会员"><el-select v-model="transferMemberId" filterable style="width:100%"><el-option v-for="m in transferCandidates" :key="m.id" :label="`${m.realName} · ${m.memberNo}`" :value="m.id"/></el-select></el-form-item></el-form><template #footer><el-button @click="transferVisible=false">取消</el-button><el-button type="primary" @click="submitTransfer">确认转卡</el-button></template></el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
@@ -137,7 +141,8 @@ const loading=ref(false), activeTab=ref('products'), remindersOnly=ref(false)
 const overview=ref<CommercialOverview>({monthRevenue:0,monthOrders:0,activeEntitlements:0,expiringWithin30Days:0,todayEntries:0,generatedAt:''})
 const products=ref<Product[]>([]),orders=ref<Order[]>([]),entitlements=ref<Entitlement[]>([]),payments=ref<Payment[]>([]),documents=ref<BusinessDocument[]>([]),accessRecords=ref<AccessRecord[]>([]),members=ref<Member[]>([]),venues=ref<Venue[]>([])
 const scopeMap=ref<Record<number, number[]>>({}),scopeDialog=ref(false),scopeProduct=ref<Product|null>(null),scopeSaving=ref(false),scopeForm=ref<number[]>([])
-const saleSubmitting=ref(false)
+const saleSubmitting=ref(false),renewSubmitting=ref(false)
+let renewalIntent: { fingerprint: string; idempotencyKey: string } | undefined
 const productVisible=ref(false),saleVisible=ref(false),renewVisible=ref(false),transferVisible=ref(false),editingProduct=ref<Product>(),actionEntitlement=ref<Entitlement>(),transferMemberId=ref<number>()
 const productForm=reactive<any>({name:'',category:'CARD',productType:'MONTH_CARD',description:'',validityDays:30,totalUses:undefined,accessAllowed:true,price:399,status:'ACTIVE',venueId:auth.userInfo?.organizationId})
 const saleForm=reactive<any>({memberId:undefined,productId:undefined,paymentMethod:'WECHAT',paidAmount:undefined,remark:'',memberCouponId:undefined})
@@ -220,8 +225,20 @@ const submitSale=async()=>{
 }
 const freeze=async(e:Entitlement)=>{await ElMessageBox.confirm(`冻结 ${e.memberName} 的“${e.productName}”？`,'冻结权益',{type:'warning'});await freezeEntitlement(e.id);ElMessage.success('权益已冻结');await loadAll()}
 const unfreeze=async(e:Entitlement)=>{await unfreezeEntitlement(e.id);ElMessage.success('权益已解冻，有效期已自动顺延');await loadAll()}
-const openRenew=(e:Entitlement)=>{actionEntitlement.value=e;const p=products.value.find(p=>p.id===e.productId);Object.assign(renewForm,{additionalDays:p?.validityDays||30,additionalUses:p?.totalUses||0,amount:p?.price||399,paymentMethod:'WECHAT'});renewVisible.value=true}
-const submitRenew=async()=>{if(!actionEntitlement.value)return;await renewEntitlement(actionEntitlement.value.id,renewForm);ElMessage.success('续费成功，权益已更新');renewVisible.value=false;await loadAll()}
+const openRenew=(e:Entitlement)=>{renewalIntent=undefined;actionEntitlement.value=e;const p=products.value.find(p=>p.id===e.productId);Object.assign(renewForm,{additionalDays:p?.validityDays||30,additionalUses:p?.totalUses||0,amount:p?.price||399,paymentMethod:'WECHAT'});renewVisible.value=true}
+const submitRenew=async()=>{
+  if(!actionEntitlement.value||renewSubmitting.value)return
+  const id=actionEntitlement.value.id
+  const body={additionalDays:renewForm.additionalDays,additionalUses:renewForm.additionalUses||undefined,amount:renewForm.amount,paymentMethod:renewForm.paymentMethod,note:renewForm.note}
+  const fingerprint=JSON.stringify({id,...body})
+  try{if(renewalIntent?.fingerprint!==fingerprint)renewalIntent={fingerprint,...refundIntent()}}catch{ElMessage.error('无法生成安全随机申请编号，请检查浏览器后重试');return}
+  renewSubmitting.value=true
+  try{
+    await renewEntitlement(id,{...body,idempotencyKey:renewalIntent.idempotencyKey})
+    renewalIntent=undefined
+    ElMessage.success('续费成功，权益已更新');renewVisible.value=false;await loadAll()
+  }finally{renewSubmitting.value=false}
+}
 const openTransfer=(e:Entitlement)=>{actionEntitlement.value=e;transferMemberId.value=undefined;transferVisible.value=true}
 const submitTransfer=async()=>{if(!actionEntitlement.value||!transferMemberId.value)return ElMessage.warning('请选择接收会员');await transferEntitlement(actionEntitlement.value.id,transferMemberId.value);ElMessage.success('转卡成功');transferVisible.value=false;await loadAll()}
 const openFinanceRefund=async(e:Entitlement)=>{activeTab.value='refunds';await nextTick();await refundPanel.value?.startFor(e.id)}

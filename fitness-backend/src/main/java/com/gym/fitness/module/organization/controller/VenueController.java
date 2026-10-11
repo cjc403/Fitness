@@ -63,10 +63,10 @@ public class VenueController {
         var user = SecurityUtil.getCurrentUser();
         if (user == null) throw new BusinessException(ErrorCode.UNAUTHORIZED);
         VenueResponse venue = venueService.get(id);
-        String accessToken = tokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole(), id);
+        String accessToken = tokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole(), id, user.getSessionVersion(), user.getSessionId());
         java.util.Map<String, Object> data = new java.util.LinkedHashMap<>();
         data.put("accessToken", accessToken);
-        data.put("refreshToken", tokenProvider.generateRefreshToken(user.getId()));
+        data.put("refreshToken", tokenProvider.generateRefreshToken(user.getId(), user.getSessionVersion(), user.getSessionId()));
         data.put("venue", venue);
         return Result.success(data);
     }

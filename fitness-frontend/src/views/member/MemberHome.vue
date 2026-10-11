@@ -1,17 +1,19 @@
 <template>
   <div class="member-home" v-loading="loading">
-    <section class="hero">
-      <div>
+    <WorkspaceHero>
+      <template #heading>
         <span>MEMBER PORTAL</span>
         <h1>你好，{{ profile?.realName || userInfo?.realName }}</h1>
         <p>{{ userInfo?.organizationName }} · 会员编号 {{ profile?.memberNo || '—' }}</p>
-      </div>
-      <div class="hero-stats">
-        <div><strong>{{ activeBookingCount }}</strong><small>待参加课程</small></div>
-        <div><strong>{{ attendedCount }}</strong><small>已完成训练</small></div>
-        <div><strong>{{ activeEntitlementCount }}</strong><small>生效中权益</small></div>
-      </div>
-    </section>
+      </template>
+      <template #footer>
+        <div class="hero-stats">
+          <div><strong>{{ activeBookingCount }}</strong><small>待参加课程</small></div>
+          <div><strong>{{ attendedCount }}</strong><small>已完成训练</small></div>
+          <div><strong>{{ activeEntitlementCount }}</strong><small>生效中权益</small></div>
+        </div>
+      </template>
+    </WorkspaceHero>
 
     <el-tabs v-model="activeTab" class="portal-tabs">
       <el-tab-pane label="发现课程" name="schedules">
@@ -60,6 +62,7 @@
       </el-tab-pane>
 
       <el-tab-pane label="私教签课" name="training"><TrainingPanel ref="trainingPanel" @changed="load" @go="onTrainingGuide" /></el-tab-pane>
+      <el-tab-pane label="我的训练" name="training-plans"><TrainingPlanPanel v-if="activeTab==='training-plans'" member-mode /></el-tab-pane>
       <el-tab-pane label="购买会籍" name="shop">
         <section><div class="section-head"><div><h2>会员卡与课程包</h2><p>与门店在售商品实时同步；其他门店的商品仅作展示，需到该门店办理。演示环境不接入真实支付。</p></div><el-tag effect="plain">{{ products.length }} 款在售</el-tag></div>
           <div class="entitlement-grid">
@@ -180,6 +183,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { Calendar, Clock, User } from '@element-plus/icons-vue'
@@ -187,6 +191,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/modules/auth'
 import QRCode from 'qrcode'
 import TrainingPanel from '@/components/TrainingPanel.vue'
+import TrainingPlanPanel from '@/components/TrainingPlanPanel.vue'
 import { cancelSelfBooking, createSelfBooking, getCourseRecommendations, getMemberProfile, joinScheduleWaitlist, listMemberBookings, listMemberProducts, listMemberSchedules, purchaseMembership, requestBookingLeave, type CourseRecommendation, type MemberBooking, type MemberProduct, type MemberProfile, type MemberSchedule, type RecommendationResult } from '@/api/modules/memberPortal'
 import { getMyAccessCode, getMyEntitlements, type AccessCode, type Entitlement } from '@/api/modules/commercial'
 import { cancelMyRefund, createMyRefund, getMyEntitlementQuote, listMyRefunds, type EntitlementQuote, type MemberRefund, getMyRefundBlockers, clearMyRefundBlockers, type RefundBlocker, type ClearBlockersResult } from '@/api/modules/finance'
@@ -229,6 +234,11 @@ const couponPickerVisible=ref(false), pickingProduct=ref<MemberProduct|null>(nul
 const pickOptions=ref<CouponQuoteOption[]>([]), pickedCouponId=ref(0)
 const accessSecondsLeft=ref(0)
 let accessTimer:number|undefined
+let disposed=false
+let accessRequestVersion=0
+let loadVersion=0
+const sessionGeneration=authStore.sessionGeneration
+const isCurrentView=()=>!disposed&&authStore.sessionGeneration===sessionGeneration
 const refundEntitlementId=ref<number>(), refundQuote=ref<EntitlementQuote>(), refundReason=ref(''), quoteLoading=ref(false), refundSubmitting=ref(false), refundIntentRef=ref<{idempotencyKey:string}>()
 const refundBlockers=ref<RefundBlocker[]>([]), clearingBlockers=ref(false), lastClearResult=ref<ClearBlockersResult>()
 const can=(permission:string)=>authStore.userInfo?.permissions?.includes(permission)===true
@@ -238,20 +248,28 @@ const attendedCount = computed(() => bookings.value.filter(item => item.status =
 const activeEntitlementCount = computed(() => entitlements.value.filter(item => item.status === 'ACTIVE').length)
 
 const load = async () => {
+  if(!isCurrentView())return
+  const version=++loadVersion
+  const codeVersion=++accessRequestVersion
   loading.value = true
   try {
     const [profileResponse, scheduleResponse, bookingResponse, entitlementResponse, codeResponse] = await Promise.all([
       getMemberProfile(), listMemberSchedules(), listMemberBookings(), getMyEntitlements(), getMyAccessCode()
     ])
+    if(!isCurrentView()||version!==loadVersion)return
     profile.value = profileResponse.data
     schedules.value = scheduleResponse.data
     bookings.value = bookingResponse.data
     entitlements.value = entitlementResponse.data
-    accessCode.value = codeResponse.data
-    qrImage.value = await QRCode.toDataURL(codeResponse.data.qrPayload, { width: 220, margin: 1, color: { dark: '#132445', light: '#ffffff' } })
-    startAccessCountdown(codeResponse.data.ttlSeconds || 60)
+    const image=await QRCode.toDataURL(codeResponse.data.qrPayload, { width: 220, margin: 1, color: { dark: '#132445', light: '#ffffff' } })
+    if(!isCurrentView()||version!==loadVersion)return
+    if(codeVersion===accessRequestVersion){
+      accessCode.value=codeResponse.data
+      qrImage.value=image
+      startAccessCountdown(codeResponse.data.ttlSeconds || 60)
+    }
     if(can('MEMBER_SELF_SERVICE')) await Promise.all([loadRefunds(), loadNotices(), loadCoupons(), loadReviews()])
-  } finally { loading.value = false }
+  } finally { if(isCurrentView()&&version===loadVersion)loading.value = false }
 }
 
 const loadRefunds=async()=>{refundsFailed.value=false;try{myRefunds.value=(await listMyRefunds()).data}catch{refundsFailed.value=true}}
@@ -330,22 +348,29 @@ const readAll=async()=>{if(!unreadCount.value)return;await markAllNotificationsR
 
 /** 门禁二维码是 60 秒一次性令牌，到期前自动换一张，避免"截图还能用"。 */
 const startAccessCountdown=(ttl:number)=>{
+  if(!isCurrentView())return
   window.clearInterval(accessTimer)
   accessSecondsLeft.value=ttl
   accessTimer=window.setInterval(()=>{
+    if(!isCurrentView()){window.clearInterval(accessTimer);return}
     accessSecondsLeft.value-=1
     if(accessSecondsLeft.value<=0){window.clearInterval(accessTimer);refreshAccessCode()}
   },1000)
 }
 const refreshAccessCode=async()=>{
+  if(!isCurrentView())return
+  const version=++accessRequestVersion
   try{
     const res=await getMyAccessCode()
+    if(!isCurrentView()||version!==accessRequestVersion)return
+    const image=await QRCode.toDataURL(res.data.qrPayload,{width:220,margin:1,color:{dark:'#132445',light:'#ffffff'}})
+    if(!isCurrentView()||version!==accessRequestVersion)return
     accessCode.value=res.data
-    qrImage.value=await QRCode.toDataURL(res.data.qrPayload,{width:220,margin:1,color:{dark:'#132445',light:'#ffffff'}})
+    qrImage.value=image
     startAccessCountdown(res.data.ttlSeconds||60)
-  }catch{accessSecondsLeft.value=0}
+  }catch{if(isCurrentView()&&version===accessRequestVersion)accessSecondsLeft.value=0}
 }
-onUnmounted(()=>window.clearInterval(accessTimer))
+onUnmounted(()=>{disposed=true;window.clearInterval(accessTimer)})
 const loadProducts=async()=>{try{products.value=(await listMemberProducts()).data}catch{products.value=[]}}
 const doPurchase=async(item:MemberProduct,couponId?:number)=>{
   let intent:{idempotencyKey:string}

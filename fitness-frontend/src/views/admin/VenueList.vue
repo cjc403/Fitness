@@ -1,15 +1,13 @@
 <template>
   <div class="page">
-    <div class="page-toolbar">
-      <div>
-        <h2>场馆管理</h2>
-        <p>维护总部和分店的基础信息</p>
-      </div>
-      <el-button v-if="canCreate" type="primary" @click="openCreate">
+    <WorkspaceHero compact>
+      <template #heading><span>FITNESS OPERATIONS</span><h2>场馆管理</h2>
+        <p>维护总部和分店的基础信息</p></template>
+      <template #actions><el-button v-if="canCreate" type="primary" @click="openCreate">
         <el-icon><Plus /></el-icon>
         新增场馆
-      </el-button>
-    </div>
+      </el-button></template>
+    </WorkspaceHero>
 
     <el-card shadow="never">
       <el-table v-loading="loading" :data="venues" stripe>
@@ -66,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkspaceHero from '@/components/WorkspaceHero.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'

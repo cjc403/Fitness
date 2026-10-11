@@ -1,0 +1,129 @@
+{
+  "venueId": 1,
+  "database": "cash_qa",
+  "desktopOpenShiftId": 2,
+  "passed": true,
+  "approvedShiftId": 1,
+  "checks": [
+    {
+      "name": "reception-one-visible-venue",
+      "passed": true,
+      "actual": 1
+    },
+    {
+      "name": "first-opening-excludes-old-funding",
+      "passed": true,
+      "actual": 2
+    },
+    {
+      "name": "open-key-replays-same-shift",
+      "passed": true,
+      "actual": 1
+    },
+    {
+      "name": "new-payment-rejects-stale-preview",
+      "passed": true,
+      "actual": 2600
+    },
+    {
+      "name": "system-receipts-literal300",
+      "passed": true,
+      "actual": 300.0
+    },
+    {
+      "name": "system-refunds-literal140",
+      "passed": true,
+      "actual": 140.0
+    },
+    {
+      "name": "system-net-literal160",
+      "passed": true,
+      "actual": 160.0
+    },
+    {
+      "name": "backdated-refunds-included-by-registration-id",
+      "passed": true,
+      "actual": 4
+    },
+    {
+      "name": "offsetting-channel-difference-requires-reason",
+      "passed": true,
+      "actual": 1001
+    },
+    {
+      "name": "submitted-actual-net-literal155",
+      "passed": true,
+      "actual": 155.0
+    },
+    {
+      "name": "submit-replay-no-extra-version",
+      "passed": true,
+      "actual": 1
+    },
+    {
+      "name": "reception-cannot-review",
+      "passed": true,
+      "actual": 1003
+    },
+    {
+      "name": "manager-return",
+      "passed": true,
+      "actual": "RETURNED"
+    },
+    {
+      "name": "returned-keeps-original-four-payment-snapshot",
+      "passed": true,
+      "actual": 4
+    },
+    {
+      "name": "approved-net-literal160-audit-five",
+      "passed": true,
+      "actual": {
+        "net": 160.0,
+        "audit": 5
+      }
+    },
+    {
+      "name": "status-filter-does-not-change-daily-summary",
+      "passed": true,
+      "actual": 160.0
+    },
+    {
+      "name": "next-shift-includes-carried-over500",
+      "passed": true,
+      "actual": 500.0
+    },
+    {
+      "name": "hq-complete-venue-options",
+      "passed": true,
+      "actual": 2
+    },
+    {
+      "name": "foreign-venue-denied",
+      "passed": true,
+      "actual": 1003
+    },
+    {
+      "name": "advisor-denied-cash-shift",
+      "passed": true,
+      "actual": 1003
+    },
+    {
+      "name": "coach-denied-cash-shift",
+      "passed": true,
+      "actual": 1003
+    },
+    {
+      "name": "member-denied-cash-shift",
+      "passed": true,
+      "actual": 1003
+    },
+    {
+      "name": "closed-snapshot-only-four-rows",
+      "passed": true,
+      "actual": 4
+    }
+  ],
+  "generatedAt": "2026-10-10T03:55:16.3603431Z",
+  "applicationPort": 8189
+}

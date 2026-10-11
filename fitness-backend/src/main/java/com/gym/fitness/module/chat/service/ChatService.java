@@ -117,8 +117,13 @@ public class ChatService {
         SysUserEntity me = me();
         SysUserEntity other = users.findById(otherUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "对方账号不存在"));
+        List<DirectMessageEntity> history = messages.findThread(me.getId(), otherUserId);
+        // A participant keeps access to their own historical conversation after
+        // a counterpart transfers/leaves. An arbitrary ID without a history
+        // must satisfy the same contact boundary as starting a conversation.
+        if (history.isEmpty()) assertCanMessage(me, other);
         messages.markThreadRead(me.getId(), otherUserId, LocalDateTime.now());
-        List<Message> list = messages.findThread(me.getId(), otherUserId).stream()
+        List<Message> list = history.stream()
                 .map(m -> new Message(m.getId(), Objects.equals(m.getSenderUserId(), me.getId()),
                         m.getSenderName(), m.getContent(), m.getCreatedAt()))
                 .toList();

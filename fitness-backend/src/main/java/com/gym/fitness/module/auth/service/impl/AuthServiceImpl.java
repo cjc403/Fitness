@@ -38,6 +38,10 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider tokenProvider;
     private final SysUserRepository sysUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.gym.fitness.module.auth.repository.RevokedAuthSessionRepository revokedSessions;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshTokenExpiration;
 
     @Value("${jwt.expiration}")
     private long accessTokenExpiration;
@@ -46,18 +50,18 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public LoginResponse login(LoginRequest request) {
         try {
+            // Lock before AuthenticationManager reads the account into this persistence
+            // context; login bookkeeping must never overwrite a concurrent reset.
+            SysUserEntity entity = sysUserRepository.findByUsernameForUpdate(request.getUsername())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.LOGIN_FAILED));
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
             
             SecurityContextHolder.getContext().setAuthentication(authentication);
             
-            UserDetailsImpl user = (UserDetailsImpl) authentication.getPrincipal();
-            sysUserRepository.findById(user.getId()).ifPresent(entity -> {
-                entity.setLastLoginAt(LocalDateTime.now());
-                sysUserRepository.save(entity);
-            });
-            return buildLoginResponse(user);
+            entity.setLastLoginAt(LocalDateTime.now());
+            return buildLoginResponse(detailsOf(entity));
         } catch (AuthenticationException e) {
             log.warn("登录失败: username={}", request.getUsername());
             throw new BusinessException(ErrorCode.LOGIN_FAILED);
@@ -65,23 +69,68 @@ public class AuthServiceImpl implements AuthService {
     }
     
     @Override
-    public void logout() {
+    @Transactional
+    public void logout(String refreshToken) {
+        var principal = SecurityUtil.getCurrentUser();
+        Long userId = principal == null ? null : principal.getId();
+        long version = principal == null ? -1L : principal.getSessionVersion();
+        String sessionId = principal == null ? null : principal.getSessionId();
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            if (!tokenProvider.validateRefreshToken(refreshToken)) throw new BusinessException(ErrorCode.TOKEN_INVALID);
+            Long refreshUser = tokenProvider.getUserIdFromToken(refreshToken);
+            long refreshVersion = tokenProvider.getSessionVersionFromToken(refreshToken);
+            String refreshSession = tokenProvider.getSessionIdFromToken(refreshToken);
+            if (principal != null && (!principal.getId().equals(refreshUser)
+                    || principal.getSessionVersion() != refreshVersion
+                    || !java.util.Objects.equals(principal.getSessionId(), refreshSession))) {
+                throw new BusinessException(ErrorCode.TOKEN_INVALID);
+            }
+            userId = refreshUser;
+            version = refreshVersion;
+            sessionId = refreshSession;
+        }
+        if (userId != null) {
+            var user = sysUserRepository.findByIdForUpdate(userId).orElse(null);
+            if (user != null && user.currentSessionVersion() == version) {
+                if (sessionId == null) {
+                    // Pre-V18 tokens cannot identify a device; retain safe legacy revocation.
+                    user.revokeSessions();
+                } else if (!revokedSessions.existsById(sessionId)) {
+                    var revoked = new com.gym.fitness.module.auth.entity.RevokedAuthSessionEntity();
+                    revoked.setSessionId(sessionId);
+                    revoked.setUserId(userId);
+                    revoked.setRevokedAt(java.time.Instant.now());
+                    revoked.setExpiresAt(java.time.Instant.now().plusMillis(Math.max(accessTokenExpiration, refreshTokenExpiration)));
+                    revokedSessions.save(revoked);
+                }
+            }
+        }
         SecurityContextHolder.clearContext();
     }
-    
+
     @Override
+    @Transactional
     public LoginResponse refreshToken(String refreshToken) {
         if (!tokenProvider.validateRefreshToken(refreshToken)) {
             throw new BusinessException(ErrorCode.TOKEN_INVALID);
         }
 
         Long userId = tokenProvider.getUserIdFromToken(refreshToken);
-        SysUserEntity entity = sysUserRepository.findById(userId)
+        SysUserEntity entity = sysUserRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         if (!"ACTIVE".equalsIgnoreCase(entity.getStatus())) {
             throw new BusinessException(ErrorCode.ACCOUNT_DISABLED);
         }
+        if (entity.currentSessionVersion() != tokenProvider.getSessionVersionFromToken(refreshToken)) {
+            throw new BusinessException(ErrorCode.TOKEN_INVALID);
+        }
 
+        String sessionId = tokenProvider.getSessionIdFromToken(refreshToken);
+        if (sessionId != null && revokedSessions.existsById(sessionId)) throw new BusinessException(ErrorCode.TOKEN_INVALID);
+        return buildLoginResponse(detailsOf(entity), sessionId);
+    }
+
+    private UserDetailsImpl detailsOf(SysUserEntity entity) {
         UserDetailsImpl user = new UserDetailsImpl();
         user.setId(entity.getId());
         user.setUsername(entity.getUsername());
@@ -91,16 +140,22 @@ public class AuthServiceImpl implements AuthService {
         user.setOrganizationId(entity.getVenueId());
         user.setOrganizationName(entity.getVenue().getName());
         user.setMustChangePassword(Boolean.TRUE.equals(entity.getMustChangePassword()));
-        return buildLoginResponse(user);
+        user.setSessionVersion(entity.currentSessionVersion());
+        return user;
     }
 
     @Override
     @Transactional
-    public void changePassword(ChangePasswordRequest request) {
+    public LoginResponse changePassword(ChangePasswordRequest request) {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) throw new BusinessException(ErrorCode.UNAUTHORIZED);
-        SysUserEntity user = sysUserRepository.findById(userId)
+        SysUserEntity user = sysUserRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (SecurityUtil.getCurrentUser().getSessionVersion() != user.currentSessionVersion()
+                || (SecurityUtil.getCurrentUser().getSessionId() != null
+                    && revokedSessions.existsById(SecurityUtil.getCurrentUser().getSessionId()))) {
+            throw new BusinessException(ErrorCode.TOKEN_INVALID);
+        }
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
             throw new BusinessException(ErrorCode.LOGIN_FAILED, "当前密码不正确");
         }
@@ -110,13 +165,22 @@ public class AuthServiceImpl implements AuthService {
         }
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         user.setMustChangePassword(false);
+        user.revokeSessions();
         sysUserRepository.save(user);
+        return buildLoginResponse(detailsOf(user));
     }
 
     private LoginResponse buildLoginResponse(UserDetailsImpl user) {
+        return buildLoginResponse(user, java.util.UUID.randomUUID().toString());
+    }
+
+    private LoginResponse buildLoginResponse(UserDetailsImpl user, String existingSessionId) {
+        // Legacy refresh stays legacy until a new login/password change, so
+        // logout can still revoke every copy via the account version.
+        String sessionId = existingSessionId;
         String accessToken = tokenProvider.generateToken(
-                user.getId(), user.getUsername(), user.getRole(), user.getOrganizationId());
-        String refreshToken = tokenProvider.generateRefreshToken(user.getId());
+                user.getId(), user.getUsername(), user.getRole(), user.getOrganizationId(), user.getSessionVersion(), sessionId);
+        String refreshToken = tokenProvider.generateRefreshToken(user.getId(), user.getSessionVersion(), sessionId);
 
         LoginResponse response = new LoginResponse();
         response.setAccessToken(accessToken);

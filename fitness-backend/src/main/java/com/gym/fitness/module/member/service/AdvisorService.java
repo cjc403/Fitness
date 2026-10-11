@@ -35,6 +35,8 @@ public class AdvisorService {
     private final MemberFollowUpRepository followUps;
     private final SysUserRepository users;
     private final SalesOrderRepository orders;
+    private final com.fasterxml.jackson.databind.ObjectMapper mapper;
+    private final java.time.Clock contactClock = java.time.Clock.system(java.time.ZoneId.of("Asia/Shanghai"));
     private final com.gym.fitness.module.booking.repository.BookingRepository bookings;
     private final com.gym.fitness.module.commercial.repository.MemberEntitlementRepository entitlements;
 
@@ -59,27 +61,66 @@ public class AdvisorService {
 
     @Transactional(readOnly = true)
     public List<FollowUpView> memberFollowUps(Long memberId) {
-        requireMember(memberId);
+        MemberEntity member = requireMember(memberId);
+        if (SecurityUtil.hasRole("SALES")) assertCanFollow(member);
         return followUps.findByMemberIdOrderByIdDesc(memberId).stream().map(this::toView).toList();
     }
 
     /** 记录一次跟进；只有归属本人、店长或总部可以为该会员记跟进。 */
     @Transactional
     public FollowUpView addFollowUp(Long memberId, FollowUpRequest request) {
-        MemberEntity member = requireMember(memberId);
+        MemberEntity member = members.findByIdForUpdate(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        if (!SecurityUtil.isSuperAdmin() && !Objects.equals(member.getVenueId(), currentVenue())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "不能操作其他门店的会员");
+        }
         assertCanFollow(member);
         String type = request.getFollowType().trim().toUpperCase();
         if (!Set.of("CALL", "WECHAT", "VISIT", "OTHER").contains(type)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "跟进方式只能是电话、微信、到店或其它");
+        }
+        String content = request.getContent().trim();
+        String outcome = request.getOutcome() == null ? "NOT_RECORDED" : request.getOutcome().trim().toUpperCase(Locale.ROOT);
+        if (content.isEmpty() || !Set.of("NOT_RECORDED", "NO_CONTACT", "VISIT_BOOKED", "RENEWAL_PENDING", "DECLINED", "OTHER").contains(outcome)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "请填写跟进内容并选择有效的跟进结果");
+        }
+        String key = request.getIdempotencyKey();
+        if (key != null && (key.isBlank() || !key.equals(key.trim()))) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "提交标识不能为空或包含首尾空格");
+        }
+        String fingerprint = followFingerprint(type, content, outcome, request.getNextFollowAt());
+        if (key != null) {
+            var previous = followUps.findByMemberIdAndStaffUserIdAndRequestKey(memberId, SecurityUtil.getCurrentUserId(), key);
+            if (previous.isPresent()) {
+                if (!fingerprint.equals(previous.get().getRequestFingerprint())) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "同一提交标识不能用于不同的跟进内容");
+                }
+                return toView(previous.get());
+            }
+        }
+        if (request.getNextFollowAt() != null && !request.getNextFollowAt().isAfter(LocalDateTime.now(contactClock))) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "下次联系时间必须晚于现在");
         }
         MemberFollowUpEntity entity = new MemberFollowUpEntity();
         entity.setMemberId(member.getId());
         entity.setStaffUserId(SecurityUtil.getCurrentUserId());
         entity.setVenueId(member.getVenueId());
         entity.setFollowType(type);
-        entity.setContent(request.getContent().trim());
+        entity.setContent(content);
+        entity.setOutcome(outcome);
+        entity.setRequestKey(key);
+        entity.setRequestFingerprint(key == null ? null : fingerprint);
         entity.setNextFollowAt(request.getNextFollowAt());
         return toView(followUps.save(entity));
+    }
+
+    private String followFingerprint(String type, String content, String outcome, LocalDateTime next) {
+        try {
+            byte[] payload = mapper.writeValueAsBytes(List.of(type, content, outcome, next == null ? "" : next.toString()));
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(payload));
+        } catch (java.io.IOException | java.security.NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("无法生成跟进提交标识", ex);
+        }
     }
 
     // ---------------------------------------------------------------- 工作台
@@ -180,7 +221,8 @@ public class AdvisorService {
     /** 归属本人、店长或总部可以为该会员记跟进；其他顾问不能碰别人的会员。 */
     private void assertCanFollow(MemberEntity member) {
         Long me = SecurityUtil.getCurrentUserId();
-        boolean owner = Objects.equals(member.getSalesUserId(), me) || Objects.equals(member.getCoachId(), me);
+        boolean owner = Objects.equals(member.getSalesUserId(), me) ||
+                (!SecurityUtil.hasRole("SALES") && Objects.equals(member.getCoachId(), me));
         boolean manager = SecurityUtil.hasRole("MANAGER") || SecurityUtil.isSuperAdmin();
         if (!owner && !manager) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "只能跟进归属自己的会员，或由店长/总部代记");
@@ -191,7 +233,7 @@ public class AdvisorService {
         String memberName = members.findById(e.getMemberId()).map(MemberEntity::getRealName).orElse(null);
         String staffName = users.findById(e.getStaffUserId()).map(SysUserEntity::getRealName).orElse(null);
         return new FollowUpView(e.getId(), e.getMemberId(), memberName, e.getStaffUserId(), staffName,
-                e.getFollowType(), e.getContent(), e.getNextFollowAt(), e.getCreatedAt());
+                e.getFollowType(), e.getContent(), e.getNextFollowAt(), e.getCreatedAt(), e.getOutcome());
     }
 
     private Long currentVenue() {

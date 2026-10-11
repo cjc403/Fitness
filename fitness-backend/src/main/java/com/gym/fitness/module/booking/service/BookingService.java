@@ -38,7 +38,9 @@ public class BookingService {
         return booking.getSchedule() == null ? null : booking.getSchedule().getVenueId();
     }
 
+    @Transactional(readOnly = true)
     public List<BookingEntity> list() {
+        if (SecurityUtil.hasRole("COACH")) return bookingRepository.findBySchedule_VenueIdAndSchedule_CoachIdOrderByBookedAtDesc(requireCurrentVenueId(), SecurityUtil.getCurrentUserId());
         return SecurityUtil.isSuperAdmin()
                 ? bookingRepository.findAllByOrderByBookedAtDesc()
                 : bookingRepository.findBySchedule_VenueIdOrderByBookedAtDesc(requireCurrentVenueId());
@@ -46,16 +48,20 @@ public class BookingService {
 
     @Transactional
     public BookingEntity create(BookingRequest request) {
-        MemberEntity member = memberRepository.findById(request.getMemberId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        MemberEntity member = values.lockMemberServices(request.getMemberId());
         if (!"ACTIVE".equals(member.getStatus()) || Boolean.TRUE.equals(member.getBlacklistFlag()))
             throw new BusinessException(ErrorCode.OPERATION_NOT_ALLOWED, "该会员当前不可预约");
         venueLock.acquire(member.getVenueId());
         values.assertBookableMember(member.getId());
         CourseScheduleEntity schedule = scheduleRepository.findByIdForUpdate(request.getScheduleId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
-        assertAccessibleVenue(member.getVenueId());
-        assertAccessibleVenue(schedule.getVenueId());
+        if (SecurityUtil.hasRole("MEMBER")) {
+            if (!java.util.Objects.equals(member.getUserId(), SecurityUtil.getCurrentUserId()))
+                throw new BusinessException(ErrorCode.BOOKING_NOT_FOUND);
+        } else {
+            assertAccessibleVenue(member.getVenueId());
+            assertAccessibleVenue(schedule.getVenueId());
+        }
         // 跨店通用：会员所属门店，或持有覆盖该排课门店的有效权益，都可以预约
         if (!member.getVenueId().equals(schedule.getVenueId())
                 && !crossVenue.memberCanAccessVenue(member.getId(), member.getVenueId(), schedule.getVenueId())) {
@@ -124,7 +130,7 @@ public class BookingService {
 
     @Transactional
     public BookingEntity joinWaitlistForCurrentMember(Long scheduleId) {
-        MemberEntity member = currentMember();
+        MemberEntity member = values.lockMemberServices(currentMember().getId());
         venueLock.acquire(member.getVenueId());
         values.assertBookableMember(member.getId());
         CourseScheduleEntity schedule = scheduleRepository.findByIdForUpdate(scheduleId)
@@ -242,7 +248,7 @@ public class BookingService {
             if(candidate.isEmpty())return;
             var next=candidate.get();
             var member=memberRepository.findById(next.getMemberId()).orElseThrow();
-            if(!"ACTIVE".equals(member.getStatus())||Boolean.TRUE.equals(member.getBlacklistFlag())||!java.util.Objects.equals(member.getVenueId(),schedule.getVenueId())||!training.tryReserveWaitlist(next,schedule)) {
+            if(!"ACTIVE".equals(member.getStatus())||Boolean.TRUE.equals(member.getBlacklistFlag())||!crossVenue.memberCanAccessVenue(member.getId(),member.getVenueId(),schedule.getVenueId())||!training.tryReserveWaitlist(next,schedule)) {
                 next.setStatus("CANCELLED");next.setCancelledAt(LocalDateTime.now());next.setCancelReason("候补失效：会员状态或私教课包不可用，请联系前台");next.setWaitlistPosition(null);bookingRepository.saveAndFlush(next);continue;
             }
                     next.setStatus("BOOKED");
@@ -260,7 +266,10 @@ public class BookingService {
 
     private BookingEntity find(Long id) {
         Long venueId=bookingRepository.findVenueId(id).orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
-        assertAccessibleVenue(venueId);
+        if (SecurityUtil.hasRole("MEMBER")) {
+            bookingRepository.findByIdAndMemberId(id, currentMember().getId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
+        } else assertAccessibleVenue(venueId);
         venueLock.acquire(venueId);
         Long scheduleId = bookingRepository.findScheduleId(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
@@ -268,7 +277,7 @@ public class BookingService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
         BookingEntity booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOKING_NOT_FOUND));
-        assertAccessibleVenue(booking.getSchedule().getVenueId());
+        if (!SecurityUtil.hasRole("MEMBER")) assertAccessibleVenue(booking.getSchedule().getVenueId());
         return booking;
     }
 

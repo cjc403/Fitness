@@ -3,7 +3,6 @@ package com.gym.fitness.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gym.fitness.common.constant.ErrorCode;
 import com.gym.fitness.common.response.Result;
-import com.gym.fitness.module.auth.repository.SysUserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 @Component
 @RequiredArgsConstructor
 public class PasswordChangeRequiredFilter extends OncePerRequestFilter {
-    private final SysUserRepository users;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -30,7 +28,7 @@ public class PasswordChangeRequiredFilter extends OncePerRequestFilter {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()
                 && authentication.getPrincipal() instanceof UserDetailsImpl principal
-                && users.findById(principal.getId()).map(user -> Boolean.TRUE.equals(user.getMustChangePassword())).orElse(false)
+                && principal.isMustChangePassword()
                 && !isPasswordLifecyclePath(request.getRequestURI())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());

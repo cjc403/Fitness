@@ -17,12 +17,12 @@ public interface AuthService {
     /**
      * 用户登出
      */
-    void logout();
+    void logout(String refreshToken);
     
     /**
      * 刷新Token
      */
     LoginResponse refreshToken(String refreshToken);
 
-    void changePassword(ChangePasswordRequest request);
+    LoginResponse changePassword(ChangePasswordRequest request);
 }

@@ -39,7 +39,7 @@ public class RefundService {
     private final EntityManager em;
     private final com.gym.fitness.module.notice.service.NotificationService notifications;
     private final com.gym.fitness.module.booking.service.BookingService bookingService;
-    public Quote quote(Long id){var e=values.lock(id);values.refreshTime(e);return values.quoteLocked(e,serviceBlocks(e));}
+    public Quote quote(Long id){var e=lockEntitlement(id);values.refreshTime(e);return values.quoteLocked(e,serviceBlocks(e));}
     private List<String> serviceBlocks(MemberEntitlementEntity e){
         var blocks=new ArrayList<String>();if(e.getReservedUses()>0||lessons.findByMemberIdOrderByReservedAtDesc(e.getMemberId()).stream().anyMatch(l->Set.of("RESERVED","PENDING").contains(l.getStatus())))blocks.add("会员有预占课次或待签课，请先处理");
         if(bookings.findByMemberIdOrderByBookedAtDesc(e.getMemberId()).stream().anyMatch(b->Set.of("BOOKED","WAITLISTED").contains(b.getStatus())||("ATTENDED".equals(b.getStatus())&&b.getSchedule().getScheduledEndTime().isAfter(now()))))blocks.add("会员有未完成服务预约（含团课），请先正常取消或完成");
@@ -51,7 +51,11 @@ public class RefundService {
         if(sum!=a.getBalanceCents()||sum!=expected)throw fail("价值余额与来源资金不一致，请重新核对");
     }
     public Refund request(RefundRequest request){
-        var e=values.lock(request.entitlementId());String fingerprint=fingerprint(request);Long who=SecurityUtil.getCurrentUserId();
+        var initial=entitlements.findById(request.entitlementId()).orElseThrow(()->fail("权益不存在"));
+        if(SecurityUtil.hasRole("MEMBER"))ownEntitlement(initial.getId());else values.assertScope(initial.getVenueId());
+        Long memberId=initial.getMemberId();values.lockMemberServices(memberId);
+        var e=lockEntitlement(request.entitlementId());
+        if(!Objects.equals(memberId,e.getMemberId()))throw fail("权益持有人已变化，请重新办理");String fingerprint=fingerprint(request);Long who=SecurityUtil.getCurrentUserId();
         var existing=refunds.findByRequestedByAndIdempotencyKey(who,request.idempotencyKey());
         if(existing.isPresent()){if(!existing.get().getRequestFingerprint().equals(fingerprint))throw fail("幂等键已用于不同申请内容");return response(existing.get());}
         values.refreshTime(e);var a=values.account(e);if(a.getVersion()!=request.version())throw fail("权益版本已变化，请重新预览");var blocks=values.valueBlocks(e,a);blocks.addAll(serviceBlocks(e));if(!blocks.isEmpty())throw fail(String.join("；",blocks));
@@ -61,7 +65,12 @@ public class RefundService {
         a.setActiveRefundId(r.getId());a.setVersion(a.getVersion()+1);accounts.saveAndFlush(a);audit(r,"REQUEST",request.reason());reviewers.forEach(u->notifications.notifyUser(u.getId(),null,r.getVenueId(),"REFUND","有新的退款申请待审核","退款单 "+r.getRefundNo()+"（¥"+Money.yuan(r.getAmountCents())+"）已提交，请及时审核。","REFUND",r.getId()));return response(r);
     }
     private String fingerprint(RefundRequest r){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest((r.entitlementId()+"|"+r.version()+"|"+r.reason()).getBytes(StandardCharsets.UTF_8)));}catch(Exception ex){throw new IllegalStateException(ex);}}
-    private RefundApplicationEntity locked(Long id){var r=refunds.findById(id).orElseThrow(()->fail("退款申请不存在"));values.assertScope(r.getVenueId());values.lock(r.getEntitlementId());em.refresh(r,LockModeType.PESSIMISTIC_WRITE);values.assertScope(r.getVenueId());return r;}
+    private MemberEntitlementEntity lockEntitlement(Long id){return SecurityUtil.hasRole("MEMBER")?values.lockForCurrentMember(id):values.lock(id);}
+    private void assertRefundScope(RefundApplicationEntity r){
+        if(SecurityUtil.hasRole("MEMBER")){if(!Objects.equals(r.getMemberId(),currentMemberId()))throw fail("只能办理本人退款申请");}
+        else values.assertScope(r.getVenueId());
+    }
+    private RefundApplicationEntity locked(Long id){var r=refunds.findById(id).orElseThrow(()->fail("退款申请不存在"));assertRefundScope(r);lockEntitlement(r.getEntitlementId());em.refresh(r,LockModeType.PESSIMISTIC_WRITE);assertRefundScope(r);return r;}
     private MemberEntitlementEntity active(RefundApplicationEntity r){var e=entitlements.findById(r.getEntitlementId()).orElseThrow();var a=values.account(e);if(!Objects.equals(a.getActiveRefundId(),r.getId())||!Objects.equals(e.getMemberId(),r.getMemberId())||!Objects.equals(e.getVenueId(),r.getVenueId())||!Objects.equals(e.getRemainingUses(),r.getRemainingUsesSnapshot()))throw fail("权益库存、申请或归属已变化");validateSources(e,a,r.getAmountCents());return e;}
     public Refund approve(Long id,String reason){var r=locked(id);if(Objects.equals(r.getRequestedBy(),SecurityUtil.getCurrentUserId()))throw fail("申请人不能审核自己的退款");if(!"PENDING".equals(r.getStatus()))throw fail("仅待审核申请可以审核");var e=active(r);if(!serviceBlocks(e).isEmpty())throw fail("存在未完成服务，不能审核");r.setStatus("APPROVED");r.setApprovedBy(SecurityUtil.getCurrentUserId());r.setApprovedAt(now());r.setDecisionReason(reason);refunds.save(r);audit(r,"APPROVE",reason);notifications.notifyMember(r.getMemberId(),r.getVenueId(),"REFUND","退款申请已通过审核","退款单 "+r.getRefundNo()+"（¥"+Money.yuan(r.getAmountCents())+"）已通过审核，等待门店登记退款支付。","REFUND",r.getId());return response(r);}
     public Refund reject(Long id,String reason){var r=locked(id);if(Objects.equals(r.getRequestedBy(),SecurityUtil.getCurrentUserId()))throw fail("申请人不能审核自己的退款");if(!"PENDING".equals(r.getStatus()))throw fail("仅待审核申请可以拒绝");return release(r,"REJECTED","REJECT",reason);}
@@ -130,6 +139,7 @@ public class RefundService {
      * 这样某一条因业务规则失败（例如开课前 2 小时内不能自助取消）只影响它自己。
      * 若这里也开事务，内层抛出的异常会把事务标记为 rollback-only，整批都会失败。</p>
      */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public ClearBlockers memberClearBlockers(Long entitlementId){
         var e=ownEntitlement(entitlementId);
         List<ClearBlockers.Item> cancelled=new ArrayList<>(),skipped=new ArrayList<>();

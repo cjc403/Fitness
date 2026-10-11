@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-09T19:19:43.1474709+08:00",
+  "pid": 31116,
+  "oldPid": 32380,
+  "jarSha256": "2AE22EF9C4F44EF9E5B7807DE28C8D38EDFFA104ED9709845D501147DA7EFAF8",
+  "backupDirectory": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\leads-local-activation-20261009-191942",
+  "database": "fitness_db:5433",
+  "profile": "prod",
+  "onlineUpdated": false
+}
