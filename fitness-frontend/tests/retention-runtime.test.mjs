@@ -5,6 +5,7 @@ import { transformSync } from 'esbuild'
 import * as vue from 'vue'
 import * as financeUi from '../src/utils/financeUi.mjs'
 import * as accessControl from '../src/utils/accessControl.mjs'
+import * as mobileNavigation from '../src/utils/mobileNavigation.mjs'
 
 // Execute actual API and SFC setup; only HTTP, browser and lifecycle boundaries are substituted.
 function execute(path, deps, names = []) {
@@ -173,7 +174,7 @@ test('date-only membership expiry preserves its calendar day across time zones w
 })
 test('retention route and menu both reject non-owner staff roles even when MEMBER_READ is present', () => {
   let routerOptions
-  const deps = { 'vue-router': { createRouter: options => { routerOptions = options; return { beforeEach() {} } }, createWebHistory: () => ({}) }, '@/utils/storage': { getToken: () => '', getUserInfo: () => ({}) }, '@/utils/auth': accessControl, '@/utils/accessControl.mjs': accessControl }
+  const deps = { 'vue-router': { createRouter: options => { routerOptions = options; return { beforeEach() {} } }, createWebHistory: () => ({}) }, '@/utils/storage': { getToken: () => '', getUserInfo: () => ({}) }, '@/utils/auth': accessControl, '@/utils/accessControl.mjs': accessControl, '@/utils/mobileNavigation.mjs': mobileNavigation }
   execute('router/index.ts', deps)
   const route = routerOptions.routes.find(r => r.path === '/').children.find(r => r.path === 'retention')
   assert.ok(route, 'retention route must be registered')

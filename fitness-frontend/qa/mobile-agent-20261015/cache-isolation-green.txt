@@ -1,0 +1,17 @@
+✔ desktop and mobile dev servers cannot overwrite each others dependency cache (201.4339ms)
+✔ build cache is separate from both live development entries (95.4735ms)
+✔ isolated test harness cache overrides remain respected (38.6435ms)
+▶ real Vite proxy accepts LAN same-origin login without widening backend CORS
+  ✔ phone LAN Origin reaches login field validation (14.3944ms)
+  ✔ localhost works through the same proxy (61.0292ms)
+  ✔ an unrelated Origin is never rewritten into an authorized one (6.8127ms)
+  ✔ a different port and null Origin remain rejected (192.5575ms)
+✔ real Vite proxy accepts LAN same-origin login without widening backend CORS (478.9094ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 895.3387

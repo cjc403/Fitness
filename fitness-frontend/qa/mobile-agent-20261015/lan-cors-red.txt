@@ -1,0 +1,107 @@
+✔ opt-in request scope rejects obsolete business success/errors silently (70.8283ms)
+✔ opt-in request scope checks before transport and leaves ordinary requests compatible (5.3287ms)
+✔ opt-in scope rechecked after delayed success and error blob parsing (11.1378ms)
+✔ opt-in scope never refreshes stale401 or replays after scope changes during refresh (9.6541ms)
+✔ cancelled transport errors do not produce network messages (6.4891ms)
+✖ CORS rejection during login is not mislabeled as missing account permission (6.2595ms)
+✔ offline transport refuses all business mutations without sending or queuing them (5.5546ms)
+✔ delayed refresh success cannot restore a logged-out session or replace a new account (10.4932ms)
+✔ delayed refresh failure cannot clear a new account or redirect it (5.1287ms)
+✔ an old request 401 never borrows the new account refresh token (4.8224ms)
+✔ expiry redirect scheduled before a new login cannot interrupt that login (4.8934ms)
+✔ logout carries the captured token and late completion cannot navigate a new account (5.5028ms)
+✔ logout 401 is never refreshed or replayed (5.0991ms)
+✔ out-of-order chat openings display the selected contact (2.9752ms)
+✔ switching contact never sends the previous contact draft (1.7974ms)
+✔ late send completion cannot clear or reload the newly selected contact (2.0495ms)
+✔ chat initial load finishing after unmount cannot create polling (1.8281ms)
+✔ chat poll response finishing after a contact switch cannot overwrite its thread (1.8816ms)
+✔ assistant history keeps six turns with at most 500 UTF-16 characters per turn (3.6862ms)
+✔ member load: QR completion after unmount cannot publish or start auto-renewal (3.1331ms)
+✔ member refreshAccessCode: QR completion after unmount cannot publish or start auto-renewal (2.8693ms)
+✔ password change applies the new server session before entering the workbench (5.9754ms)
+✔ old mounted chat cannot send a saved draft or poll using a replacement session (1.666ms)
+✔ old mounted member cannot renew an access token using a replacement session (3.1153ms)
+✔ assistant response after account replacement does not publish private content (3.1212ms)
+✔ parallel 401 requests share one refresh and replay under the same account (4.9088ms)
+✔ delayed login success cannot replace a later account or restore a logged-out account (9.2788ms)
+✔ delayed successful business data is rejected after account replacement (4.7984ms)
+✔ logout token remains captured even if another login happens before request dispatch (4.1289ms)
+✔ chat preserves drafts per contact and preserves newly typed text during sending (1.5898ms)
+✔ only the latest QR generation can publish or start its countdown (2.7365ms)
+✔ a password response arriving after account replacement cannot overwrite or navigate it (7.1426ms)
+✔ chat opening during contact reload never leaves the loading overlay stuck (3.1776ms)
+✔ chat polling without new messages preserves the reader scroll position (2.0077ms)
+▶ real Vite proxy accepts LAN same-origin login without widening backend CORS
+  ✖ phone LAN Origin reaches login field validation (21.6951ms)
+  ✖ localhost works through the same proxy (77.5667ms)
+  ✔ an unrelated Origin is never rewritten into an authorized one (8.8893ms)
+  ✔ a different port and null Origin remain rejected (58.4779ms)
+✖ real Vite proxy accepts LAN same-origin login without widening backend CORS (362.3476ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 35
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 648.1672
+
+✖ failing tests:
+
+test at tests\async-safety.test.mjs:83:1
+✖ CORS rejection during login is not mislabeled as missing account permission (6.2595ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /来源/. Input:
+
+  '当前账号没有执行此操作的权限'
+
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/async-safety.test.mjs:86:43)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '当前账号没有执行此操作的权限',
+    expected: /来源/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\mobile-proxy.test.mjs:26:11
+✖ phone LAN Origin reaches login field validation (21.6951ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  403 !== 400
+
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/mobile-proxy.test.mjs:26:150)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/mobile-proxy.test.mjs:26:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\mobile-proxy.test.mjs:27:11
+✖ localhost works through the same proxy (77.5667ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  403 !== 400
+
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/mobile-proxy.test.mjs:27:135)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/mobile-proxy.test.mjs:27:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

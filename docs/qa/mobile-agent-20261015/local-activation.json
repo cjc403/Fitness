@@ -1,0 +1,22 @@
+{
+  "databaseVersion": "23",
+  "health": "UP",
+  "kind": "Local development activation only; no online server access",
+  "backup": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\mobile-agent-20261015-194246",
+  "jarSha256": "E283B7A19CC17323A6DDA57CBB31CF7EA86EB153F8AB3B20F9A6149032DA37B5",
+  "activatedAt": "2026-10-15T19:43:04+08:00",
+  "passwordHashesUnchanged": true,
+  "verifiedJarMatches": true,
+  "businessCountsUnchanged": true,
+  "counts": {
+    "courses": 11,
+    "entitlements": 24,
+    "members": 19,
+    "schedules": 30,
+    "orders": 24,
+    "users": 10,
+    "venues": 2,
+    "bookings": 106,
+    "trainingPlans": 0
+  }
+}

@@ -1,0 +1,7 @@
+﻿{
+    "healthy":  true,
+    "jarSha256":  "E283B7A19CC17323A6DDA57CBB31CF7EA86EB153F8AB3B20F9A6149032DA37B5",
+    "at":  "2026-10-15T20:43:24",
+    "businessCountsAndPasswordHashesUnchanged":  true,
+    "kind":  "local config reload only"
+}

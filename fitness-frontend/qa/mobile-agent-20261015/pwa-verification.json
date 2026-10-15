@@ -1,0 +1,18 @@
+{
+  "kind": "Production preview Service Worker isolation test; no real account or business API",
+  "base": "http://127.0.0.1:4179",
+  "passed": true,
+  "caches": [
+    {
+      "key": "fitchain-public-shell-v1",
+      "urls": [
+        "/offline.html",
+        "/manifest.webmanifest",
+        "/icons/fitchain.svg",
+        "/icons/fitchain-192.png",
+        "/icons/fitchain-512.png"
+      ]
+    }
+  ],
+  "offlineText": "当前无法连接 FitChain\n\n请连接网络后重新打开。离线时无法查看业务资料或提交操作，系统不会在恢复网络后自动执行请求。\n\n重新连接"
+}

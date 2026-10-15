@@ -1,0 +1,59 @@
+{
+  "kind": "Real HTTP browser integration against isolated PostgreSQL agent_browser; no mock business endpoints; no physical device",
+  "base": "http://127.0.0.1:4177",
+  "database": "127.0.0.1:55451/agent_browser",
+  "cases": [
+    {
+      "role": "SUPER_ADMIN",
+      "tool": "courses",
+      "passed": true
+    },
+    {
+      "role": "MANAGER",
+      "tool": "courses",
+      "passed": true
+    },
+    {
+      "role": "RECEPTION",
+      "tool": "courses",
+      "passed": true
+    },
+    {
+      "role": "COACH",
+      "tool": "training_draft",
+      "preview": "PENDING",
+      "confirm": "SUCCEEDED",
+      "resultId": 2,
+      "passed": true
+    },
+    {
+      "role": "SALES",
+      "tool": "book_trial",
+      "preview": "PENDING",
+      "confirm": "SUCCEEDED",
+      "resultId": 1,
+      "passed": true
+    },
+    {
+      "role": "MEMBER",
+      "tool": "book_course",
+      "preview": "PENDING",
+      "confirm": "SUCCEEDED",
+      "resultId": 24,
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "model": {
+    "configured": true,
+    "mode": "LOCAL",
+    "resultCount": 1,
+    "actionCount": 0,
+    "status": {
+      "configured": true,
+      "model": "deepseek-v4-flash",
+      "toolCalling": false,
+      "state": "degraded"
+    }
+  }
+}

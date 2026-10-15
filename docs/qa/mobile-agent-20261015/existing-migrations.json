@@ -1,0 +1,115 @@
+{
+  "existingVersionsUnchanged": true,
+  "checks": [
+    {
+      "file": "V10__idempotent_sales_qr_grant_notifications.sql",
+      "unchanged": true,
+      "sha256": "85a99f8291cb86a394445ef19b89cdbdff6eb1abce65004c804c0bf79ea47ed5"
+    },
+    {
+      "file": "V11__coupons_and_course_reviews.sql",
+      "unchanged": true,
+      "sha256": "f8e49b30fb13879727d3b63892e7f001c383f2a4570ccf01abe1d1317ef7f1e4"
+    },
+    {
+      "file": "V12__rooms_and_advisor_follow_ups.sql",
+      "unchanged": true,
+      "sha256": "2f57c9a6da3fe7ed1f9cce97254d1adabbdefabf09bddd34cae38550e37fdc9b"
+    },
+    {
+      "file": "V13__body_measurements_and_training_goal.sql",
+      "unchanged": true,
+      "sha256": "18a0013ace6f2f90d5352ce7e529085387a65ea635889863a9ab5874190e9e77"
+    },
+    {
+      "file": "V14__message_deliveries.sql",
+      "unchanged": true,
+      "sha256": "011bf3475b228cd2df504e4856efeda0f29b67ff07ea720c088665f1d1ea7b44"
+    },
+    {
+      "file": "V15__cross_venue_scope.sql",
+      "unchanged": true,
+      "sha256": "76a507b9c1636d7dc506eac5c50f689e71906680ac291c6cd21019df725e864c"
+    },
+    {
+      "file": "V16__direct_messages.sql",
+      "unchanged": true,
+      "sha256": "863905977802ce0ba7552527d2041a5fc064a7fb6d1a64b36eb3e4afc25f5d94"
+    },
+    {
+      "file": "V17__cross_venue_settlement.sql",
+      "unchanged": true,
+      "sha256": "01aae30f8d76d22a2b7ed43844e3d615533472209b3eb3358bb1e9d227bc57b9"
+    },
+    {
+      "file": "V18__revocable_account_sessions.sql",
+      "unchanged": true,
+      "sha256": "d59699d5f8f16a11c29f4650b1e70bf774920e7757c16bd878d8af97c8033925"
+    },
+    {
+      "file": "V19__member_follow_up_outcomes.sql",
+      "unchanged": true,
+      "sha256": "a078c2a0d147f4fbfbf7a2a7b149df27b1da11debcd3a530510ab58620ead500"
+    },
+    {
+      "file": "V1__init_schema.sql",
+      "unchanged": true,
+      "sha256": "1c039f8d758a8a4d6b6f046b77d38126c5011cd436631fbcb25e0863bb9de71e"
+    },
+    {
+      "file": "V20__leads_and_trial_appointments.sql",
+      "unchanged": true,
+      "sha256": "4f60a47c4dc5a01985762d99791444b71d9309c93aa31097ff761ba4fa80c355"
+    },
+    {
+      "file": "V21__cash_shifts_and_daily_close.sql",
+      "unchanged": true,
+      "sha256": "6db037cdc47eaf52e2b5a6dd56ce00ed4a32d1fd66a1995ae06117699aac742b"
+    },
+    {
+      "file": "V22__training_plans_and_sessions.sql",
+      "unchanged": true,
+      "sha256": "d18dc10ca9f89d32226aaab2f727266aa19998e5b88c66278b9ec3cd1c8ffb9d"
+    },
+    {
+      "file": "V2__seed_admin_user.sql",
+      "unchanged": true,
+      "sha256": "20390aa67b02c70f2ecfd6e1417ecad4b3ea4e2e4c41c380b8c4346df559a3da"
+    },
+    {
+      "file": "V3__course_booking_enhancements.sql",
+      "unchanged": true,
+      "sha256": "a23c59bf835a91ae76845c460c3fccdc555eb7f7d569ffcabaf53d87b6ddabd0"
+    },
+    {
+      "file": "V4__rbac_permissions_and_indexes.sql",
+      "unchanged": true,
+      "sha256": "372eae2b35787313ea3eb8be138996be4f4d04b669c8be735a1b96ce6dfdfd49"
+    },
+    {
+      "file": "V5__disable_insecure_default_admin.sql",
+      "unchanged": true,
+      "sha256": "1e3bc4a75e1737a7ab4c766ed8199088b0b2586f83b1de0cf3bb53034c0f8b9e"
+    },
+    {
+      "file": "V6__account_lifecycle.sql",
+      "unchanged": true,
+      "sha256": "7b610586ef34d1b8e9019fe9dfff7a39485b29480283553c2cc4156d1fac12f6"
+    },
+    {
+      "file": "V7__commercial_core.sql",
+      "unchanged": true,
+      "sha256": "6ba0830bbb8920572d25e0e29ea757c2ef8e41a973949546813a45b06e7aef0e"
+    },
+    {
+      "file": "V8__private_training.sql",
+      "unchanged": true,
+      "sha256": "e8cfa4622843cca39c287f405e567994b559060d90f4f6202ad2af9b0277c197"
+    },
+    {
+      "file": "V9__refund_value_accounting.sql",
+      "unchanged": true,
+      "sha256": "f5c036c89aa0b0531e61e3f1a8d07ea7cc65081068f022b716dec21784bae256"
+    }
+  ]
+}

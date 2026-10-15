@@ -80,6 +80,24 @@ test('opt-in scope never refreshes stale401 or replays after scope changes durin
 })
 test('cancelled transport errors do not produce network messages', async () => { const r = runtime(config => { throw new axios.CanceledError('canceled', config) }); await r.request.get('/cancel').catch(() => {}); assert.deepEqual(r.notices, []) })
 
+test('CORS rejection during login is not mislabeled as missing account permission', async () => {
+  const r=runtime(config=>{throw {config,response:{status:403,data:'Invalid CORS request'}}})
+  await r.request.post('/v1/auth/login',{}).catch(()=>{})
+  assert.equal(r.notices.length,1);assert.match(r.notices[0],/来源/);assert.doesNotMatch(r.notices[0],/账号.*权限/)
+  assert.equal(r.auth.token,'A');assert.deepEqual(r.routes,[])
+})
+
+test('offline transport refuses all business mutations without sending or queuing them', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { onLine: false } })
+  try {
+    const r = runtime()
+    for (const method of ['post', 'put', 'patch', 'delete']) await r.request[method]('/v1/business', {}).catch(() => {})
+    assert.equal(r.calls.length, 0)
+    assert.ok(r.notices.some(text => /离线/.test(text)))
+  } finally { if (descriptor) Object.defineProperty(globalThis, 'navigator', descriptor); else delete globalThis.navigator }
+})
+
 test('delayed refresh success cannot restore a logged-out session or replace a new account', async () => {
   for (const next of [null, 'B']) {
     let attempts = 0
@@ -131,7 +149,7 @@ test('logout 401 is never refreshed or replayed', async t => {
 function componentRuntime(path, api, names, extra = {}) {
   const b = browser(), mounted = [], unmounted = []
   const auth = { sessionGeneration: 0, userInfo: { permissions: [] } }
-  const deps = { vue: { ...vue, onMounted: fn => mounted.push(fn), onBeforeUnmount: fn => unmounted.push(fn), onUnmounted: fn => unmounted.push(fn) }, 'element-plus': { ElMessage: { error() {}, success() {} } }, '@element-plus/icons-vue': {}, '@/api/modules/chat': api, '@/api/modules/assistant': api, '@/store/modules/auth': { useAuthStore: () => auth }, ...extra }
+  const deps = { vue: { ...vue, onMounted: fn => mounted.push(fn), onBeforeUnmount: fn => unmounted.push(fn), onUnmounted: fn => unmounted.push(fn) }, 'element-plus': { ElMessage: { error() {}, success() {} } }, '@element-plus/icons-vue': {}, '@/components/AgentData.vue': {}, '@/components/AgentExercises.vue': {}, '@/api/modules/chat': api, '@/api/modules/assistant': api, '@/store/modules/auth': { useAuthStore: () => auth }, ...extra }
   return { ...execute(path, deps, names), auth, b, mounted, unmount: () => unmounted.forEach(fn => fn()) }
 }
 const threadData = id => ({ data: { userId: id, name: String(id), messages: [] } })

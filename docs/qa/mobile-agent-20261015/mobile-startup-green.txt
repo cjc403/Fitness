@@ -1,0 +1,10 @@
+Reusing the verified FitChain mobile frontend.
+PASS: Reuse exact workspace even when elevated process command line is unreadable
+Reusing the verified FitChain mobile frontend.
+PASS: Reuse readable exact-workspace listener
+PASS: A different workspace is rejected even with a convincing command line
+PASS: A stale or mismatched PID is rejected
+PASS: A generic HTML or unavailable endpoint cannot prove ownership
+PASS: A desktop-only loopback listener cannot serve a phone
+PASS: Only ready addresses on connected physical adapters are recommended
+Mobile startup tests: 7/7 passed.

@@ -1,0 +1,45 @@
+✖ desktop and mobile dev servers cannot overwrite each others dependency cache (146.1095ms)
+✖ build cache is separate from both live development entries (61.2296ms)
+✔ isolated test harness cache overrides remain respected (17.0382ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 1
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 492.7813
+
+✖ failing tests:
+
+test at tests\dev-cache.test.mjs:12:1
+✖ desktop and mobile dev servers cannot overwrite each others dependency cache (146.1095ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+
+  'C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/node_modules/.vite'
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/dev-cache.test.mjs:14:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/node_modules/.vite',
+    expected: 'C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/node_modules/.vite',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\dev-cache.test.mjs:16:1
+✖ build cache is separate from both live development entries (61.2296ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+
+  'C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/node_modules/.vite'
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/dev-cache.test.mjs:19:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/node_modules/.vite',
+    expected: 'C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/node_modules/.vite',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }

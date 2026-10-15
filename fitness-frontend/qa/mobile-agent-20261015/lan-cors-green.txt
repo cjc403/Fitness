@@ -1,0 +1,48 @@
+✔ opt-in request scope rejects obsolete business success/errors silently (70.8161ms)
+✔ opt-in request scope checks before transport and leaves ordinary requests compatible (4.8466ms)
+✔ opt-in scope rechecked after delayed success and error blob parsing (11.1025ms)
+✔ opt-in scope never refreshes stale401 or replays after scope changes during refresh (12.0113ms)
+✔ cancelled transport errors do not produce network messages (5.3653ms)
+✔ CORS rejection during login is not mislabeled as missing account permission (6.35ms)
+✔ offline transport refuses all business mutations without sending or queuing them (5.552ms)
+✔ delayed refresh success cannot restore a logged-out session or replace a new account (11.0443ms)
+✔ delayed refresh failure cannot clear a new account or redirect it (5.3226ms)
+✔ an old request 401 never borrows the new account refresh token (4.6809ms)
+✔ expiry redirect scheduled before a new login cannot interrupt that login (5.0332ms)
+✔ logout carries the captured token and late completion cannot navigate a new account (4.6783ms)
+✔ logout 401 is never refreshed or replayed (4.196ms)
+✔ out-of-order chat openings display the selected contact (2.317ms)
+✔ switching contact never sends the previous contact draft (2.1892ms)
+✔ late send completion cannot clear or reload the newly selected contact (1.8648ms)
+✔ chat initial load finishing after unmount cannot create polling (2.667ms)
+✔ chat poll response finishing after a contact switch cannot overwrite its thread (1.8829ms)
+✔ assistant history keeps six turns with at most 500 UTF-16 characters per turn (3.7276ms)
+✔ member load: QR completion after unmount cannot publish or start auto-renewal (3.6333ms)
+✔ member refreshAccessCode: QR completion after unmount cannot publish or start auto-renewal (3.1824ms)
+✔ password change applies the new server session before entering the workbench (6.4775ms)
+✔ old mounted chat cannot send a saved draft or poll using a replacement session (1.5488ms)
+✔ old mounted member cannot renew an access token using a replacement session (2.6197ms)
+✔ assistant response after account replacement does not publish private content (2.7615ms)
+✔ parallel 401 requests share one refresh and replay under the same account (5.0849ms)
+✔ delayed login success cannot replace a later account or restore a logged-out account (9.462ms)
+✔ delayed successful business data is rejected after account replacement (4.4795ms)
+✔ logout token remains captured even if another login happens before request dispatch (5.11ms)
+✔ chat preserves drafts per contact and preserves newly typed text during sending (1.8145ms)
+✔ only the latest QR generation can publish or start its countdown (2.8232ms)
+✔ a password response arriving after account replacement cannot overwrite or navigate it (6.8385ms)
+✔ chat opening during contact reload never leaves the loading overlay stuck (1.973ms)
+✔ chat polling without new messages preserves the reader scroll position (3.0104ms)
+▶ real Vite proxy accepts LAN same-origin login without widening backend CORS
+  ✔ phone LAN Origin reaches login field validation (11.7574ms)
+  ✔ localhost works through the same proxy (72.6428ms)
+  ✔ an unrelated Origin is never rewritten into an authorized one (7.7618ms)
+  ✔ a different port and null Origin remain rejected (52.8703ms)
+✔ real Vite proxy accepts LAN same-origin login without widening backend CORS (332.6554ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 606.7648

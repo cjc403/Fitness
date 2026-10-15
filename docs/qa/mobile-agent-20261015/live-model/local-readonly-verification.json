@@ -1,0 +1,16 @@
+{
+  "writePreviews": 0,
+  "tools": [
+    "courses"
+  ],
+  "at": "2026-10-15T20:52:18",
+  "model": {
+    "configured": true,
+    "model": "deepseek-v4-flash",
+    "toolCalling": true,
+    "state": "available"
+  },
+  "mode": "MODEL",
+  "kind": "Normal local backend read-only provider verification",
+  "loginSuccessful": true
+}

@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "FitChain 健身工作台",
+  "short_name": "FitChain",
+  "lang": "zh-CN",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#eff5fc",
+  "theme_color": "#193d68",
+  "description": "FitChain 六角色健身业务工作台，联网后使用。",
+  "icons": [
+    { "src": "/icons/fitchain-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/fitchain-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/fitchain.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

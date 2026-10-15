@@ -5,6 +5,7 @@ import { transformSync } from 'esbuild'
 import * as vue from 'vue'
 import * as financeUi from '../src/utils/financeUi.mjs'
 import * as accessControl from '../src/utils/accessControl.mjs'
+import * as mobileNavigation from '../src/utils/mobileNavigation.mjs'
 
 function execute(path, deps, names = []) {
   const url = new URL('../src/' + path, import.meta.url)
@@ -225,7 +226,7 @@ test('leads: write errors remain safe, version conflict requires reload then fre
 })
 test('leads: route and menu require both LEAD_READ and permitted owner roles', () => {
   let routerOptions
-  const deps = { 'vue-router': { createRouter: value => { routerOptions = value; return { beforeEach() {} } }, createWebHistory: () => ({}) }, '@/utils/storage': { getToken: () => '', getUserInfo: () => ({}) }, '@/utils/auth': accessControl, '@/utils/accessControl.mjs': accessControl }
+  const deps = { 'vue-router': { createRouter: value => { routerOptions = value; return { beforeEach() {} } }, createWebHistory: () => ({}) }, '@/utils/storage': { getToken: () => '', getUserInfo: () => ({}) }, '@/utils/auth': accessControl, '@/utils/accessControl.mjs': accessControl, '@/utils/mobileNavigation.mjs': mobileNavigation }
   execute('router/index.ts', deps); const route = routerOptions.routes.find(r => r.path === '/').children.find(r => r.path === 'leads'); assert.ok(route)
   globalThis.window = { innerWidth: 1200, matchMedia: () => ({ matches: false }) }; globalThis.document = { hidden: false }; globalThis.localStorage = { getItem: () => null }
   const layout = execute('layouts/AdminLayout.vue', { ...deps, vue: { ...vue, provide() {}, onMounted() {}, onUnmounted() {}, watchEffect() {} }, 'vue-router': { useRoute: () => ({ path: '/leads' }) }, 'element-plus': { ElMessage: {} }, '@element-plus/icons-vue': {}, '@/store/modules/auth': { useAuthStore: () => ({ userInfo: { role: 'SALES', permissions: ['LEAD_READ'] } }) }, '@/utils/workspaceAppearance.mjs': { normalizeMotionPreference: () => 'standard', resolveMotionState: () => 'full' }, '@/utils/workspaceMotion': { workspaceMotionKey: Symbol() } }, ['menuItems']); const menu = layout.menuItems.find(m => m.path === '/leads'); assert.ok(menu)

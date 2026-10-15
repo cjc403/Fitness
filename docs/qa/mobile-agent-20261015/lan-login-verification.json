@@ -1,0 +1,25 @@
+{
+  "kind": "Real browser request from LAN hostname to normal local backend, invalid empty fields only; no login credentials or business writes",
+  "url": "http://192.168.1.71:5174/login",
+  "cases": [
+    {
+      "name": "Actual browser LAN Origin reaches login validation",
+      "origin": "http://192.168.1.71:5174",
+      "http": 400,
+      "code": 1001,
+      "passed": true
+    },
+    {
+      "origin": "https://untrusted.example",
+      "http": 403,
+      "passed": true
+    },
+    {
+      "origin": "http://localhost:5173",
+      "http": 400,
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

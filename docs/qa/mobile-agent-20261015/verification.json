@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-15",
+  "scope": "local_only",
+  "implemented": [
+    "six_role_H5_navigation",
+    "PWA_public_offline_shell",
+    "role_scoped_real_queries",
+    "immutable_preview_manual_confirm_audit",
+    "book_course_cancel_booking",
+    "book_trial",
+    "training_draft"
+  ],
+  "backend": {
+    "total": 297,
+    "passed": 284,
+    "skipped": 13,
+    "failures": 0,
+    "new_real_postgres_tests": 11
+  },
+  "frontend": {
+    "passed": 218,
+    "build": true
+  },
+  "real_isolated_browser": {
+    "roles": 6,
+    "mobileWidths": [
+      390,
+      360,
+      320
+    ],
+    "desktopWidth": 1366,
+    "businessWriteFlows": 3,
+    "runtimeErrors": 0
+  },
+  "localActivation": "local-activation.json",
+  "existingMigrationBytesUnchanged": 22,
+  "model": {
+    "liveProbeHTTP": 200,
+    "mode": "MODEL",
+    "liveToolCallingVerified": true,
+    "sixRoleQueries": 6,
+    "confirmedWriteFlows": 4,
+    "evidence": "live-model/verification.json",
+    "normalLocalReadOnlyVerified": true
+  },
+  "physicalDeviceVerified": false,
+  "httpsPhoneInstallationVerified": false,
+  "serverUpdated": false,
+  "notes": [
+    "Test writes used isolated PostgreSQL only",
+    "Existing large frontend chunk warning remains",
+    "Backend source and JAR unchanged from previous fresh-build verification; backend suite not rerun for this frontend/script increment",
+    "Browser resizing is not physical-phone keyboard or PWA installation evidence"
+  ],
+  "lanLoginFix": {
+    "cause": "LAN same-origin request rejected by backend CORS after dev proxy rewrote Host but preserved browser Origin",
+    "fix": "Normalize Origin only for requests matching the receiving Vite scheme/Host/port; preserve foreign and null origins",
+    "actualBrowser": "lan-login-verification.json",
+    "realAccountLoginTested": false,
+    "accountPermissionsChanged": false,
+    "backendCorsChanged": false,
+    "firewallChanged": false
+  },
+  "desktopWhiteScreenFix": {
+    "cause": "Concurrent dev servers and proxy test harness shared Vite dependency cache; desktop optimized dependency requests returned 504",
+    "fix": "Per-port dev cache, separate build cache, temporary isolated cache for proxy tests",
+    "evidence": "cache-isolation-verification.json",
+    "desktopActualBrowserRendered": true,
+    "mobileLanActualBrowserRendered": true,
+    "desktopConsoleErrors": 0
+  },
+  "committed": true,
+  "pushed": false,
+  "startupHardening": {
+    "workspaceAndPIDProbe": true,
+    "unreadableCommandLineSupported": true,
+    "physicalAdapterURLsOnly": true,
+    "repeatedStartupPassed": 2,
+    "existingEndpointCases": 10,
+    "newStartupCases": 7
+  },
+  "liveBrowser": {
+    "evidence": "live-model/browser-verification.json",
+    "roles": 6,
+    "realBrowserLogins": 6,
+    "runtimeErrors": 0,
+    "alternateAPIBypassBlocked": true,
+    "requestedPreviewAndReceiptBound": true
+  }
+}

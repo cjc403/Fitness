@@ -1,0 +1,154 @@
+{
+  "command": "mvn -B -Dagent.test.pgurl=jdbc:postgresql://127.0.0.1:55451/agent_junit clean package",
+  "freshTempSourceCopy": "C:\\Users\\CJC\\AppData\\Local\\Temp\\fitchain-agent-final-full-178885ca643d4ba8bd9c76cf9180b9b2",
+  "total": 297,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 13,
+  "suites": [
+    {
+      "name": "com.gym.fitness.AgentIntegrationTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "16.384"
+    },
+    {
+      "name": "com.gym.fitness.AgentPostgresConcurrencyTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "4.304"
+    },
+    {
+      "name": "com.gym.fitness.AuthenticationSecurityIntegrationTest",
+      "tests": "17",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "8.542"
+    },
+    {
+      "name": "com.gym.fitness.BusinessTimezoneTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.287"
+    },
+    {
+      "name": "com.gym.fitness.CashShiftIntegrationTest",
+      "tests": "26",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "6",
+      "time": "4.704"
+    },
+    {
+      "name": "com.gym.fitness.ChatPrivacyIntegrationTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.883"
+    },
+    {
+      "name": "com.gym.fitness.CommercialBoundaryIntegrationTest",
+      "tests": "23",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "12.941"
+    },
+    {
+      "name": "com.gym.fitness.FinanceMoneyTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.005"
+    },
+    {
+      "name": "com.gym.fitness.FinanceReportIntegrationTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "4.298"
+    },
+    {
+      "name": "com.gym.fitness.FitnessApplicationIntegrationTest",
+      "tests": "39",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "9.738"
+    },
+    {
+      "name": "com.gym.fitness.LeadIntegrationTest",
+      "tests": "29",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.989"
+    },
+    {
+      "name": "com.gym.fitness.module.agent.AgentServiceTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.69"
+    },
+    {
+      "name": "com.gym.fitness.module.assistant.service.AgentModelClientTest",
+      "tests": "22",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "3.491"
+    },
+    {
+      "name": "com.gym.fitness.PrivateTrainingIntegrationTest",
+      "tests": "20",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.251"
+    },
+    {
+      "name": "com.gym.fitness.RefundFinanceIntegrationTest",
+      "tests": "32",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "3.76"
+    },
+    {
+      "name": "com.gym.fitness.RetentionIntegrationTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "1.992"
+    },
+    {
+      "name": "com.gym.fitness.TrainingPlanIntegrationTest",
+      "tests": "17",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.612"
+    },
+    {
+      "name": "com.gym.fitness.TrainingPlanPostgresConcurrencyTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "7",
+      "time": "0.0"
+    }
+  ]
+}

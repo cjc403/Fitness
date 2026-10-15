@@ -1,0 +1,106 @@
+{
+  "kind": "Actual local frontend resource verification after full tests and build; no credentials or business writes",
+  "before": {
+    "origin": "http://localhost:5173",
+    "vue": 504,
+    "pinia": 504,
+    "elementPlus": 504,
+    "icons": 504,
+    "locale": 504
+  },
+  "after": [
+    {
+      "origin": "http://localhost:5173",
+      "resources": [
+        {
+          "path": "/.vite/dev-5173/deps/vue.js?v=c02b8a39",
+          "status": 200
+        },
+        {
+          "path": "/.vite/dev-5173/deps/pinia.js?v=8d1936d5",
+          "status": 200
+        },
+        {
+          "path": "/.vite/dev-5173/deps/element-plus.js?v=16580ca2",
+          "status": 200
+        },
+        {
+          "path": "/node_modules/element-plus/dist/index.css",
+          "status": 200
+        },
+        {
+          "path": "/src/styles/polish.css",
+          "status": 200
+        },
+        {
+          "path": "/src/styles/mobile.css",
+          "status": 200
+        },
+        {
+          "path": "/.vite/dev-5173/deps/@element-plus_icons-vue.js?v=88cfd6f7",
+          "status": 200
+        },
+        {
+          "path": "/.vite/dev-5173/deps/element-plus_es_locale_lang_zh-cn.js?v=2decc5a3",
+          "status": 200
+        },
+        {
+          "path": "/src/App.vue",
+          "status": 200
+        },
+        {
+          "path": "/src/router/index.ts",
+          "status": 200
+        }
+      ],
+      "passed": true
+    },
+    {
+      "origin": "http://localhost:5174",
+      "resources": [
+        {
+          "path": "/.vite/dev-5174/deps/vue.js?v=89967df6",
+          "status": 200
+        },
+        {
+          "path": "/.vite/dev-5174/deps/pinia.js?v=7dca18f7",
+          "status": 200
+        },
+        {
+          "path": "/.vite/dev-5174/deps/element-plus.js?v=9c6f7e7d",
+          "status": 200
+        },
+        {
+          "path": "/node_modules/element-plus/dist/index.css",
+          "status": 200
+        },
+        {
+          "path": "/src/styles/polish.css",
+          "status": 200
+        },
+        {
+          "path": "/src/styles/mobile.css",
+          "status": 200
+        },
+        {
+          "path": "/.vite/dev-5174/deps/@element-plus_icons-vue.js?v=33a45b7d",
+          "status": 200
+        },
+        {
+          "path": "/.vite/dev-5174/deps/element-plus_es_locale_lang_zh-cn.js?v=7337fb0b",
+          "status": 200
+        },
+        {
+          "path": "/src/App.vue",
+          "status": 200
+        },
+        {
+          "path": "/src/router/index.ts",
+          "status": 200
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "lanLoginFieldValidation": 400
+}

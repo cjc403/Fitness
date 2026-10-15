@@ -1,0 +1,53 @@
+✔ development launcher can identify the exact workspace without process command-line access (184.7182ms)
+✔ isolated browser guard accepts the bound test frontend (0.7551ms)
+✔ isolated browser guard rejects a normal backend proxy despite a healthy isolated marker (1.0642ms)
+✔ isolated browser guard rejects a different workspace or unverified listener (0.7175ms)
+✔ live booking QA accepts only the requested preview (0.4646ms)
+✖ live booking QA rejects wrong, multiple, or differently targeted model actions (0.3966ms)
+✖ live booking QA requires a receipt bound to both preview id and schedule (0.1581ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 5
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1444.6573
+
+✖ failing tests:
+
+test at tests\live-preview-target.test.mjs:9:1
+✖ live booking QA rejects wrong, multiple, or differently targeted model actions (0.3966ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/live-preview-target.test.mjs:10:204)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests\live-preview-target.test.mjs:12:1
+✖ live booking QA requires a receipt bound to both preview id and schedule (0.1581ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/live-preview-target.test.mjs:15:151)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'throws',
+    diff: 'simple'
+  }

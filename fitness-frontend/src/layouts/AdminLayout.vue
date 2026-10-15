@@ -25,22 +25,37 @@
         </div>
       </el-header>
       <el-main class="main">
+        <div v-if="!online" class="mobile-offline" role="status">当前离线，无法提交业务操作。恢复网络后请手动重试。</div>
         <router-view />
       </el-main>
     </el-container>
-    <AssistantPanel v-if="canUseAssistant" />
+    <nav class="mobile-navigation" aria-label="手机主导航">
+      <router-link v-for="item in mobileMenus.primary" :key="item.path" :to="item.path" :class="{ active: activeMenu === item.path }" :aria-current="activeMenu === item.path ? 'page' : undefined"><el-icon><component :is="item.icon" /></el-icon><span>{{ item.label }}</span></router-link>
+      <button v-if="canUseAssistant" type="button" aria-label="打开业务助手" @click="openAssistant"><el-icon><ChatDotRound /></el-icon><span>业务助手</span></button>
+      <button type="button" :class="{ active: moreOpen }" :aria-expanded="moreOpen" aria-controls="mobile-more" @click="moreOpen = !moreOpen"><el-icon><Expand /></el-icon><span>更多</span></button>
+    </nav>
+    <div v-show="moreOpen" class="mobile-more-backdrop" @click.self="moreOpen = false" @keydown.esc="moreOpen = false">
+      <section id="mobile-more" class="mobile-more" role="dialog" aria-label="全部功能" aria-modal="true"><header><div><strong>全部功能</strong><small>{{ roleName }} · {{ userInfo?.realName || userInfo?.username }}</small></div><button type="button" aria-label="关闭更多菜单" @click="moreOpen = false">关闭</button></header>
+        <div class="mobile-menu-grid"><router-link v-for="item in visibleMenus" :key="item.path" :to="item.path" @click="moreOpen = false"><el-icon><component :is="item.icon" /></el-icon>{{ item.label }}</router-link></div>
+        <PwaInstall />
+        <button class="mobile-logout" type="button" @click="handleCommand('logout')">退出登录</button>
+      </section>
+    </div>
+    <AssistantPanel v-if="canUseAssistant" :key="authStore.sessionGeneration" />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, provide, ref, watchEffect } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/modules/auth'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, Bell, ChatDotRound, Collection, CreditCard, Expand, Fold, MagicStick, Odometer, OfficeBuilding, Tickets, TrendCharts, User, UserFilled } from '@element-plus/icons-vue'
 import AssistantPanel from '@/components/AssistantPanel.vue'
+import PwaInstall from '@/components/PwaInstall.vue'
 import { ROLE_NAMES } from '@/utils/auth'
 import { isMenuVisible } from '@/utils/accessControl.mjs'
+import { mobileNavigation } from '@/utils/mobileNavigation.mjs'
 import { normalizeMotionPreference, resolveMotionState } from '@/utils/workspaceAppearance.mjs'
 import { workspaceMotionKey } from '@/utils/workspaceMotion'
 
@@ -72,6 +87,13 @@ onUnmounted(() => {
 
 const route = useRoute()
 const authStore = useAuthStore()
+const moreOpen = ref(false), online = ref(navigator.onLine !== false)
+const syncOnline = () => { online.value = navigator.onLine !== false }
+const openAssistant = () => { moreOpen.value = false; window.dispatchEvent(new CustomEvent('fitchain:open-assistant')) }
+watch(() => route.fullPath, () => { moreOpen.value = false })
+watch(() => authStore.sessionGeneration, () => { moreOpen.value = false })
+onMounted(() => { window.addEventListener('online', syncOnline); window.addEventListener('offline', syncOnline) })
+onUnmounted(() => { window.removeEventListener('online', syncOnline); window.removeEventListener('offline', syncOnline) })
 const collapsed = ref(window.innerWidth <= 900)
 const syncCollapsed = () => { if (window.innerWidth <= 720) collapsed.value = true }
 onMounted(() => window.addEventListener('resize', syncCollapsed))
@@ -107,10 +129,12 @@ const visibleMenus = computed(() => {
   return menuItems.filter(item => isMenuVisible(item, role, permissions))
 })
 const roleName = computed(() => userInfo.value?.roleName || ROLE_NAMES[userInfo.value?.role || ''] || '系统用户')
+const mobileMenus = computed(() => mobileNavigation(menuItems, userInfo.value?.role, userInfo.value?.permissions || []))
 const canUseAssistant = computed(() => userInfo.value?.permissions?.includes('ASSISTANT_USE'))
 
 const handleCommand = (command: string) => {
   if (command === 'logout') {
+    moreOpen.value = false
     authStore.logout()
     ElMessage.success('已退出登录')
   }
@@ -149,6 +173,8 @@ const handleCommand = (command: string) => {
 .avatar { display: grid; place-items: center; width: 37px; height: 37px; border: 2px solid #fff; border-radius: 12px; background: linear-gradient(130deg,#387ce7,#90bffb); box-shadow: 0 0 0 1px #cfe0f4; color: #fff; font-weight: 800; }
 .user-name { font-size: 13px; font-weight: 700; }.user-name small { display: block; margin-top: 4px; color: #7890aa; font-size: 10px; font-weight: 400; }
 .main { position: relative; min-width: 0; min-height: 0; padding: 26px 30px 36px; overflow: auto; background: radial-gradient(ellipse at 100% 0,#d7e9ff6b,transparent 42%),radial-gradient(ellipse at 0 100%,#e6e2ff40,transparent 45%),#eff5fc; }
+.mobile-navigation,.mobile-more-backdrop { display:none; }.mobile-offline{padding:12px;margin-bottom:14px;border-radius:9px;background:#fff2d4;color:#815719;font-size:12px;line-height:1.7}
 @media (max-width: 1100px) { .main { padding: 22px; }.header { padding: 0 22px; }.header-right { gap: 8px; } }
 @media (max-width: 720px) { .aside { width: 76px !important; }.brand { padding: 0 17px; min-height: 78px; }.brand>div:not(.brand-mark),.menu-label,.aside-bottom span,.menu :deep(.el-menu-item span) { display: none; }.aside-bottom { justify-content: center; padding: 13px; }.main { padding: 16px 12px 25px; }.header { padding: 0 12px; height: 64px; }.user-name { display: none; }.header-right { gap: 4px; }.header-left .el-tag { display: none; }.motion-toggle { padding: 7px; }.motion-toggle span { display: none; }.header-left div strong { font-size: 12px; }.header-left div span { font-size: 9px; } }
+@media(max-width:760px){.aside{display:none}.header{height:calc(62px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 14px 0}.main{padding:16px 12px calc(90px + env(safe-area-inset-bottom,0px))}.user-name{display:none}.header-left .el-tag,.motion-toggle{display:none}.header-right{gap:4px}.mobile-navigation{position:fixed;bottom:0;left:0;right:0;z-index:1800;display:flex;justify-content:space-around;min-height:calc(66px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);border-top:1px solid #d5e2f2;background:#fffffffa;box-shadow:0 -5px 22px #294d6d0b}.mobile-navigation>a,.mobile-navigation>button{flex:1;display:flex;flex-direction:column;gap:5px;align-items:center;justify-content:center;min-width:0;min-height:58px;border:0;border-radius:10px;background:transparent;color:#73869d;text-decoration:none;font-size:10px;cursor:pointer}.mobile-navigation .el-icon{font-size:21px}.mobile-navigation .active{color:#235fbb;background:#eef5ff}.mobile-navigation span{overflow:hidden;max-width:100%;text-overflow:ellipsis;white-space:nowrap}.mobile-more-backdrop{position:fixed;inset:0;z-index:1900;display:flex;align-items:flex-end;background:#10223e65}.mobile-more{width:100%;max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;padding:18px 16px calc(24px + env(safe-area-inset-bottom,0px));border-radius:22px 22px 0 0;background:#fff}.mobile-more header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px;color:#25476b}.mobile-more header small{display:block;font-size:11px;color:#7c91a9;margin-top:5px}.mobile-more header button,.mobile-logout{border:1px solid #d6e2f1;border-radius:9px;min-height:44px;padding:10px 15px;color:#395e8d;background:#f8fbff}.mobile-menu-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:18px}.mobile-menu-grid>a{display:flex;gap:7px;flex-direction:column;justify-content:center;align-items:center;min-height:72px;border:1px solid #e1eaf6;border-radius:11px;color:#37608a;background:#f6faff;text-decoration:none;font-size:12px}.mobile-menu-grid .el-icon{font-size:22px}.mobile-logout{width:100%;margin-top:16px;color:#aa4141}.header-left div strong{max-width:50vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.header-left div span{font-size:10px}}
 </style>

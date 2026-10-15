@@ -1,0 +1,317 @@
+✔ all six mobile roles prioritize their permitted home and never expose excluded routes (13.2418ms)
+✔ agent real tool form reads directly and write form only creates a preview (78.1615ms)
+✔ invalid required integer never reaches preview transport (6.9608ms)
+✔ confirmation freezes identity and sends only action id and empty object, once while pending (6.1081ms)
+✔ offline never submits chat, tools, confirmation or cancellation (5.0834ms)
+✔ account replacement erases private state and rejects late preview and old confirmation (4.8488ms)
+✔ cancelled and expired previews cannot be confirmed; history refresh preserves authoritative receipts (4.3778ms)
+✔ a delayed history read cannot replace a newer successful receipt (5.1561ms)
+✔ failed confirmation reloads authoritative FAILED state rather than claiming success (4.7392ms)
+✔ all agent endpoints forward a request scope; confirmation has no mutable arguments (4.252ms)
+✔ training draft duration rejects values over business maximum 240 minutes (5.3422ms)
+✖ training draft outbound nested exercises omit nullable, blank and mode-inapplicable fields (6.093ms)
+✖ training nested schema rejects overlong notes, excessive exercises and missing mode requirements before transport (4.1914ms)
+✖ training action editor does not add a 21st exercise (2.9223ms)
+✔ mobile keyboard viewport shrink keeps the assistant within the visual viewport (4.371ms)
+✔ agent status distinguishes configured unknown, real provider response and degraded service (5.0332ms)
+✔ six role mobile menus retain every allowed function in primary or more (0.2973ms)
+✔ accepting installation does not pretend the current browser tab is a standalone window (17.106ms)
+✔ public service worker never caches private html, API, token requests or arbitrary resources (2.096ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 16
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 349.3012
+
+✖ failing tests:
+
+test at tests\mobile-agent.test.mjs:148:1
+✖ training draft outbound nested exercises omit nullable, blank and mode-inapplicable fields (6.093ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+
+    {
+      arguments: {
+        exercises: [
+          {
+  +         minutes: null,
+            mode: 'STRENGTH',
+  +         name: ' 深蹲 ',
+  +         note: '',
+  -         name: '深蹲',
+            reps: 12,
+            sets: 3,
+  +         weightKg: null
+          },
+          {
+  +         minutes: 30,
+            mode: 'STRENGTH',
+            name: '自重蹲',
+  +         note: ' 放慢速度 ',
+  -         note: '放慢速度',
+            reps: 10,
+            sets: 2,
+            weightKg: 0
+          },
+          {
+  ...
+            name: '步行',
+  +         note: '   ',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+          }
+        ]
+      },
+      tool: 'training_draft'
+    }
+
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/mobile-agent.test.mjs:158:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { tool: 'training_draft', arguments: { exercises: [Array] } },
+    expected: { tool: 'training_draft', arguments: { exercises: [Array] } },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\mobile-agent.test.mjs:166:1
+✖ training nested schema rejects overlong notes, excessive exercises and missing mode requirements before transport (4.1914ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/mobile-agent.test.mjs:169:61)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\mobile-agent.test.mjs:174:1
+✖ training action editor does not add a 21st exercise (2.9223ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   {
+  +     event: 'update:modelValue',
+  +     value: [
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '深蹲',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       },
+  +       {
+  +         minutes: null,
+  +         mode: 'STRENGTH',
+  +         name: '',
+  +         note: '',
+  +         reps: 12,
+  +         sets: 3,
+  +         weightKg: null
+  +       }
+  +     ]
+  +   }
+  + ]
+  - []
+
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/mobile-agent.test.mjs:177:23)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { event: 'update:modelValue', value: [Array] } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

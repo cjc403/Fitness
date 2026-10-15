@@ -1,0 +1,79 @@
+{
+  "kind": "Mocked frontend browser QA; not backend integration or physical-device verification",
+  "base": "http://127.0.0.1:4178",
+  "cases": [
+    {
+      "role": "SUPER_ADMIN",
+      "home": "/dashboard",
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "desktopWidth": 1366,
+      "tool": "courses",
+      "passed": true
+    },
+    {
+      "role": "MANAGER",
+      "home": "/dashboard",
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "desktopWidth": 1366,
+      "tool": "courses",
+      "passed": true
+    },
+    {
+      "role": "RECEPTION",
+      "home": "/members",
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "desktopWidth": 1366,
+      "tool": "courses",
+      "passed": true
+    },
+    {
+      "role": "COACH",
+      "home": "/coach-workbench",
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "desktopWidth": 1366,
+      "tool": "training_draft",
+      "passed": true
+    },
+    {
+      "role": "SALES",
+      "home": "/advisor-workbench",
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "desktopWidth": 1366,
+      "tool": "book_trial",
+      "passed": true
+    },
+    {
+      "role": "MEMBER",
+      "home": "/member-home",
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "desktopWidth": 1366,
+      "tool": "book_course",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

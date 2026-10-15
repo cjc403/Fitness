@@ -1,0 +1,15 @@
+✔ development launcher can identify the exact workspace without process command-line access (189.2271ms)
+✔ isolated browser guard accepts the bound test frontend (0.6484ms)
+✔ isolated browser guard rejects a normal backend proxy despite a healthy isolated marker (0.4971ms)
+✔ isolated browser guard rejects a different workspace or unverified listener (0.5887ms)
+✔ live booking QA accepts only the requested preview (0.4622ms)
+✔ live booking QA rejects wrong, multiple, or differently targeted model actions (0.7218ms)
+✔ live booking QA requires a receipt bound to both preview id and schedule (0.2571ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1447.4081

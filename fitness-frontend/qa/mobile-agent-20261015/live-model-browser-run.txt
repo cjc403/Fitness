@@ -1,0 +1,90 @@
+PASS browser SUPER_ADMIN
+PASS browser MANAGER
+PASS browser RECEPTION
+PASS browser SALES
+PASS browser COACH
+PASS browser MEMBER
+{
+  "kind": "Real isolated API and real browser login, keyboard-space simulation; not a physical phone",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "browserLogin": true,
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "reducedViewportInputFits": true,
+      "desktop": true
+    },
+    {
+      "role": "MANAGER",
+      "browserLogin": true,
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "reducedViewportInputFits": true,
+      "desktop": true
+    },
+    {
+      "role": "RECEPTION",
+      "browserLogin": true,
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "reducedViewportInputFits": true,
+      "desktop": true
+    },
+    {
+      "role": "SALES",
+      "browserLogin": true,
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "reducedViewportInputFits": true,
+      "desktop": true
+    },
+    {
+      "role": "COACH",
+      "browserLogin": true,
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "reducedViewportInputFits": true,
+      "desktop": true
+    },
+    {
+      "role": "MEMBER",
+      "browserLogin": true,
+      "mobileWidths": [
+        390,
+        360,
+        320
+      ],
+      "reducedViewportInputFits": true,
+      "desktop": true
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": [],
+  "naturalLanguageUIFlow": {
+    "role": "MEMBER",
+    "beforeConfirm": "PENDING",
+    "afterConfirm": "SUCCEEDED",
+    "confirmRequests": 1,
+    "fixtureCleanup": "CANCELLED"
+  },
+  "networkGuard": {
+    "alternateAbsoluteApiBlocked": true,
+    "trapRequests": 0
+  }
+}

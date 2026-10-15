@@ -1,0 +1,62 @@
+✖ development launcher can identify the exact workspace without process command-line access (180.7844ms)
+✔ isolated browser guard accepts the bound test frontend (0.5008ms)
+✖ isolated browser guard rejects a normal backend proxy despite a healthy isolated marker (0.4365ms)
+✖ isolated browser guard rejects a different workspace or unverified listener (0.1403ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 1
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 475.0743
+
+✖ failing tests:
+
+test at tests\dev-identity.test.mjs:10:1
+✖ development launcher can identify the exact workspace without process command-line access (180.7844ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - 'http://localhost:8080'
+
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/dev-identity.test.mjs:30:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'http://localhost:8080',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\isolated-target.test.mjs:12:1
+✖ isolated browser guard rejects a normal backend proxy despite a healthy isolated marker (0.4365ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/isolated-target.test.mjs:13:3)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\isolated-target.test.mjs:15:1
+✖ isolated browser guard rejects a different workspace or unverified listener (0.1403ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/isolated-target.test.mjs:16:88)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

@@ -1,0 +1,93 @@
+PASS query SUPER_ADMIN
+PASS query MANAGER
+PASS query RECEPTION
+PASS query SALES
+PASS query COACH
+PASS query MEMBER
+Prepared isolated regular schedule
+PASS flow MEMBER book_course
+PASS flow MEMBER cancel_booking
+PASS flow SALES book_trial
+PASS flow COACH training_draft
+{
+  "kind": "Actual provider and actual isolated PostgreSQL; synthetic fixtures only",
+  "date": "2026-10-15T12:49:44.872Z",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "query": "analytics",
+      "actualModelToolCall": true,
+      "writes": 0
+    },
+    {
+      "role": "MANAGER",
+      "query": "analytics",
+      "actualModelToolCall": true,
+      "writes": 0
+    },
+    {
+      "role": "RECEPTION",
+      "query": "cash_summary",
+      "actualModelToolCall": true,
+      "writes": 0
+    },
+    {
+      "role": "SALES",
+      "query": "leads",
+      "actualModelToolCall": true,
+      "writes": 0
+    },
+    {
+      "role": "COACH",
+      "query": "students",
+      "actualModelToolCall": true,
+      "writes": 0
+    },
+    {
+      "role": "MEMBER",
+      "query": "courses",
+      "actualModelToolCall": true,
+      "writes": 0
+    }
+  ],
+  "flows": [
+    {
+      "role": "MEMBER",
+      "tool": "book_course",
+      "naturalLanguagePreview": true,
+      "beforeConfirm": "PENDING",
+      "afterConfirm": "SUCCEEDED",
+      "replaySameReceipt": true
+    },
+    {
+      "role": "MEMBER",
+      "tool": "cancel_booking",
+      "naturalLanguagePreview": true,
+      "beforeConfirm": "PENDING",
+      "afterConfirm": "SUCCEEDED",
+      "replaySameReceipt": true
+    },
+    {
+      "role": "SALES",
+      "tool": "book_trial",
+      "naturalLanguagePreview": true,
+      "beforeConfirm": "PENDING",
+      "afterConfirm": "SUCCEEDED",
+      "replaySameReceipt": true
+    },
+    {
+      "role": "COACH",
+      "tool": "training_draft",
+      "naturalLanguagePreview": true,
+      "beforeConfirm": "PENDING",
+      "afterConfirm": "SUCCEEDED",
+      "replaySameReceipt": true
+    }
+  ],
+  "model": {
+    "configured": true,
+    "model": "deepseek-v4-flash",
+    "toolCalling": true,
+    "state": "available"
+  }
+}

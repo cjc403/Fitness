@@ -120,6 +120,10 @@ const endExpiredSession = (generation?: number) => {
 service.interceptors.request.use(
   (config: RetryableRequestConfig) => {
     if (!isRequestCurrent(config)) return Promise.reject(new axios.CanceledError('请求范围已变更', config))
+    if (typeof navigator !== 'undefined' && navigator.onLine === false && !['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())) {
+      ElMessage.warning('当前离线，无法提交操作；恢复网络后请手动重试')
+      return Promise.reject(new axios.CanceledError('离线时禁止提交操作', config))
+    }
     const authStore = useAuthStore()
     if (config._retry && !isCurrentSession(config._sessionGeneration)) {
       return Promise.reject(new Error('登录会话已变更'))
@@ -175,6 +179,7 @@ service.interceptors.response.use(
     const blobFailure = data instanceof Blob ? parseBlobPayload(await data.text()) : null
     if (!isRequestCurrent(originalRequest)) return Promise.reject(error)
     const errorMessage = blobFailure?.message || data?.message
+    const corsRejected = typeof data === 'string' && data.trim() === 'Invalid CORS request'
     const fieldDetail = status === 400 && !blobFailure ? describeFieldErrors(data) : ''
 
     if (originalRequest?.skipAuthRefresh) return Promise.reject(error)
@@ -206,7 +211,7 @@ service.interceptors.response.use(
       const now = Date.now()
       if (now - lastForbiddenNoticeAt > 2000) {
         lastForbiddenNoticeAt = now
-        ElMessage.error(errorMessage || '当前账号没有执行此操作的权限')
+        ElMessage.error(corsRejected ? '请求来源被接口拒绝，请检查访问地址或本地代理配置。' : errorMessage || '当前账号没有执行此操作的权限')
       }
     } else if (status === 404) {
       ElMessage.error('请求的资源不存在')

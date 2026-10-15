@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-10-15T20:38:13",
+  "endpoint": "https://api.deepseek.com",
+  "suppliedMatchesUserConfig": false,
+  "requests": [
+    {
+      "kind": "model_catalog",
+      "httpStatus": 200,
+      "modelIds": [
+        "deepseek-flash",
+        "deepseek-v4-pro"
+      ]
+    },
+    {
+      "kind": "minimal_tool_probe",
+      "httpStatus": 200,
+      "toolNames": [
+        "health_probe"
+      ]
+    }
+  ],
+  "configurationUpdated": true
+}

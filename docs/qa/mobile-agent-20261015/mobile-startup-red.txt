@@ -1,0 +1,8 @@
+FAIL: Reuse exact workspace even when elevated process command line is unreadable
+PASS: Reuse readable exact-workspace listener
+FAIL: A different workspace is rejected even with a convincing command line
+PASS: A stale or mismatched PID is rejected
+FAIL: A generic HTML or unavailable endpoint cannot prove ownership
+FAIL: A desktop-only loopback listener cannot serve a phone
+FAIL: Only ready addresses on connected physical adapters are recommended
+Mobile startup tests: 2/7 passed.

@@ -1,0 +1,32 @@
+✖ development launcher can identify the exact workspace without process command-line access (193.1089ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 485.7459
+
+✖ failing tests:
+
+test at tests\dev-identity.test.mjs:10:1
+✖ development launcher can identify the exact workspace without process command-line access (193.1089ms)
+  AssertionError [ERR_ASSERTION]: Attest the resolved proxy after inline/CLI overrides, not an earlier config variable
+  + actual - expected
+
+  + 'http://localhost:8080'
+  - 'http://127.0.0.1:18080'
+            ^
+
+      at TestContext.<anonymous> (file:///C:/Users/CJC/Desktop/fitness-feature-hh/fitness-feature-hh/fitness-frontend/tests/dev-identity.test.mjs:31:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'http://localhost:8080',
+    expected: 'http://127.0.0.1:18080',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

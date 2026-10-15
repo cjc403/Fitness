@@ -1,0 +1,47 @@
+/* Mobile business forms share the existing routes and permissions. Desktop styles stay in place. */
+@media (max-width: 760px) {
+  html, body, #app { width: 100%; min-width: 0; min-height: 100dvh; }
+  body { overflow-x: hidden; }
+  .wb-workspace .el-main > * { min-width: 0; max-width: 100%; }
+  .wb-workspace :is(.section-head,.page-header,.page-head,.panel-head,.filter-bar,.filters,.search-bar,.toolbar,.tab-head,.risk-actions,.schedule-filter) { flex-wrap: wrap; gap: 12px; }
+  .wb-workspace :is(.dashboard-grid,.content-grid,.workbench-grid,.membership-layout,.recommendation-panel,.training-layout,.finance-layout,.commercial-layout) { grid-template-columns: minmax(0,1fr) !important; }
+  .wb-workspace :is(.stats-row,.stat-grid,.metric-grid,.summary-grid,.quick-grid) { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .wb-workspace :is(.schedule-grid,.entitlement-grid,.recommendation-list,.product-grid,.two-cols,.form-grid,.detail-grid) { grid-template-columns: minmax(0,1fr) !important; }
+  .wb-workspace :is(.el-card,.el-card__body,.el-tabs,.el-tab-pane,section,article,.table-wrap,.table-card) { min-width: 0; max-width: 100%; }
+  .wb-workspace .el-table { width: 100%; max-width: 100%; }
+  .wb-workspace .el-table__body-wrapper { overscroll-behavior-x: contain; }
+  .wb-workspace .el-tabs__nav-scroll { overflow: hidden; }
+  .wb-workspace .el-tabs__item { min-height: 46px; }
+  .wb-workspace :is(.el-input,.el-select,.el-date-editor,.el-input-number) { max-width: 100%; min-width: 0; }
+  .wb-workspace :is(.recommendation-controls,.schedule-filter,.filter-bar,.filters,.search-bar,.toolbar) > :is(.el-input,.el-select,.el-date-editor,.el-input-number) { width: 100% !important; flex: 1 1 160px; }
+  .wb-workspace :is(.el-input__wrapper,.el-select__wrapper,.el-textarea__inner) { min-height: 42px; }
+  .wb-workspace :is(.el-input__inner,.el-textarea__inner) { font-size: 16px; }
+  .wb-workspace .el-button:not(.is-link):not(.is-text) { min-height: 42px; }
+  .wb-workspace :is(.el-pagination,.pagination) { max-width: 100%; overflow-x: auto; justify-content: flex-start; }
+  .wb-workspace .el-pagination__sizes,.wb-workspace .el-pagination__jump { display: none; }
+  .wb-workspace .wb-hero { padding: 20px 16px; }
+  .wb-workspace .wb-hero h1 { font-size: 24px; overflow-wrap: anywhere; }
+  .wb-workspace .wb-hero .hero-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+  .wb-workspace .wb-hero .hero-stats > div { min-width: 0; padding: 12px 8px; }
+  .wb-workspace .wb-hero .hero-stats strong { font-size: 24px; }
+  .wb-workspace .qr-card { width: 100%; }
+  body.wb-portal-active :is(.el-overlay-dialog,.el-message-box__wrapper) { padding: 0 10px; }
+  body.wb-portal-active :is(.el-dialog,.el-message-box,.el-drawer) { width: calc(100vw - 20px) !important; max-width: calc(100vw - 20px) !important; }
+  body.wb-portal-active .el-dialog { margin: 4dvh auto !important; max-height: 92dvh; display: flex; flex-direction: column; border-radius: 14px; }
+  body.wb-portal-active .el-dialog__body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+  body.wb-portal-active .el-dialog__footer { flex: none; padding-bottom: max(16px,env(safe-area-inset-bottom)); }
+  body.wb-portal-active .el-dialog .el-form-item { display: flex; flex-direction: column; align-items: stretch; }
+  body.wb-portal-active .el-dialog .el-form-item__label { width: auto !important; justify-content: flex-start; height: auto; padding-bottom: 6px; line-height: 1.6; }
+  body.wb-portal-active .el-dialog .el-form-item__content { margin-left: 0 !important; min-width: 0; }
+  body.wb-portal-active .el-dialog :is(.el-col,.el-form-item__content > .el-select,.el-form-item__content > .el-input,.el-form-item__content > .el-date-editor) { max-width: 100%; width: 100%; }
+  body.wb-portal-active .el-dialog .el-row { margin-left: 0 !important; margin-right: 0 !important; flex-wrap: wrap; }
+  body.wb-portal-active .el-dialog .el-row > .el-col { flex: 0 0 100%; padding: 0 !important; }
+  body.wb-portal-active .el-popper { max-width: calc(100vw - 16px); }
+  body.wb-portal-active .el-picker-panel { max-width: calc(100vw - 20px); }
+  .login-container,.register-container { min-height: 100dvh; overflow-y: auto; }
+}
+@media (max-width: 380px) {
+  .wb-workspace :is(.stats-grid,.stats-row,.stat-grid,.metric-grid,.summary-grid) { gap: 8px; }
+  .wb-workspace .el-card__body { padding: 14px; }
+  body.wb-portal-active .el-dialog__footer .el-button { margin: 4px; }
+}

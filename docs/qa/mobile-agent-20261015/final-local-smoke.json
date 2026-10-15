@@ -1,0 +1,102 @@
+{
+  "kind": "Normal desktop and LAN development services after full tests/build",
+  "entries": [
+    {
+      "base": "http://localhost:5173",
+      "loginVisible": true,
+      "assets": [
+        {
+          "path": "/.vite/dev-5173/deps/vue.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/.vite/dev-5173/deps/pinia.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/.vite/dev-5173/deps/element-plus.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/node_modules/element-plus/dist/index.css",
+          "http": 200
+        },
+        {
+          "path": "/src/styles/polish.css",
+          "http": 200
+        },
+        {
+          "path": "/src/styles/mobile.css",
+          "http": 200
+        },
+        {
+          "path": "/.vite/dev-5173/deps/@element-plus_icons-vue.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/.vite/dev-5173/deps/element-plus_es_locale_lang_zh-cn.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/src/App.vue",
+          "http": 200
+        },
+        {
+          "path": "/src/router/index.ts",
+          "http": 200
+        }
+      ],
+      "port": 5173,
+      "workspaceVerified": true
+    },
+    {
+      "base": "http://192.168.1.71:5174",
+      "loginVisible": true,
+      "assets": [
+        {
+          "path": "/.vite/dev-5174/deps/vue.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/.vite/dev-5174/deps/pinia.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/.vite/dev-5174/deps/element-plus.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/node_modules/element-plus/dist/index.css",
+          "http": 200
+        },
+        {
+          "path": "/src/styles/polish.css",
+          "http": 200
+        },
+        {
+          "path": "/src/styles/mobile.css",
+          "http": 200
+        },
+        {
+          "path": "/.vite/dev-5174/deps/@element-plus_icons-vue.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/.vite/dev-5174/deps/element-plus_es_locale_lang_zh-cn.js?v=07e4055b",
+          "http": 200
+        },
+        {
+          "path": "/src/App.vue",
+          "http": 200
+        },
+        {
+          "path": "/src/router/index.ts",
+          "http": 200
+        }
+      ],
+      "port": 5174,
+      "workspaceVerified": true
+    }
+  ],
+  "errors": []
+}

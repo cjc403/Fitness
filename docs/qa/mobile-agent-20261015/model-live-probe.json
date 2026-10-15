@@ -1,0 +1,7 @@
+{
+  "toolCalls": false,
+  "kind": "No-business-data live tool calling protocol probe",
+  "status": 401,
+  "model": "deepseek-v4-flash",
+  "failureKind": "provider_unauthorized"
+}
