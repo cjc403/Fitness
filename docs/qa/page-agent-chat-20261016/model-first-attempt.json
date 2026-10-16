@@ -1,0 +1,113 @@
+{
+  "at": "2026-10-16T09:57:16.307Z",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "target": {
+        "userId": 6,
+        "name": "林晓雨"
+      },
+      "content": "你好啊 · 网页验收1792144637498-SUPER_ADMIN",
+      "before": 0,
+      "decisions": [
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r1_3"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r2_16"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r3_3"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r4_4"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "fill",
+          "arguments": {
+            "ref": "r5_17",
+            "value": "你好啊 · 网页验收1792144637498-SUPER_ADMIN"
+          },
+          "summary": "准备填写当前页面字段"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r6_18"
+          },
+          "summary": "准备点击当前页面元素"
+        }
+      ],
+      "status": "WAITING_CONFIRMATION",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：站内消息"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：发起会话"
+        },
+        {
+          "index": 3,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：会员（1）"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：选择联系人：林晓雨（会员，编号6）"
+        },
+        {
+          "index": 5,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：输入消息，Enter 发送 / Shift+Enter 换行"
+        },
+        {
+          "index": 6,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "RUNNING",
+          "detail": "已点击当前页控件：发送"
+        }
+      ],
+      "pause": {
+        "close": "ASSISTANT_CLOSED",
+        "visibility": "PAGE_HIDDEN",
+        "preservedConfirmation": true,
+        "zeroBeforeConfirm": true
+      }
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": [],
+  "failure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'WAITING_CONFIRMATION'\n- 'SUCCEEDED'\n"
+}

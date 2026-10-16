@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-16T10:08:48.1261910Z",
+  "frontend": {
+    "app": "fitchain-vite",
+    "workspace": "0f4d4ad4ad28a4a62340a01d29f658b8eb9e2450597afcb591706d87ac4d8476",
+    "pid": 30100,
+    "port": 5173,
+    "apiOrigin": "http://localhost:8080"
+  },
+  "chatModuleStatus": 200,
+  "contactButtons": true,
+  "taskModuleStatus": 200,
+  "pauseReasons": true,
+  "scope": "Read-only normal dev module requests; no login or business API write",
+  "engineModuleStatus": 200,
+  "confirmedReceiptFeedback": true
+}

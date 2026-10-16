@@ -161,3 +161,37 @@ test('repeated export decisions reuse one artifact reference in subsequent plann
   const t=await f.engine.create('生成课表文件');const done=await terminal(f.engine,t.id)
   assert.equal(done.status,'SUCCEEDED');assert.equal(done.artifacts.length,1)
 })
+
+test('automatic pauses expose the first cause, preserve pending confirmation and clear the cause on resume', async () => {
+  for(const reason of ['PAGE_HIDDEN','ASSISTANT_CLOSED','OFFLINE']){
+    let request, n=0
+    const f=fixture(async()=>++n===1?{action:'click',arguments:{ref:'send'}}:{action:'finish',arguments:{}})
+    f.engine.options.driver.act=async()=>{request=f.gate.intercept({method:'post',baseURL:'/api',url:'/v1/messages/send',data:{recipientUserId:2,content:'fixture'},headers:{}});request.catch(()=>{});return '点击发送'}
+    const t=await f.engine.create('发送消息')
+    try{
+      const waiting=await terminal(f.engine,t.id);assert.equal(waiting.status,'WAITING_CONFIRMATION')
+      f.engine.suspend(reason);f.engine.suspend('OFFLINE')
+      const paused=f.engine.get(t.id)
+      assert.equal(paused.status,'PAUSED');assert.equal(paused.pauseReason,reason)
+      assert.equal(paused.pendingConfirmation.id,waiting.pendingConfirmation.id)
+      assert.equal(f.engine.resume(t.id).status,'WAITING_CONFIRMATION')
+      assert.equal(f.engine.get(t.id).pauseReason,undefined)
+      f.engine.pause(t.id);assert.equal(f.engine.get(t.id).pauseReason,'USER')
+    }finally{f.engine.stop(t.id);await tick()}
+  }
+})
+
+test('the next planning round receives the actual confirmed business receipt, not just a click report', async () => {
+  let n=0,request,feedback
+  const f=fixture(async body=>{
+    if(++n===1)return {action:'click',arguments:{ref:'send'}}
+    feedback=body.history
+    assert.ok(feedback.some(row=>row.ok&&/人工确认/.test(row.summary)&&/业务提交成功/.test(row.summary)),'Model must receive the real confirmed receipt')
+    return {action:'finish',arguments:{}}
+  })
+  f.engine.options.driver.act=async()=>{request=f.gate.intercept({method:'post',baseURL:'/api',url:'/v1/messages/send',data:{recipientUserId:2,content:'fixture'},headers:{}}).then(c=>f.gate.settle(c,true,'当前页业务接口返回成功回执'));request.catch(()=>{});return '已点击当前页控件：发送'}
+  const t=await f.engine.create('发送消息'),waiting=await terminal(f.engine,t.id)
+  await f.engine.confirm(t.id,waiting.pendingConfirmation.id);await request
+  const done=await terminal(f.engine,t.id);assert.equal(done.status,'SUCCEEDED',done.error)
+  assert.ok(feedback);assert.equal(done.steps.filter(step=>step.action==='submit').length,1)
+})

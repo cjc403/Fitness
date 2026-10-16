@@ -9,13 +9,15 @@
         </div>
       </div>
       <ul class="conv-list">
-        <li v-for="c in conversations" :key="c.userId" :class="{ active: c.userId === activeUserId }" @click="openThread(c.userId)">
-          <div class="conv-top"><strong>{{ c.name }}</strong><small>{{ timeText(c.lastAt) }}</small></div>
-          <div class="conv-bottom">
+        <li v-for="c in conversations" :key="c.userId" :class="{ active: c.userId === activeUserId }">
+          <button type="button" class="conv-contact" :aria-label="`打开会话：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" :aria-pressed="c.userId === activeUserId" @click="openThread(c.userId)">
+          <span class="conv-top"><strong>{{ c.name }}</strong><small>{{ timeText(c.lastAt) }}</small></span>
+          <span class="conv-bottom">
             <span class="conv-last">{{ c.lastContent }}</span>
             <span v-if="c.unread" class="unread">{{ c.unread > 99 ? '99+' : c.unread }}</span>
-          </div>
+          </span>
           <small class="role">{{ c.roleName || '—' }}</small>
+          </button>
         </li>
         <li v-if="!conversations.length" class="empty">还没有会话，点右上角「发起会话」给同事或会员发消息</li>
       </ul>
@@ -24,7 +26,7 @@
     <section class="chat-main">
       <template v-if="thread">
         <header class="main-head">
-          <div><strong>{{ thread.name }}</strong><small>{{ thread.roleName || '—' }}</small></div>
+          <div><strong>{{ thread.name }}</strong><small>{{ thread.roleName || '—' }} · 账号编号 {{ thread.userId }}</small></div>
           <span class="hint">站内消息 · 对方登录后即可在自己的消息界面看到</span>
         </header>
         <div ref="scrollBox" class="bubbles">
@@ -50,17 +52,21 @@
       <el-tabs v-model="pickerTab">
         <el-tab-pane :label="`员工（${filtered.staff.length}）`" name="staff">
           <ul class="picker-list">
-            <li v-for="c in filtered.staff" :key="c.userId" @click="startWith(c)">
+            <li v-for="c in filtered.staff" :key="c.userId">
+              <button type="button" class="picker-contact" :aria-label="`选择联系人：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" @click="startWith(c)">
               <strong>{{ c.name }}</strong><small>{{ c.roleName }}<template v-if="c.venueName"> · {{ c.venueName }}</template></small>
               <span v-if="c.unread" class="unread">{{ c.unread }}</span>
+              </button>
             </li>
           </ul>
         </el-tab-pane>
         <el-tab-pane v-if="contacts.members.length" :label="`会员（${filtered.members.length}）`" name="members">
           <ul class="picker-list">
-            <li v-for="c in filtered.members" :key="c.userId" @click="startWith(c)">
+            <li v-for="c in filtered.members" :key="c.userId">
+              <button type="button" class="picker-contact" :aria-label="`选择联系人：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" @click="startWith(c)">
               <strong>{{ c.name }}</strong><small>{{ c.roleName }}<template v-if="c.venueName"> · {{ c.venueName }}</template></small>
               <span v-if="c.unread" class="unread">{{ c.unread }}</span>
+              </button>
             </li>
           </ul>
         </el-tab-pane>
@@ -218,10 +224,13 @@ onBeforeUnmount(() => { disposed = true; if (timer !== undefined) window.clearIn
 .aside-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #eef1f6}
 .aside-head strong{color:#1b263b;font-size:14px}
 .conv-list{list-style:none;margin:0;padding:0;overflow:auto;flex:1}
-.conv-list li{padding:11px 14px;border-bottom:1px dashed #f2f5fa;cursor:pointer;transition:background .15s}
-.conv-list li:hover{background:#f7faff}
+.conv-list li{border-bottom:1px dashed #f2f5fa}
+.conv-contact,.picker-contact{width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer;transition:background .15s}
+.conv-contact{display:block;padding:11px 14px}
+.conv-contact:hover{background:#f7faff}
+.conv-contact:focus-visible,.picker-contact:focus-visible{outline:2px solid #4080ff;outline-offset:-2px}
 .conv-list li.active{background:#eef4ff}
-.conv-list li.empty{cursor:default;color:#9aa5b8;font-size:12px;line-height:1.7}
+.conv-list li.empty{padding:11px 14px;color:#9aa5b8;font-size:12px;line-height:1.7}
 .conv-top,.conv-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .conv-top strong{color:#1b263b;font-size:13px}
 .conv-top small{color:#9aa5b8;font-size:11px}
@@ -243,8 +252,8 @@ onBeforeUnmount(() => { disposed = true; if (timer !== undefined) window.clearIn
 .composer{display:flex;gap:10px;align-items:flex-end;padding:12px 16px;border-top:1px solid #eef1f6}
 .composer .el-button{margin-bottom:2px}
 .picker-list{list-style:none;margin:0;padding:0;max-height:280px;overflow:auto}
-.picker-list li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer}
-.picker-list li:hover{background:#f2f7ff}
+.picker-contact{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px}
+.picker-contact:hover{background:#f2f7ff}
 .picker-list strong{color:#1b263b;font-size:13px}
 .picker-list small{color:#9aa5b8;font-size:12px}
 @media(max-width:900px){.chat-panel,.chat-panel.embedded{grid-template-columns:1fr}.chat-aside{max-height:240px}}

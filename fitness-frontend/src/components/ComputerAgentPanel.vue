@@ -27,7 +27,7 @@
         <p v-if="task.error" class="computer-error">{{ task.error }}</p>
         <p v-if="task.status === 'SUCCEEDED'" class="computer-success">任务已完成，请查看当前页面及下方实际操作结果。</p>
         <p v-if="task.status === 'CANCELLED'" class="computer-muted">任务已停止。</p>
-        <p v-if="task.status === 'PAUSED'" class="computer-muted">任务已暂停。点击“继续”后才会继续执行。</p>
+        <p v-if="task.status === 'PAUSED'" class="computer-muted" role="status">{{ pauseExplanation(task.pauseReason) }}点击“继续”后才会继续执行；若有待确认的提交，继续后仍需单独确认。</p>
         <div class="computer-controls">
           <button v-if="task.status === 'RUNNING'" type="button" :disabled="!canWrite" @click="pauseTask">暂停</button>
           <button v-if="task.status === 'PAUSED'" type="button" :disabled="!canWrite" @click="resumeTask">继续</button>
@@ -91,11 +91,12 @@ const connectionText = computed(() => !online.value ? '网络已断开' : connec
 const canWrite = computed(() => props.active && online.value && available.value && !busy.value && !connecting.value && !!auth.token)
 const screenshotSource = computed(() => typeof task.value?.screenshot === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=\s]+$/.test(task.value.screenshot) ? task.value.screenshot : undefined)
 const statusLabel = (status: ComputerTaskStatus) => ({ RUNNING: '执行中', PAUSED: '已暂停', WAITING_CONFIRMATION: '待你确认', WAITING_INPUT: '待补充信息', SUCCEEDED: '已完成', FAILED: '执行失败', CANCELLED: '已停止' })[status] || '状态未知'
+const pauseExplanation = (reason?: ComputerTask['pauseReason']) => ({ USER: '你已手动暂停任务。', PAGE_HIDDEN: '当前网页曾被隐藏（如切换标签页或最小化），任务已自动暂停。', ASSISTANT_CLOSED: '助手面板已关闭或重新加载，任务已自动暂停。', OFFLINE: '网络已断开，任务已自动暂停。' } as Record<string,string>)[reason || ''] || '任务已暂停。'
 const stepStatusLabel = (status: string) => ({ RUNNING: '执行中', SUCCEEDED: '完成', FAILED: '失败', CANCELLED: '已停止', PAUSED: '暂停', WAITING_CONFIRMATION: '等待确认', WAITING_INPUT: '等待补充', PENDING: '等待执行' } as Record<string, string>)[status] || status
 const isActiveTask = (value: ComputerTask) => ['RUNNING', 'PAUSED', 'WAITING_CONFIRMATION', 'WAITING_INPUT'].includes(value.status)
 const formatTime = (value: string) => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—'
 const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
-const fieldLabel = (label: string) => ({ name: '姓名 / 名称', phone: '联系电话', source: '咨询来源', intent: '意向程度', ownerId: '负责顾问编号', venueId: '门店编号', memberId: '会员编号', coachId: '教练编号', scheduleId: '排课编号', note: '备注', content: '内容', title: '标题', nextFollowAt: '下次联系时间', startsAt: '开始时间', endsAt: '结束时间', idempotencyKey: '重复提交保护标识', expectedVersion: '资料版本', productId: '商品编号', paidAmount: '实收金额', paymentMethod: '收款方式' } as Record<string,string>)[label] || label
+const fieldLabel = (label: string) => ({ name: '姓名 / 名称', phone: '联系电话', source: '咨询来源', intent: '意向程度', ownerId: '负责顾问编号', venueId: '门店编号', memberId: '会员编号', recipientUserId: '收件人账号编号', coachId: '教练编号', scheduleId: '排课编号', note: '备注', content: '内容', title: '标题', nextFollowAt: '下次联系时间', startsAt: '开始时间', endsAt: '结束时间', idempotencyKey: '重复提交保护标识', expectedVersion: '资料版本', productId: '商品编号', paidAmount: '实收金额', paymentMethod: '收款方式' } as Record<string,string>)[label] || label
 const fieldValue = (value: string) => ({ WALK_IN: '自然到店', REFERRAL: '转介绍', DOUYIN: '抖音', WECHAT: '微信', OTHER: '其他', HIGH: '高意向', MEDIUM: '中意向', LOW: '低意向' } as Record<string,string>)[value] || value
 const errorText = (failure: unknown) => failure instanceof Error ? failure.message : '网页任务连接失败，请检查后端服务后刷新'
 const identityKey = () => { const user = auth.userInfo as (typeof auth.userInfo & { venueId?: number }); return JSON.stringify([auth.sessionGeneration, auth.token, user?.id, user?.role, user?.organizationId, user?.venueId]) }

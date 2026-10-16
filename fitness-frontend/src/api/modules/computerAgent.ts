@@ -8,6 +8,7 @@ export interface ComputerTask {
   id: string; goal: string; status: ComputerTaskStatus; createdAt: string; updatedAt: string
   steps: ComputerTaskStep[]; artifacts: ComputerArtifact[]; pendingConfirmation?: ComputerConfirmation
   question?: string; error?: string; screenshot?: string
+  pauseReason?: 'USER' | 'PAGE_HIDDEN' | 'ASSISTANT_CLOSED' | 'OFFLINE'
 }
 export interface ComputerAgentStatus { available: boolean; platform: string; scope: string; outputDirectory: string }
 export interface ComputerRequestConfig { isRequestCurrent?: () => boolean; signal?: AbortSignal }

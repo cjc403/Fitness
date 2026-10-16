@@ -39,14 +39,20 @@ export class PageTaskEngine {
     if(identity!==this.options.identity()||lifecycle!==this.lifecycle||config.signal?.aborted||config.isRequestCurrent?.()===false)throw Error('创建请求已取消或当前页面状态已变更')
     if(this.tasks.some(t=>this.current(t)))throw Error('已有进行中的网页任务')
     const t={id:uid(),goal:goal.trim(),status:'RUNNING',createdAt:stamp(),updatedAt:stamp(),steps:[],artifacts:[],identity,session,controller:new AbortController(),version:0,history:[],input:''}
-    this.options.gate.bind({verify:async()=>{await this.verify(t);if(t.status==='PAUSED')throw Object.assign(Error('任务已暂停，请继续后重新确认'),{code:'PAUSED_TASK'})},onPending:preview=>{if(this.current(t)){t.pendingConfirmation=preview;t.status='WAITING_CONFIRMATION';this.touch(t)}},onReceipt:(ok,detail)=>{t.steps.push({index:t.steps.length+1,action:'submit',label:'业务提交回执',status:ok?'SUCCEEDED':'FAILED',detail});if(!ok)t.error=detail;this.touch(t)}})
+    this.options.gate.bind({verify:async()=>{await this.verify(t);if(t.status==='PAUSED')throw Object.assign(Error('任务已暂停，请继续后重新确认'),{code:'PAUSED_TASK'})},onPending:preview=>{if(this.current(t)){t.pendingConfirmation=preview;t.status='WAITING_CONFIRMATION';this.touch(t)}},onReceipt:(ok,detail)=>{
+      t.steps.push({index:t.steps.length+1,action:'submit',label:'业务提交回执',status:ok?'SUCCEEDED':'FAILED',detail})
+      // The planner must receive the confirmed transport result, not infer it from page text.
+      // `observe` is an existing feedback action accepted by the planning protocol.
+      t.history.push({action:'observe',summary:`真实请求回执：人工确认已完成；${ok?'业务提交成功':'业务提交失败'}。${detail}`.slice(0,500),ok})
+      if(!ok)t.error=detail;this.touch(t)
+    }})
     this.tasks=[t,...this.tasks.filter(item=>this.owned(item))].slice(0,30)
     this.runningTask=t
     void this.run(t)
     return this.public(t)
   }
-  pause(id) {const t=this.raw(id);if(!['RUNNING','WAITING_CONFIRMATION','WAITING_INPUT'].includes(t.status))throw Error('当前任务不可暂停');t.pausedStatus=t.status;t.status='PAUSED';t.version++;t.operationController?.abort();this.touch(t);this.options.driver.clear();return this.public(t)}
-  resume(id) {const t=this.raw(id);if(t.status!=='PAUSED')throw Error('当前任务不可继续');t.status=t.pausedStatus||'RUNNING';t.pausedStatus=undefined;this.touch(t);return this.public(t)}
+  pause(id,reason='USER') {const t=this.raw(id);if(!['RUNNING','WAITING_CONFIRMATION','WAITING_INPUT'].includes(t.status))throw Error('当前任务不可暂停');t.pausedStatus=t.status;t.pauseReason=reason;t.status='PAUSED';t.version++;t.operationController?.abort();this.touch(t);this.options.driver.clear();return this.public(t)}
+  resume(id) {const t=this.raw(id);if(t.status!=='PAUSED')throw Error('当前任务不可继续');t.status=t.pausedStatus||'RUNNING';t.pausedStatus=undefined;t.pauseReason=undefined;this.touch(t);return this.public(t)}
   stop(id) {const t=this.tasks.find(t=>t.id===id);if(!t)return;if(!terminal(t.status)){t.status='CANCELLED';t.version++;t.controller.abort();t.pendingConfirmation=undefined;this.options.gate.cancel();this.options.driver.clear();this.touch(t)}return this.public(t)}
   async confirm(id,confirmationId) {
     const t=this.raw(id);if(t.status!=='WAITING_CONFIRMATION' || t.pendingConfirmation?.id!==confirmationId)throw Error('确认已失效')
@@ -55,7 +61,7 @@ export class PageTaskEngine {
     t.pendingConfirmation=undefined;t.status='RUNNING';this.touch(t);return this.public(t)
   }
   input(id,message) {const t=this.raw(id);if(t.status!=='WAITING_INPUT'||!message?.trim()||message.length>2000)throw Error('当前任务不接受此补充');t.input=(t.input+'\n'+message.trim()).slice(-2000);t.question=undefined;t.status='RUNNING';this.touch(t);return this.public(t)}
-  suspend() {this.lifecycle++;for(const t of this.tasks)if(this.current(t)&&t.status!=='PAUSED')this.pause(t.id)}
+  suspend(reason='ASSISTANT_CLOSED') {this.lifecycle++;for(const t of this.tasks)if(this.current(t)&&t.status!=='PAUSED')this.pause(t.id,reason)}
   invalidate() {this.lifecycle++;for(const t of this.tasks)if(!terminal(t.status))this.stop(t.id);this.tasks=[]}
   async run(t) {
     let effects=0,lastDecision=0,retries=0

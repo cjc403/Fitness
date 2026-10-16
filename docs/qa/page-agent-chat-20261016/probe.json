@@ -1,0 +1,129 @@
+{
+  "at": "2026-10-16T09:57:03.359Z",
+  "roles": [],
+  "errors": [],
+  "blockedOrigins": [],
+  "probe": {
+    "target": {
+      "userId": 6,
+      "name": "林晓雨"
+    },
+    "nodes": [
+      {
+        "ref": "r1_0",
+        "role": "button",
+        "name": "关闭此对话框",
+        "type": "button"
+      },
+      {
+        "ref": "r1_1",
+        "role": "textbox",
+        "name": "搜索姓名",
+        "type": "text"
+      },
+      {
+        "ref": "r1_2",
+        "role": "tab",
+        "name": "员工（0）"
+      },
+      {
+        "ref": "r1_3",
+        "role": "tab",
+        "name": "会员（1）"
+      },
+      {
+        "ref": "r1_4",
+        "role": "button",
+        "name": "选择联系人：林晓雨（会员，编号6）",
+        "type": "button"
+      },
+      {
+        "ref": "r1_5",
+        "role": "menuitem",
+        "name": "经营看板"
+      },
+      {
+        "ref": "r1_6",
+        "role": "menuitem",
+        "name": "经营分析"
+      },
+      {
+        "ref": "r1_7",
+        "role": "menuitem",
+        "name": "消息与渠道"
+      },
+      {
+        "ref": "r1_8",
+        "role": "menuitem",
+        "name": "站内消息"
+      },
+      {
+        "ref": "r1_9",
+        "role": "menuitem",
+        "name": "员工账号"
+      },
+      {
+        "ref": "r1_10",
+        "role": "menuitem",
+        "name": "会员管理"
+      },
+      {
+        "ref": "r1_11",
+        "role": "menuitem",
+        "name": "续费与回访"
+      },
+      {
+        "ref": "r1_12",
+        "role": "menuitem",
+        "name": "潜客与体验课"
+      },
+      {
+        "ref": "r1_13",
+        "role": "menuitem",
+        "name": "交班与日结"
+      },
+      {
+        "ref": "r1_14",
+        "role": "menuitem",
+        "name": "训练计划"
+      },
+      {
+        "ref": "r1_15",
+        "role": "menuitem",
+        "name": "会籍与商业"
+      },
+      {
+        "ref": "r1_16",
+        "role": "menuitem",
+        "name": "课程与排课"
+      },
+      {
+        "ref": "r1_17",
+        "role": "menuitem",
+        "name": "周课表"
+      },
+      {
+        "ref": "r1_18",
+        "role": "menuitem",
+        "name": "预约与签到"
+      },
+      {
+        "ref": "r1_19",
+        "role": "menuitem",
+        "name": "场馆管理"
+      },
+      {
+        "ref": "r1_20",
+        "role": "button",
+        "name": "收起导航",
+        "type": "button"
+      },
+      {
+        "ref": "r1_21",
+        "role": "button",
+        "name": "发起会话",
+        "type": "button"
+      }
+    ]
+  }
+}

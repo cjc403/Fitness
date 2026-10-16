@@ -1,0 +1,105 @@
+{
+  "at": "2026-10-16T10:06:33.144Z",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "target": {
+        "userId": 6,
+        "name": "林晓雨"
+      },
+      "content": "你好啊 · 网页验收1792145194239-SUPER_ADMIN",
+      "before": 0,
+      "decisions": [
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r1_3"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r2_17"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "fill",
+          "arguments": {
+            "ref": "r3_18",
+            "value": "你好啊 · 网页验收1792145194239-SUPER_ADMIN"
+          },
+          "summary": "准备填写当前页面字段"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r4_19"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "finish",
+          "arguments": {},
+          "summary": "结束本轮操作，结果以实际步骤记录为准"
+        }
+      ],
+      "plannerReceipts": [
+        "真实请求回执：人工确认已完成；业务提交成功。当前页业务接口返回成功回执"
+      ],
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：站内消息"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：打开会话：林晓雨（会员，编号6）"
+        },
+        {
+          "index": 3,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：输入消息，Enter 发送 / Shift+Enter 换行"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：发送"
+        },
+        {
+          "index": 5,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "pause": {
+        "close": "ASSISTANT_CLOSED",
+        "visibility": "PAGE_HIDDEN",
+        "preservedConfirmation": true,
+        "zeroBeforeConfirm": true
+      },
+      "after": 1,
+      "actualRequests": 1,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": []
+}

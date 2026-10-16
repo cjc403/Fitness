@@ -51,8 +51,8 @@ function ensure() {
     cleanup:()=>values.clear()
   })
   watch(identity,()=>{engine?.invalidate();values.clear()},{flush:'sync'})
-  window.addEventListener('offline',()=>engine?.suspend())
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)engine?.suspend()})
+  window.addEventListener('offline',()=>engine?.suspend('OFFLINE'))
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)engine?.suspend('PAGE_HIDDEN')})
   return engine
 }
 async function result<T>(operation:()=>T|Promise<T>,config:ComputerRequestConfig={}):Promise<ComputerResult<T>> {
