@@ -1,0 +1,138 @@
+{
+  "at": "2026-10-16T03:46:49.047Z",
+  "kind": "Real model, isolated PostgreSQL, actual controlled Edge DOM execution; no normal database writes",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "goal": "打开周课表，查看课程安排，然后结束任务",
+      "id": "4e0f290a-71de-499b-a62f-ac5df066a866",
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "navigate",
+          "label": "打开项目页面",
+          "status": "SUCCEEDED",
+          "detail": "已打开http://127.0.0.1:4177/schedule-week并读取页面；空列表或0条记录也是有效查询结果"
+        },
+        {
+          "index": 2,
+          "action": "finish",
+          "label": "核对任务结果",
+          "status": "SUCCEEDED",
+          "detail": "已核对真实页面操作、业务回执或成果文件"
+        }
+      ]
+    },
+    {
+      "role": "MANAGER",
+      "goal": "打开会员列表，查看本店会员，然后结束任务",
+      "id": "b52c82fa-0761-4dd6-ae56-9786cedab07f",
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "navigate",
+          "label": "打开项目页面",
+          "status": "SUCCEEDED",
+          "detail": "已打开http://127.0.0.1:4177/members并读取页面；空列表或0条记录也是有效查询结果"
+        },
+        {
+          "index": 2,
+          "action": "finish",
+          "label": "核对任务结果",
+          "status": "SUCCEEDED",
+          "detail": "已核对真实页面操作、业务回执或成果文件"
+        }
+      ]
+    },
+    {
+      "role": "RECEPTION",
+      "goal": "打开周课表，查看课程安排，然后结束任务",
+      "id": "404c7141-4e0e-48d3-9bd0-80b15fea2da7",
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "navigate",
+          "label": "打开项目页面",
+          "status": "SUCCEEDED",
+          "detail": "已打开http://127.0.0.1:4177/schedule-week并读取页面；空列表或0条记录也是有效查询结果"
+        },
+        {
+          "index": 2,
+          "action": "finish",
+          "label": "核对任务结果",
+          "status": "SUCCEEDED",
+          "detail": "已核对真实页面操作、业务回执或成果文件"
+        }
+      ]
+    },
+    {
+      "role": "COACH",
+      "goal": "打开周课表，查看我的课程，然后结束任务",
+      "id": "3f5aa209-b968-434b-97ba-5a7c74bc8c29",
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "navigate",
+          "label": "打开项目页面",
+          "status": "SUCCEEDED",
+          "detail": "已打开http://127.0.0.1:4177/schedule-week并读取页面；空列表或0条记录也是有效查询结果"
+        },
+        {
+          "index": 2,
+          "action": "finish",
+          "label": "核对任务结果",
+          "status": "SUCCEEDED",
+          "detail": "已核对真实页面操作、业务回执或成果文件"
+        }
+      ]
+    },
+    {
+      "role": "SALES",
+      "goal": "打开潜客与体验课页面，查看我的潜客，然后结束任务",
+      "id": "01290ca1-0912-4912-b922-44b79873f323",
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "navigate",
+          "label": "打开项目页面",
+          "status": "SUCCEEDED",
+          "detail": "已打开http://127.0.0.1:4177/leads并读取页面；空列表或0条记录也是有效查询结果"
+        },
+        {
+          "index": 2,
+          "action": "finish",
+          "label": "核对任务结果",
+          "status": "SUCCEEDED",
+          "detail": "已核对真实页面操作、业务回执或成果文件"
+        }
+      ]
+    },
+    {
+      "role": "MEMBER",
+      "goal": "点击我的训练，查看自己的训练计划，然后结束任务",
+      "id": "0e6f4aad-1ffe-4fcc-aec0-22c4dea6fa34",
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面元素",
+          "status": "SUCCEEDED",
+          "detail": "已点击“我的训练”；页面内容或地址已实际更新"
+        },
+        {
+          "index": 2,
+          "action": "finish",
+          "label": "核对任务结果",
+          "status": "SUCCEEDED",
+          "detail": "已核对真实页面操作、业务回执或成果文件"
+        }
+      ]
+    }
+  ]
+}

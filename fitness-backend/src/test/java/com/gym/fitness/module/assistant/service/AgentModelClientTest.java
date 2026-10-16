@@ -85,6 +85,16 @@ class AgentModelClientTest {
     }
 
     @Test
+    void computerPlanningCanRequireAnActionWhileBusinessChatKeepsAutomaticChoice() throws Exception {
+        respond(200, completion(null, List.of(call("decision1", "courses", "{}"))));
+        assertTrue(client.complete(MESSAGES, TOOLS, true).isPresent());
+        assertEquals("required", payload().path("tool_choice").asText());
+        assertEquals("disabled", payload().path("thinking").path("type").asText());
+        assertTrue(client.complete(MESSAGES, TOOLS).isPresent());
+        assertEquals("auto", payload().path("tool_choice").asText());
+    }
+
+    @Test
     void outgoingPayloadRedactsContentAndArgumentValuesWhilePreservingProtocolAndJsonKeys() throws Exception {
         respond(200, completion("已查询", List.of()));
         var assistant = new LinkedHashMap<String, Object>();

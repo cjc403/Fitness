@@ -49,6 +49,7 @@ try {
     await page.getByRole('button', { name: '打开业务助手', exact: true }).click()
     const panel = page.getByRole('dialog', { name: 'FitChain 业务助手' })
     await panel.waitFor()
+    await panel.getByRole('button', { name: '业务问答', exact: true }).click()
     await page.getByLabel('业务问题').focus()
     await page.setViewportSize({ width: 390, height: 420 })
     await page.waitForTimeout(180)

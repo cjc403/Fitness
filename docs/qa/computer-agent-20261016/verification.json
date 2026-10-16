@@ -1,0 +1,72 @@
+{
+  "at": "2026-10-16T03:54:13.137462+00:00",
+  "scope": "Local only; no online deployment or push",
+  "backend": {
+    "total": 377,
+    "executedPassed": 364,
+    "skippedOldPostgresSuites": 13,
+    "failed": 0,
+    "computerBoundary": 79,
+    "modelTransport": 23,
+    "realPostgresConcurrency": 11,
+    "freshTempCleanPackage": true
+  },
+  "frontend": {
+    "passed": 236,
+    "build": true
+  },
+  "runner": {
+    "passed": 28,
+    "actualEdgeComponents": true
+  },
+  "startup": {
+    "endpointTests": 10,
+    "mobileIdentityTests": 7,
+    "computerTests": 7,
+    "actualInitialStartAndReuse": true
+  },
+  "realModel": {
+    "sixRoleTasks": 6,
+    "sixRoleDesktopPanels": 6,
+    "file": {
+      "rows": 6,
+      "bytes": 599,
+      "openedRequest": true,
+      "windowVisuallyVerified": false
+    },
+    "write": {
+      "before": 0,
+      "after": 1,
+      "duplicateConfirmationHttp": 409,
+      "isolationMarker": "agent_browser"
+    },
+    "normalReadonlyTask": "SUCCEEDED"
+  },
+  "activation": {
+    "health": "UP",
+    "businessCountsUnchanged": true,
+    "passwordHashesUnchanged": true,
+    "counts": {
+      "entitlements": 24,
+      "schedules": 30,
+      "courses": 11,
+      "venues": 2,
+      "members": 19,
+      "trainingPlans": 0,
+      "bookings": 106,
+      "users": 10,
+      "orders": 24
+    },
+    "jarSha256": "70E9D9341C76C504CD02080D930E5AAAC8C34DC4107FECE7112211558681DA49",
+    "verifiedJarMatches": true
+  },
+  "migrationFilesOriginalBytes": 23,
+  "independentReview": "Important findings fixed and regressed; no unresolved high-impact findings",
+  "limits": [
+    "Windows local controlled FitChain browser and owned CSV artifacts only",
+    "No general Windows app control or image-model vision",
+    "LAN mobile cannot control host computer",
+    "Physical phone installation/keyboard remains prior-stage pending",
+    "Member export is future bookable courses, not reservation history"
+  ]
+}

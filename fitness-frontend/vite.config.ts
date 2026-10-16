@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import { createHash } from 'node:crypto'
+import { createLocalAgentBridge } from './dev/local-agent-bridge.mjs'
 
 const apiTarget = process.env.FITCHAIN_DEV_API_TARGET || 'http://localhost:8080'
 
@@ -9,6 +10,15 @@ const apiTarget = process.env.FITCHAIN_DEV_API_TARGET || 'http://localhost:8080'
 export default defineConfig({
   plugins: [
     vue(),
+    {
+      name: 'fitchain-local-computer-bridge',
+      apply: 'serve',
+      configureServer(server) {
+        const projectFingerprint = createHash('sha256').update(resolve(__dirname, '..').replace(/\\/g, '/').toLowerCase()).digest('hex')
+        const configPath = process.env.FITCHAIN_AGENT_BRIDGE_CONFIG || resolve(process.env.LOCALAPPDATA || process.env.HOME || '.', 'FitChainAgent', projectFingerprint, 'bridge.json')
+        server.middlewares.use('/local-agent', createLocalAgentBridge({ port: server.config.server.port || 5173, projectFingerprint, configPath }))
+      }
+    },
     {
       name: 'fitchain-dev-identity',
       apply: 'serve',

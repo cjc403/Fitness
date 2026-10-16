@@ -36,7 +36,7 @@ function runtime(overrides = {}) {
   const api = execute('api/modules/assistant.ts', deps)
   deps['@/api/modules/assistant'] = api
   const scope = vue.effectScope()
-  const page = scope.run(() => execute('components/AssistantPanel.vue', deps, ['input', 'send', 'messages', 'profile', 'actions', 'selectedTool', 'toolForm', 'runTool', 'confirmAction', 'cancelAction', 'online', 'result', 'toolError', 'loading', 'loadProfile', 'loadActions', 'syncViewport', 'viewportHeight', 'viewportTop', 'serviceText']))
+  const page = scope.run(() => execute('components/AssistantPanel.vue', deps, ['input', 'send', 'messages', 'profile', 'actions', 'selectedTool', 'toolForm', 'runTool', 'confirmAction', 'cancelAction', 'online', 'result', 'toolError', 'loading', 'loadProfile', 'loadActions', 'syncViewport', 'viewportHeight', 'viewportTop', 'serviceText', 'executionMode', 'computerRef', 'tab']))
   return { ...page, api, auth, calls, notices, mount: () => Promise.all(mounted.map(fn => fn())), unmount() { unmounted.forEach(fn => fn()); scope.stop() } }
 }
 
@@ -52,6 +52,16 @@ test('all six mobile roles prioritize their permitted home and never expose excl
     assert.deepEqual([...nav.primary, ...nav.more].map(m => m.path), [access.ROLE_HOME[role]])
   }
   assert.deepEqual(mobileNavigation(menus, 'UNKNOWN', []).primary, [])
+})
+
+test('computer conversation delegates the goal to the actual task panel without issuing a business chat', async () => {
+  const p = runtime(), goals = []
+  assert.ok(p.executionMode && p.computerRef, 'Conversation must expose an actual computer task execution path')
+  p.executionMode.value = 'computer'; p.computerRef.value = { submitGoal: async text => goals.push(text) }
+  p.input.value = '整理我本周的课程并生成文件'; await p.send()
+  assert.deepEqual(goals, ['整理我本周的课程并生成文件'])
+  assert.equal(p.tab.value, 'computer'); assert.equal(p.calls.length, 0)
+  assert.equal(p.loading.value, false); p.unmount()
 })
 
 test('agent real tool form reads directly and write form only creates a preview', async () => {

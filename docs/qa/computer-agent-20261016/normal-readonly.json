@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-16T03:52:13.357Z",
+  "kind": "Normal local runtime real model and visible controlled Edge read-only check",
+  "role": "SUPER_ADMIN",
+  "status": "SUCCEEDED",
+  "steps": [
+    {
+      "index": 1,
+      "action": "navigate",
+      "label": "打开项目页面",
+      "status": "SUCCEEDED",
+      "detail": "已打开http://localhost:5173/schedule-week并读取页面；空列表或0条记录也是有效查询结果"
+    },
+    {
+      "index": 2,
+      "action": "finish",
+      "label": "核对任务结果",
+      "status": "SUCCEEDED",
+      "detail": "已核对真实页面操作、业务回执或成果文件"
+    }
+  ],
+  "confirmationSent": false,
+  "artifactsCreated": 0
+}

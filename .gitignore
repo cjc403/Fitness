@@ -11,6 +11,7 @@ Thumbs.db
 # Frontend
 fitness-frontend/node_modules/
 fitness-frontend/dist/
+fitness-agent-runner/node_modules/
 
 # Backend
 fitness-backend/target/

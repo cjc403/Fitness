@@ -205,17 +205,27 @@ class RetentionIntegrationTest {
     }
 
     @Test void renewalCountsComeFromNetPaidRenewalOrdersAndCountMembersOnce() throws Exception {
-        var sales = account("SALES", 0); var a = member(sales, 0); var b = member(sales, 0);
-        order(a, "RENEW", "PAID", "100", "0", LocalDateTime.now());
-        order(a, "RENEW", "PARTIALLY_REFUNDED", "100", "40", LocalDateTime.now());
-        order(b, "RENEW", "REFUNDED", "100", "100", LocalDateTime.now());
-        order(b, "SALE", "PAID", "200", "0", LocalDateTime.now());
-        order(b, "RENEW", "PAID", "200", "0", LocalDate.now().withDayOfMonth(1).minusDays(1).atTime(12, 0));
-        var view = retention(sales, "ALL");
-        assertThat(view.path("summary").path("renewedThisMonth").asInt()).isEqualTo(1);
-        assertThat(view.path("summary").path("renewalNetAmount").decimalValue()).isEqualByComparingTo("160");
-        var manager = account("MANAGER", 0);
-        assertThat(retention(manager, "ALL").path("advisors").toString()).contains(sales.getRealName());
+        Clock original = (Clock) ReflectionTestUtils.getField(retentionService, "businessClock");
+        // Paid timestamps must precede the query cutoff despite timestamp(6) rounding.
+        LocalDateTime asOf = LocalDateTime.of(2026, 10, 16, 12, 0);
+        try {
+            ReflectionTestUtils.setField(retentionService, "businessClock",
+                Clock.fixed(asOf.atZone(original.getZone()).toInstant(), original.getZone()));
+            var sales = account("SALES", 0); var a = member(sales, 0); var b = member(sales, 0);
+            LocalDateTime paidAt = asOf.minusMinutes(1);
+            order(a, "RENEW", "PAID", "100", "0", paidAt);
+            order(a, "RENEW", "PARTIALLY_REFUNDED", "100", "40", paidAt);
+            order(b, "RENEW", "REFUNDED", "100", "100", paidAt);
+            order(b, "SALE", "PAID", "200", "0", paidAt);
+            order(b, "RENEW", "PAID", "200", "0", asOf.toLocalDate().withDayOfMonth(1).minusDays(1).atTime(12, 0));
+            var view = retention(sales, "ALL");
+            assertThat(view.path("summary").path("renewedThisMonth").asInt()).isEqualTo(1);
+            assertThat(view.path("summary").path("renewalNetAmount").decimalValue()).isEqualByComparingTo("160");
+            var manager = account("MANAGER", 0);
+            assertThat(retention(manager, "ALL").path("advisors").toString()).contains(sales.getRealName());
+        } finally {
+            ReflectionTestUtils.setField(retentionService, "businessClock", original);
+        }
     }
 
     @Test void onlyLatestFollowUpDeterminesNextContactAndInvalidFilterIsRejected() throws Exception {

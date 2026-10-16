@@ -83,6 +83,10 @@ public class AgentModelClient {
     }
 
     public Optional<Completion> complete(List<Map<String, Object>> messages, List<Map<String, Object>> tools) {
+        return complete(messages, tools, false);
+    }
+
+    public Optional<Completion> complete(List<Map<String, Object>> messages, List<Map<String, Object>> tools, boolean requireAction) {
         if (!isConfigured() || Instant.now().isBefore(circuitOpenUntil.get())) {
             fallbacks.increment();
             return Optional.empty();
@@ -100,7 +104,7 @@ public class AgentModelClient {
             payload.put("stream", false);
             if (!preparedTools.isEmpty()) {
                 payload.put("tools", preparedTools);
-                payload.put("tool_choice", "auto");
+                payload.put("tool_choice", requireAction ? "required" : "auto");
             }
             byte[] body = mapper.writeValueAsBytes(payload);
             require(body.length <= MAX_REQUEST_BYTES, "Model request exceeded limit");

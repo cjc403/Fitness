@@ -357,6 +357,11 @@ try {
     if (-not (Test-BackendApi)) { throw 'Backend health is UP, but the public venues API is unavailable or returned an invalid response.' }
     if (-not (Test-Url $frontendUrl 5)) { throw 'Frontend started, but the login page is unreachable.' }
     Write-Event 'FitChain is ready: http://localhost:5173/login' Cyan
+    $computerLauncher = Join-Path $PSScriptRoot 'start-local-agent.ps1'
+    if (Test-Path -LiteralPath $computerLauncher) {
+        try { & $computerLauncher }
+        catch { Write-Event 'Computer executor is unavailable. Core FitChain services are ready; check logs/computer-agent-error.log.' Yellow }
+    }
     Write-Host "Startup log: $startupLog" -ForegroundColor DarkGray
     Write-Host 'You may close this window; the system will keep running.' -ForegroundColor DarkGray
     if (-not $NoBrowser) { Start-Process $frontendUrl }

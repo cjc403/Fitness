@@ -1,0 +1,157 @@
+{
+  "at": "2026-10-16T03:46:14.433Z",
+  "kind": "Actual desktop conversation/task UI and real model; isolated database only",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "desktopPanelConnected": true
+    },
+    {
+      "role": "MANAGER",
+      "desktopPanelConnected": true
+    },
+    {
+      "role": "RECEPTION",
+      "desktopPanelConnected": true
+    },
+    {
+      "role": "COACH",
+      "desktopPanelConnected": true
+    },
+    {
+      "role": "SALES",
+      "desktopPanelConnected": true
+    },
+    {
+      "role": "MEMBER",
+      "desktopPanelConnected": true
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": [],
+  "file": {
+    "status": "SUCCEEDED",
+    "steps": [
+      {
+        "index": 1,
+        "action": "export_schedule",
+        "label": "生成课表文件",
+        "status": "SUCCEEDED",
+        "detail": "已生成可见排课文件（6条课程，599字节），成果ID=ca5008f9-347d-4a78-95a5-21f5cff35e20"
+      },
+      {
+        "index": 2,
+        "action": "open_artifact",
+        "label": "请求打开成果文件",
+        "status": "SUCCEEDED",
+        "detail": "已请求 Windows 打开文件；尚未验证文件窗口"
+      },
+      {
+        "index": 3,
+        "action": "finish",
+        "label": "核对任务结果",
+        "status": "SUCCEEDED",
+        "detail": "已核对真实页面操作、业务回执或成果文件"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "ca5008f9-347d-4a78-95a5-21f5cff35e20",
+        "name": "FitChain课表_2026-10-16_2026-10-22_ca5008f9.csv",
+        "bytes": 599,
+        "sha256": "c7050c44c3615e4e5903643c56913a77a7cc504bb259a65b02e55f7d4e5e9bd7",
+        "path": "C:\\Users\\CJC\\AppData\\Local\\FitChainAgent\\qa-computer-20261016\\artifacts\\FitChain课表_2026-10-16_2026-10-22_ca5008f9.csv"
+      }
+    ]
+  },
+  "write": {
+    "id": "106c88ff-c21a-4086-81c0-1a0a9e1995c6",
+    "name": "电脑Agent验收389698",
+    "status": "SUCCEEDED",
+    "steps": [
+      {
+        "index": 1,
+        "action": "navigate",
+        "label": "打开项目页面",
+        "status": "SUCCEEDED",
+        "detail": "已打开http://127.0.0.1:4177/leads并读取页面；空列表或0条记录也是有效查询结果"
+      },
+      {
+        "index": 2,
+        "action": "click",
+        "label": "点击页面元素",
+        "status": "SUCCEEDED",
+        "detail": "已点击“新建潜客”；页面内容或地址已实际更新"
+      },
+      {
+        "index": 3,
+        "action": "fill",
+        "label": "填写页面字段",
+        "status": "SUCCEEDED",
+        "detail": "已填写“姓名”：电脑Agent验收389698"
+      },
+      {
+        "index": 4,
+        "action": "fill",
+        "label": "填写页面字段",
+        "status": "SUCCEEDED",
+        "detail": "已填写“联系电话”：13900389698"
+      },
+      {
+        "index": 5,
+        "action": "click",
+        "label": "点击页面元素",
+        "status": "SUCCEEDED",
+        "detail": "已点击“意向程度”；页面内容或地址已实际更新"
+      },
+      {
+        "index": 6,
+        "action": "click",
+        "label": "点击页面元素",
+        "status": "SUCCEEDED",
+        "detail": "已点击“高意向”；页面内容或地址已实际更新"
+      },
+      {
+        "index": 7,
+        "action": "click",
+        "label": "点击页面元素",
+        "status": "SUCCEEDED",
+        "detail": "已点击“咨询来源”；页面内容或地址已实际更新"
+      },
+      {
+        "index": 8,
+        "action": "click",
+        "label": "点击页面元素",
+        "status": "SUCCEEDED",
+        "detail": "已点击“转介绍”；页面内容或地址已实际更新"
+      },
+      {
+        "index": 9,
+        "action": "fill",
+        "label": "填写页面字段",
+        "status": "SUCCEEDED",
+        "detail": "已填写“备注”：隔离测试"
+      },
+      {
+        "index": 10,
+        "action": "click",
+        "label": "点击页面元素",
+        "status": "SUCCEEDED",
+        "detail": "已点击“保存记录”；页面内容或地址已实际更新；本步已确认提交并收到成功业务回执"
+      },
+      {
+        "index": 11,
+        "action": "finish",
+        "label": "核对任务结果",
+        "status": "SUCCEEDED",
+        "detail": "已核对真实页面操作、业务回执或成果文件"
+      }
+    ],
+    "confirmedOnce": true,
+    "beforeCount": 0,
+    "afterCount": 1,
+    "duplicateConfirmationStatus": 409,
+    "source": "REFERRAL",
+    "intent": "HIGH"
+  }
+}

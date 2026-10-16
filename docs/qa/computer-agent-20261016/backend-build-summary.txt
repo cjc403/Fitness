@@ -1,0 +1,6 @@
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.915 s -- in com.gym.fitness.AgentPostgresConcurrencyTest
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.33 s -- in com.gym.fitness.CommercialBoundaryIntegrationTest
+[INFO] Tests run: 79, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.484 s -- in com.gym.fitness.module.agent.computer.ComputerAgentServiceTest
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.501 s -- in com.gym.fitness.module.assistant.service.AgentModelClientTest
+[INFO] Tests run: 377, Failures: 0, Errors: 0, Skipped: 13
+[INFO] BUILD SUCCESS
