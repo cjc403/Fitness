@@ -1,0 +1,153 @@
+{
+  "at": "2026-10-16T13:58:16.604Z",
+  "cases": [
+    {
+      "name": "multi-field-recovery",
+      "user": "manager",
+      "target": {
+        "id": 2,
+        "name": "流瑜伽",
+        "venueId": 1
+      },
+      "expected": {
+        "fee": 104.5,
+        "maxCapacity": 21
+      },
+      "goal": "只把流瑜伽的价格改成104.5，并把容量改为21，其他字段不变。保存后等待我确认，确认成功后核对课程并结束任务。",
+      "wrongDialog": true,
+      "late": false,
+      "steps": [
+        {
+          "index": 1,
+          "action": "navigate",
+          "label": "切换当前网页",
+          "status": "FAILED",
+          "detail": "当前有业务弹窗，请先核对或关闭它，再切换页面"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：取消；操作后核对：当前页面：课程与排课；；目标对象：团体课 ¥101.5 流瑜伽 改善柔韧性与核心稳定，舒缓压力。 60 分钟 20 人 低强度 编辑课程"
+        },
+        {
+          "index": 3,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：编辑课程｜流瑜伽（团体课 ¥101.5 改善柔韧性与核心稳定，舒缓压力。 60 分钟 20 人 低强度 编辑课程）；操作后核对：当前弹窗：编辑课程；容量：20；价格：101.5；课程名称：流瑜伽；课程类型：团体课 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 4,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：容量；操作后核对：当前弹窗：编辑课程；容量：21；价格：101.5；课程名称：流瑜伽；课程类型：团体课 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 5,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：价格；操作后核对：当前弹窗：编辑课程；容量：21；价格：104.5；课程名称：流瑜伽；课程类型：团体课 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 6,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：保存；操作后核对：当前页面：课程与排课；；目标对象：团体课 ¥104.5 流瑜伽 改善柔韧性与核心稳定，舒缓压力。 60 分钟 21 人 低强度 编辑课程"
+        },
+        {
+          "index": 7,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "status": "SUCCEEDED",
+      "preview": {
+        "id": "bbc581cc-6d5a-4acc-a594-30c150953777",
+        "method": "PUT",
+        "path": "/api/v1/admin/courses/2",
+        "summary": "当前页面准备提交此请求；请核对冻结参数",
+        "fields": [
+          {
+            "label": "name",
+            "value": "流瑜伽"
+          },
+          {
+            "label": "type",
+            "value": "GROUP"
+          },
+          {
+            "label": "description",
+            "value": "改善柔韧性与核心稳定，舒缓压力。"
+          },
+          {
+            "label": "durationMinutes",
+            "value": "60"
+          },
+          {
+            "label": "intensity",
+            "value": "LOW"
+          },
+          {
+            "label": "maxCapacity",
+            "value": "21"
+          },
+          {
+            "label": "fee",
+            "value": "104.5"
+          },
+          {
+            "label": "status",
+            "value": "ACTIVE"
+          },
+          {
+            "label": "venueId",
+            "value": "1"
+          },
+          {
+            "label": "id",
+            "value": "2"
+          },
+          {
+            "label": "createdBy",
+            "value": "1"
+          },
+          {
+            "label": "createdAt",
+            "value": "2026-10-15T16:18:29.990542"
+          },
+          {
+            "label": "updatedAt",
+            "value": "2026-10-16T21:55:29.572904"
+          }
+        ]
+      },
+      "beforeFee": 101.5,
+      "beforeFields": {
+        "fee": 101.5,
+        "maxCapacity": 20
+      },
+      "beforeWrites": 0,
+      "observationCount": 7,
+      "observedTarget": true,
+      "confirmedReceipt": true,
+      "dialogFieldValues": true,
+      "afterWrites": 1,
+      "afterFee": 104.5,
+      "otherRecordsUnchanged": true,
+      "otherFieldsUnchanged": true,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": []
+}

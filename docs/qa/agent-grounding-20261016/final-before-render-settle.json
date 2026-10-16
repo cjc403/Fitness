@@ -1,0 +1,279 @@
+{
+  "at": "2026-10-16T13:31:28.926Z",
+  "cases": [
+    {
+      "name": "exact-price-99",
+      "user": "admin",
+      "target": {
+        "id": 2,
+        "name": "流瑜伽",
+        "venueId": 1
+      },
+      "expected": {
+        "fee": 99
+      },
+      "goal": "打开课程与排课，把流瑜伽的价格改为99",
+      "wrongDialog": false,
+      "late": false,
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：课程与排课；操作后核对：当前页面：课程与排课；；目标对象：团体课 总部 ¥101.5 流瑜伽 改善柔韧性与核心稳定，舒缓压力。 60 分钟 20 人 低强度 编辑课程"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：编辑课程｜流瑜伽（团体课 总部 ¥101.5 改善柔韧性与核心稳定，舒缓压力。 60 分钟 20 人 低强度 编辑课程）；操作后核对：当前弹窗：编辑课程；价格：101.5；课程名称：流瑜伽；课程类型：团体课 [只读]；所属场馆：总部 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；容量：20；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 3,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：价格；操作后核对：当前弹窗：编辑课程；价格：99；课程名称：流瑜伽；课程类型：团体课 [只读]；所属场馆：总部 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；容量：20；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：保存；操作后核对：当前弹窗：编辑课程；价格：99；课程名称：流瑜伽；课程类型：团体课 [只读]；所属场馆：总部 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；容量：20；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 5,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "status": "SUCCEEDED",
+      "preview": {
+        "id": "5352ad60-7c47-4575-ae00-0c2602a2243d",
+        "method": "PUT",
+        "path": "/api/v1/admin/courses/2",
+        "summary": "当前页面准备提交此请求；请核对冻结参数",
+        "fields": [
+          {
+            "label": "name",
+            "value": "流瑜伽"
+          },
+          {
+            "label": "type",
+            "value": "GROUP"
+          },
+          {
+            "label": "description",
+            "value": "改善柔韧性与核心稳定，舒缓压力。"
+          },
+          {
+            "label": "durationMinutes",
+            "value": "60"
+          },
+          {
+            "label": "intensity",
+            "value": "LOW"
+          },
+          {
+            "label": "maxCapacity",
+            "value": "20"
+          },
+          {
+            "label": "fee",
+            "value": "99"
+          },
+          {
+            "label": "status",
+            "value": "ACTIVE"
+          },
+          {
+            "label": "venueId",
+            "value": "1"
+          },
+          {
+            "label": "id",
+            "value": "2"
+          },
+          {
+            "label": "createdBy",
+            "value": "1"
+          },
+          {
+            "label": "createdAt",
+            "value": "2026-10-15T16:18:29.990542"
+          },
+          {
+            "label": "updatedAt",
+            "value": "2026-10-16T21:22:13.316709"
+          }
+        ]
+      },
+      "beforeFee": 101.5,
+      "beforeWrites": 0,
+      "observationCount": 5,
+      "observedTarget": true,
+      "confirmedReceipt": true,
+      "dialogFieldValues": true,
+      "afterWrites": 1,
+      "afterFee": 99,
+      "otherRecordsUnchanged": true,
+      "otherFieldsUnchanged": true,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    },
+    {
+      "name": "wrong-dialog-recovery",
+      "user": "manager",
+      "target": {
+        "id": 2,
+        "name": "流瑜伽",
+        "venueId": 1
+      },
+      "expected": {
+        "fee": 101.5,
+        "maxCapacity": 20
+      },
+      "goal": "只把流瑜伽的价格改成101.5，并把容量改为20，其他字段不变。保存后等待我确认，确认成功后核对课程并结束任务。",
+      "wrongDialog": true,
+      "late": false,
+      "steps": [
+        {
+          "index": 1,
+          "action": "navigate",
+          "label": "切换当前网页",
+          "status": "FAILED",
+          "detail": "当前有业务弹窗，请先核对或关闭它，再切换页面"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：关闭此对话框；操作后核对：当前页面：课程与排课；；目标对象：团体课 ¥99 流瑜伽 改善柔韧性与核心稳定，舒缓压力。 60 分钟 20 人 低强度 编辑课程"
+        },
+        {
+          "index": 3,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：编辑课程｜流瑜伽（团体课 ¥99 改善柔韧性与核心稳定，舒缓压力。 60 分钟 20 人 低强度 编辑课程）；操作后核对：当前弹窗：编辑课程；容量：20；价格：99；课程名称：流瑜伽；课程类型：团体课 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 4,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：价格；操作后核对：当前弹窗：编辑课程；容量：20；价格：101.5；课程名称：流瑜伽；课程类型：团体课 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 5,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：容量；操作后核对：当前弹窗：编辑课程；容量：20；价格：101.5；课程名称：流瑜伽；课程类型：团体课 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 6,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：保存；操作后核对：当前弹窗：编辑课程；容量：20；价格：101.5；课程名称：流瑜伽；课程类型：团体课 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 7,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        },
+        {
+          "index": 8,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：编辑课程｜流瑜伽（团体课 ¥101.5 改善柔韧性与核心稳定，舒缓压力。 60 分钟 20 人 低强度 编辑课程）；操作后核对：当前弹窗：编辑课程；容量：20；价格：101.5；课程名称：流瑜伽；课程类型：团体课 [只读]；课程简介：改善柔韧性与核心稳定，舒缓压力。；时长：60；强度：低：LOW [已选中]；强度：中：MEDIUM [未选中]；强度：高：HIGH [未选中]"
+        },
+        {
+          "index": 9,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "RUNNING",
+          "detail": "已点击当前页控件：保存"
+        }
+      ],
+      "status": "WAITING_CONFIRMATION",
+      "preview": {
+        "id": "581d0c10-0554-499b-8f44-50fde5cad7f2",
+        "method": "PUT",
+        "path": "/api/v1/admin/courses/2",
+        "summary": "当前页面准备提交此请求；请核对冻结参数",
+        "fields": [
+          {
+            "label": "name",
+            "value": "流瑜伽"
+          },
+          {
+            "label": "type",
+            "value": "GROUP"
+          },
+          {
+            "label": "description",
+            "value": "改善柔韧性与核心稳定，舒缓压力。"
+          },
+          {
+            "label": "durationMinutes",
+            "value": "60"
+          },
+          {
+            "label": "intensity",
+            "value": "LOW"
+          },
+          {
+            "label": "maxCapacity",
+            "value": "20"
+          },
+          {
+            "label": "fee",
+            "value": "101.5"
+          },
+          {
+            "label": "status",
+            "value": "ACTIVE"
+          },
+          {
+            "label": "venueId",
+            "value": "1"
+          },
+          {
+            "label": "id",
+            "value": "2"
+          },
+          {
+            "label": "createdBy",
+            "value": "1"
+          },
+          {
+            "label": "createdAt",
+            "value": "2026-10-15T16:18:29.990542"
+          },
+          {
+            "label": "updatedAt",
+            "value": "2026-10-16T21:31:54.450305"
+          }
+        ]
+      },
+      "beforeFee": 99,
+      "beforeWrites": 0
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": [],
+  "failure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'WAITING_CONFIRMATION'\n- 'SUCCEEDED'\n"
+}

@@ -5,7 +5,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url'
 import {assertIsolatedBrowserTarget,restrictIsolatedBrowserNetwork} from './helpers/isolated-browser.mjs'
 await assertIsolatedBrowserTarget()
 const {chromium}=await import(pathToFileURL(process.env.FITCHAIN_PLAYWRIGHT_MODULE).href)
-const base='http://127.0.0.1:4177',out=fileURLToPath(new URL('../../docs/qa/page-agent-chat-20261016/',import.meta.url))
+const base='http://127.0.0.1:4177',out=fileURLToPath(new URL('../../docs/qa/'+(process.env.FITCHAIN_CHAT_QA_FOLDER||'page-agent-chat-20261016')+'/',import.meta.url))
 await mkdir(out,{recursive:true})
 const report={at:new Date().toISOString(),roles:[],errors:[],blockedOrigins:[]}
 const browser=await chromium.launch({channel:'msedge',headless:true,args:['--no-proxy-server']})

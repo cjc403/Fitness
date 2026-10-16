@@ -1,0 +1,579 @@
+{
+  "at": "2026-10-16T13:54:24.820Z",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "target": {
+        "userId": 6,
+        "name": "林晓雨"
+      },
+      "content": "你好啊 · 网页验收1792158867147-SUPER_ADMIN",
+      "before": 0,
+      "decisions": [
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r1_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r2_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "fill",
+          "arguments": {
+            "ref": "r3_19",
+            "value": "你好啊 · 网页验收1792158867147-SUPER_ADMIN"
+          },
+          "summary": "准备填写当前页面字段"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r4_2"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "finish",
+          "arguments": {},
+          "summary": "结束本轮操作，结果以实际步骤记录为准"
+        }
+      ],
+      "plannerReceipts": [
+        "真实请求回执：人工确认已完成；业务提交成功。当前页业务接口返回成功回执"
+      ],
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：站内消息；操作后核对：当前页面：站内消息；；目标对象：林晓雨 21:21 你好啊 · 网页验收1792156869394-SUPER_ADMIN 会员"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：打开会话：林晓雨（会员，编号6）；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:21 你好啊 · 网页验收1792156869394-SUPER_ADMIN 会员"
+        },
+        {
+          "index": 3,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：输入消息，Enter 发送 / Shift+Enter 换行；操作后核对：当前页面：站内消息；输入消息，Enter 发送 / Shift+Enter 换行：你好啊 · 网页验收1792158867147-SUPER_ADMIN；目标对象：林晓雨 21:21 你好啊 · 网页验收1792156869394-SUPER_ADMIN 会员"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：发送；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:54 你好啊 · 网页验收1792158867147-SUPER_ADMIN 会员"
+        },
+        {
+          "index": 5,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "pause": {
+        "close": "ASSISTANT_CLOSED",
+        "visibility": "PAGE_HIDDEN",
+        "preservedConfirmation": true,
+        "zeroBeforeConfirm": true
+      },
+      "after": 1,
+      "actualRequests": 1,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    },
+    {
+      "role": "MANAGER",
+      "target": {
+        "userId": 6,
+        "name": "林晓雨"
+      },
+      "content": "你好啊 · 网页验收1792158899109-MANAGER",
+      "before": 0,
+      "decisions": [
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r1_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r2_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "fill",
+          "arguments": {
+            "ref": "r3_19",
+            "value": "你好啊 · 网页验收1792158899109-MANAGER"
+          },
+          "summary": "准备填写当前页面字段"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r4_2"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "finish",
+          "arguments": {},
+          "summary": "结束本轮操作，结果以实际步骤记录为准"
+        }
+      ],
+      "plannerReceipts": [
+        "真实请求回执：人工确认已完成；业务提交成功。当前页业务接口返回成功回执"
+      ],
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：站内消息；操作后核对：当前页面：站内消息；；目标对象：林晓雨 21:22 你好啊 · 网页验收1792156900648-MANAGER 会员"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：打开会话：林晓雨（会员，编号6）；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:22 你好啊 · 网页验收1792156900648-MANAGER 会员"
+        },
+        {
+          "index": 3,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：输入消息，Enter 发送 / Shift+Enter 换行；操作后核对：当前页面：站内消息；输入消息，Enter 发送 / Shift+Enter 换行：你好啊 · 网页验收1792158899109-MANAGER；目标对象：林晓雨 21:22 你好啊 · 网页验收1792156900648-MANAGER 会员"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：发送；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:55 你好啊 · 网页验收1792158899109-MANAGER 会员"
+        },
+        {
+          "index": 5,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "after": 1,
+      "actualRequests": 1,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    },
+    {
+      "role": "RECEPTION",
+      "target": {
+        "userId": 6,
+        "name": "林晓雨"
+      },
+      "content": "你好啊 · 网页验收1792158929633-RECEPTION",
+      "before": 0,
+      "decisions": [
+        {
+          "action": "navigate",
+          "arguments": {
+            "path": "/messages"
+          },
+          "summary": "准备打开当前角色可访问的业务页面"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r2_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r3_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "fill",
+          "arguments": {
+            "ref": "r4_12",
+            "value": "你好啊 · 网页验收1792158929633-RECEPTION"
+          },
+          "summary": "准备填写当前页面字段"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r5_2"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "finish",
+          "arguments": {},
+          "summary": "结束本轮操作，结果以实际步骤记录为准"
+        }
+      ],
+      "plannerReceipts": [
+        "真实请求回执：人工确认已完成；业务提交成功。当前页业务接口返回成功回执"
+      ],
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "navigate",
+          "label": "切换当前网页",
+          "status": "SUCCEEDED",
+          "detail": "当前标签页已切换到 /messages；操作后核对：当前页面：消息与渠道；会员：搜索姓名或会员编号；通道：默认全部已启用通道 [只读]；分类：MEMBERSHIP；标题：；内容："
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：站内消息；操作后核对：当前页面：站内消息；；目标对象：林晓雨 21:22 你好啊 · 网页验收1792156931259-RECEPTION 会员"
+        },
+        {
+          "index": 3,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：打开会话：林晓雨（会员，编号6）；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:22 你好啊 · 网页验收1792156931259-RECEPTION 会员"
+        },
+        {
+          "index": 4,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：输入消息，Enter 发送 / Shift+Enter 换行；操作后核对：当前页面：站内消息；输入消息，Enter 发送 / Shift+Enter 换行：你好啊 · 网页验收1792158929633-RECEPTION；目标对象：林晓雨 21:22 你好啊 · 网页验收1792156931259-RECEPTION 会员"
+        },
+        {
+          "index": 5,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：发送；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:56 你好啊 · 网页验收1792158929633-RECEPTION 会员"
+        },
+        {
+          "index": 6,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "after": 1,
+      "actualRequests": 1,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    },
+    {
+      "role": "COACH",
+      "target": {
+        "userId": 6,
+        "name": "林晓雨"
+      },
+      "content": "你好啊 · 网页验收1792158967413-COACH",
+      "before": 0,
+      "decisions": [
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r1_4"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r2_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "fill",
+          "arguments": {
+            "ref": "r3_10",
+            "value": "你好啊 · 网页验收1792158967413-COACH"
+          },
+          "summary": "准备填写当前页面字段"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r4_2"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "finish",
+          "arguments": {},
+          "summary": "结束本轮操作，结果以实际步骤记录为准"
+        }
+      ],
+      "plannerReceipts": [
+        "真实请求回执：人工确认已完成；业务提交成功。当前页业务接口返回成功回执"
+      ],
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：站内消息；操作后核对：当前页面：站内消息；；目标对象：林晓雨 21:24 你好啊 · 网页验收1792157033513-MEMBER 会员"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：打开会话：林晓雨（会员，编号6）；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:24 你好啊 · 网页验收1792157033513-MEMBER 会员"
+        },
+        {
+          "index": 3,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：输入消息，Enter 发送 / Shift+Enter 换行；操作后核对：当前页面：站内消息；输入消息，Enter 发送 / Shift+Enter 换行：你好啊 · 网页验收1792158967413-COACH；目标对象：林晓雨 21:24 你好啊 · 网页验收1792157033513-MEMBER 会员"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：发送；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:56 你好啊 · 网页验收1792158967413-COACH 会员"
+        },
+        {
+          "index": 5,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "after": 1,
+      "actualRequests": 1,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    },
+    {
+      "role": "SALES",
+      "target": {
+        "userId": 6,
+        "name": "林晓雨"
+      },
+      "content": "你好啊 · 网页验收1792158999822-SALES",
+      "before": 0,
+      "decisions": [
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r1_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r2_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "fill",
+          "arguments": {
+            "ref": "r3_11",
+            "value": "你好啊 · 网页验收1792158999822-SALES"
+          },
+          "summary": "准备填写当前页面字段"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r4_2"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "finish",
+          "arguments": {},
+          "summary": "结束本轮操作，结果以实际步骤记录为准"
+        }
+      ],
+      "plannerReceipts": [
+        "真实请求回执：人工确认已完成；业务提交成功。当前页业务接口返回成功回执"
+      ],
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：站内消息；操作后核对：当前页面：站内消息；；目标对象：林晓雨 21:23 你好啊 · 网页验收1792157001349-SALES 会员"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：打开会话：林晓雨（会员，编号6）；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:23 你好啊 · 网页验收1792157001349-SALES 会员"
+        },
+        {
+          "index": 3,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：输入消息，Enter 发送 / Shift+Enter 换行；操作后核对：当前页面：站内消息；输入消息，Enter 发送 / Shift+Enter 换行：你好啊 · 网页验收1792158999822-SALES；目标对象：林晓雨 21:23 你好啊 · 网页验收1792157001349-SALES 会员"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：发送；操作后核对：当前页面：站内消息；发送： [禁用]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：林晓雨 21:57 你好啊 · 网页验收1792158999822-SALES 会员"
+        },
+        {
+          "index": 5,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "after": 1,
+      "actualRequests": 1,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    },
+    {
+      "role": "MEMBER",
+      "target": {
+        "userId": 3,
+        "name": "Alex 教练"
+      },
+      "content": "你好啊 · 网页验收1792159030617-MEMBER",
+      "before": 0,
+      "decisions": [
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r1_15"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r2_0"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "fill",
+          "arguments": {
+            "ref": "r3_22",
+            "value": "你好啊 · 网页验收1792159030617-MEMBER"
+          },
+          "summary": "准备填写当前页面字段"
+        },
+        {
+          "action": "click",
+          "arguments": {
+            "ref": "r4_1"
+          },
+          "summary": "准备点击当前页面元素"
+        },
+        {
+          "action": "finish",
+          "arguments": {},
+          "summary": "结束本轮操作，结果以实际步骤记录为准"
+        }
+      ],
+      "plannerReceipts": [
+        "真实请求回执：人工确认已完成；业务提交成功。当前页业务接口返回成功回执"
+      ],
+      "status": "SUCCEEDED",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：消息中心 5；操作后核对：当前页面：你好，林晓雨；发现课程： [未选中]；我的预约 (3)： [未选中]；私教签课： [未选中]；我的训练： [未选中]；购买会籍： [未选中]；我的会籍 (1)： [未选中]；体测档案： [未选中]；我的优惠券 (0)： [未选中]；课程评价： [未选中]；消息中心 5： [已选中]；我的退款： [未选中]；私信：chat [已选中]；系统通知（5）：notices [未选中]；目标对象：Alex 教练 21:56 你好啊 · 网页验收1792158967413-COACH 1 教练"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：打开会话：Alex 教练（教练，编号3）；操作后核对：当前页面：你好，林晓雨；发送： [禁用]；发现课程： [未选中]；我的预约 (3)： [未选中]；私教签课： [未选中]；我的训练： [未选中]；购买会籍： [未选中]；我的会籍 (1)： [未选中]；体测档案： [未选中]；我的优惠券 (0)： [未选中]；课程评价： [未选中]；消息中心 5： [已选中]；我的退款： [未选中]；私信：chat [已选中]；系统通知（5）：notices [未选中]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：Alex 教练 21:56 你好啊 · 网页验收1792158967413-COACH 教练"
+        },
+        {
+          "index": 3,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：输入消息，Enter 发送 / Shift+Enter 换行；操作后核对：当前页面：你好，林晓雨；发现课程： [未选中]；我的预约 (3)： [未选中]；私教签课： [未选中]；我的训练： [未选中]；购买会籍： [未选中]；我的会籍 (1)： [未选中]；体测档案： [未选中]；我的优惠券 (0)： [未选中]；课程评价： [未选中]；消息中心 5： [已选中]；我的退款： [未选中]；私信：chat [已选中]；系统通知（5）：notices [未选中]；输入消息，Enter 发送 / Shift+Enter 换行：你好啊 · 网页验收1792159030617-MEMBER；目标对象：Alex 教练 21:56 你好啊 · 网页验收1792158967413-COACH 教练"
+        },
+        {
+          "index": 4,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：发送；操作后核对：当前页面：你好，林晓雨；发送： [禁用]；发现课程： [未选中]；我的预约 (3)： [未选中]；私教签课： [未选中]；我的训练： [未选中]；购买会籍： [未选中]；我的会籍 (1)： [未选中]；体测档案： [未选中]；我的优惠券 (0)： [未选中]；课程评价： [未选中]；消息中心 5： [已选中]；我的退款： [未选中]；私信：chat [已选中]；系统通知（5）：notices [未选中]；输入消息，Enter 发送 / Shift+Enter 换行：；目标对象：Alex 教练 21:57 你好啊 · 网页验收1792159030617-MEMBER 教练"
+        },
+        {
+          "index": 5,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "after": 1,
+      "actualRequests": 1,
+      "duplicateRejected": true,
+      "sameTab": true,
+      "sameDocument": true,
+      "visibleCompleted": true
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": []
+}

@@ -5,10 +5,10 @@ const stamp = () => new Date().toISOString()
 const uid = () => globalThis.crypto?.randomUUID?.() || `t${Date.now()}_${Math.random().toString(36).slice(2)}`
 const scope = session => JSON.stringify([session.userId,session.role,session.venueId,session.sessionKey])
 const needsReceipt = goal => String(goal).split(/[，,。；;、]/).some(clause=>{
-  if(/仅|只|不要|不必|无需|不提交|不保存|不新建|不修改|不发送/.test(clause))return false
+  if(/不要|不必|无需|不提交|不保存|不新建|不修改|不发送/.test(clause))return false
   if(/(?:打开|查看|浏览).*(?:预约|签到|消息)/.test(clause)&&!/新建|新增|提交|保存|发送|帮我预约/.test(clause))return false
   if(/文件|CSV|导出/i.test(clause)&&!/新建(?:潜客|会员|预约)|提交|保存记录|发送消息|发布计划/.test(clause))return false
-  return /新建|新增|创建|修改|删除|提交|保存|发送|发布|退款|开卡|帮我预约|取消预约|办理签到/.test(clause)
+  return /新建|新增|创建|修改|改为|改成|改到|设为|设成|调整为|调整到|更新|删除|提交|保存|发送|发布|退款|开卡|帮我预约|取消预约|办理签到/.test(clause)
 })
 export class PageTaskEngine {
   constructor(options) {this.options={interval:7000,timeout:600000,waitTimeout:300000,...options};this.tasks=[];this.lifecycle=0}
@@ -64,7 +64,8 @@ export class PageTaskEngine {
   suspend(reason='ASSISTANT_CLOSED') {this.lifecycle++;for(const t of this.tasks)if(this.current(t)&&t.status!=='PAUSED')this.pause(t.id,reason)}
   invalidate() {this.lifecycle++;for(const t of this.tasks)if(!terminal(t.status))this.stop(t.id);this.tasks=[]}
   async run(t) {
-    let effects=0,lastDecision=0,retries=0
+    let effects=0,lastDecision=0,retries=0,blockedDecisions=0
+    const attempts=new Map()
     const started=Date.now()
     const fail=message=>{if(!terminal(t.status)){t.error=message;t.status='FAILED';t.controller.abort();this.options.gate.cancel();this.touch(t)}}
     const deadline=setTimeout(()=>fail('任务超过10分钟，已停止；已提交的请求请人工核对'),this.options.timeout)
@@ -79,7 +80,8 @@ export class PageTaskEngine {
       for(let count=0;count<30;) {
         await this.runnable(t);if(Date.now()-started>this.options.timeout)throw Error('任务执行超时，已停止')
         await this.verify(t);await this.options.settle();await this.options.gate.idle(()=>this.current(t))
-        const version=t.version,observation=await this.options.driver.observe(t.session)
+        const version=t.version,observation=await this.options.driver.observe({goal:t.goal+(t.input?'\n'+t.input:'')})
+        const beforeState=await this.options.driver.fingerprint?.()
         const delay=Math.max(0,this.options.interval-(Date.now()-lastDecision));if(delay)await sleep(delay)
         await this.runnable(t);if(t.version!==version)continue
         let decision
@@ -99,6 +101,19 @@ export class PageTaskEngine {
           t.status='SUCCEEDED';this.touch(t);break
         }
         if(action==='ask_user'){t.question=String(args.question).slice(0,500);t.status='WAITING_INPUT';this.touch(t);continue}
+        if(beforeState!==undefined&&['click','fill','select','observe','navigate','back','scroll'].includes(action)){
+          const target=this.options.driver.describe?.(action,args)||JSON.stringify({action,args})
+          const receipts=t.steps.filter(s=>s.action==='submit'&&s.status==='SUCCEEDED').length
+          const key=JSON.stringify([beforeState,target,receipts]),seen=attempts.get(key)||0
+          if(seen>=2){
+            const detail=`重复操作已阻止：相同页面状态下已执行两次“${target}”。请核对具体对象、字段值和当前弹窗，改用正确对象或关闭错误弹窗后重新定位，不重复同一动作。`
+            t.history.push({action,summary:detail.slice(0,500),ok:false});blockedDecisions++
+            if(blockedDecisions===1)t.steps.push({index:t.steps.length+1,action:'observe',label:'检测循环并重新定位',status:'SUCCEEDED',detail})
+            if(blockedDecisions>=3){t.question='检测到重复操作循环，已阻止继续重复点击。请补充具体对象名称或编号，或说明当前页面与目标的差异。';t.status='WAITING_INPUT';this.touch(t);await this.runnable(t);attempts.clear();blockedDecisions=0}
+            this.touch(t);continue
+          }
+          attempts.set(key,seen+1)
+        }
         const step={index:t.steps.length+1,action,label:({navigate:'切换当前网页',click:'点击页面控件',fill:'填写页面表单',select:'选择页面选项',scroll:'滚动当前页面',back:'返回上一页面',observe:'读取当前页面',export_schedule:'生成课表文件',open_artifact:'请求打开成果文件'})[action]||action,status:'RUNNING'}
         t.steps.push(step);this.touch(t);count++
         try {
@@ -110,13 +125,23 @@ export class PageTaskEngine {
             if(!t.artifacts.some(a=>a.id===args.artifactId))throw Error('只能打开本任务已生成文件')
             step.detail=await this.options.openArtifact(t,args.artifactId);effects++
           } else {
-            step.detail=await this.options.driver.act(action,args,t.session)
+            step.detail=await this.options.driver.act(action,args,t.session,()=>this.current(t)&&t.status==='RUNNING'&&t.version===version)
             if(action!=='observe')effects++
           }
-          await this.options.settle();await this.options.gate.idle(()=>this.current(t));await this.runnable(t)
+          await this.options.settle();await this.options.gate.idle(()=>this.current(t))
+          // A transport receipt precedes the Vue handler that closes the form and
+          // starts its refresh reads. Wait for those handlers, reads and rendering.
+          await this.options.settle();await this.options.gate.idle(()=>this.current(t));await this.options.settle();await this.runnable(t)
           if(t.error)throw Error(t.error)
+          const feedback=await this.options.driver.feedback?.()
+          await this.runnable(t)
+          if(feedback)step.detail=String(step.detail)+'；操作后核对：'+feedback
           step.status='SUCCEEDED';t.history.push({action,summary:String(step.detail).slice(0,500),ok:true});retries=0
         } catch(error) {
+          if(error.code==='ACTION_INTERRUPTED'&&this.current(t)){
+            step.status='PAUSED';step.detail='任务状态变化时已阻止继续操作，恢复后将重新观察并定位控件'
+            t.history.push({action,summary:step.detail,ok:false});await this.runnable(t);continue
+          }
           if(t.status==='PAUSED'&&t.operationController?.signal.aborted&&error.name==='AbortError'){
             step.status='PAUSED';step.detail='文件请求已中断，继续后将重新核对成果；已开始的系统操作不能撤回'
             t.history.push({action,summary:step.detail,ok:false});await this.runnable(t);continue

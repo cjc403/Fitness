@@ -51,7 +51,7 @@ function fixture(next) {
     gate, interval:0, settle:async()=>{}, timeout:1000, waitTimeout:1000})
   return {engine,gate,actions, route:()=>route, changeIdentity:()=>identity='b'}
 }
-async function terminal(engine,id) {for(let i=0;i<150;i++){const t=engine.get(id);if(['SUCCEEDED','FAILED','CANCELLED','WAITING_CONFIRMATION'].includes(t.status))return t;await tick()}throw Error('timeout')}
+async function terminal(engine,id) {for(let i=0;i<150;i++){const t=engine.get(id);if(['SUCCEEDED','FAILED','CANCELLED','WAITING_CONFIRMATION','WAITING_INPUT'].includes(t.status))return t;await tick()}throw Error('timeout')}
 
 test('engine navigates the existing driver and only completes after a real action', async () => {
   let n=0;const f=fixture(async()=>++n===1?{action:'navigate',arguments:{path:'/training-plans'}}:{action:'finish',arguments:{}})
@@ -194,4 +194,74 @@ test('the next planning round receives the actual confirmed business receipt, no
   await f.engine.confirm(t.id,waiting.pendingConfirmation.id);await request
   const done=await terminal(f.engine,t.id);assert.equal(done.status,'SUCCEEDED',done.error)
   assert.ok(feedback);assert.equal(done.steps.filter(step=>step.action==='submit').length,1)
+})
+
+test('planning receives the actual post-action page state and goal-aware observation',async()=>{
+ let n=0,seenGoal
+ const f=fixture(async body=>{if(++n===1)return {action:'click',arguments:{ref:'edit'}};assert.ok(body.history.at(-1).summary.includes('操作后核对：当前弹窗：编辑课程；课程名称：流瑜伽；价格：88'));return {action:'finish',arguments:{}}})
+ f.engine.options.driver.observe=context=>{seenGoal=context.goal;return observation()}
+ f.engine.options.driver.feedback=()=> '当前弹窗：编辑课程；课程名称：流瑜伽；价格：88'
+ const t=await f.engine.create('查看流瑜伽的编辑表单');const done=await terminal(f.engine,t.id)
+ assert.equal(done.status,'SUCCEEDED',done.error);assert.equal(seenGoal,'查看流瑜伽的编辑表单')
+})
+
+test('confirmed transport settles the consuming page before post-action feedback is recorded',async()=>{
+ let n=0,request,received=false,refreshStarted=false,refreshDone=false,rendered=false
+ const f=fixture(async body=>{
+  if(++n===1)return {action:'click',arguments:{ref:'save'}}
+  assert.ok(body.history.at(-1).summary.includes('当前页面：课程与排课；流瑜伽 99'),'Feedback must follow the page update after the frozen request resumes')
+  return {action:'finish',arguments:{}}
+ })
+ f.engine.options.settle=async()=>{
+  if(received&&!refreshStarted){refreshStarted=true;const read=await f.gate.intercept({method:'get',baseURL:'/api',url:'/v1/admin/courses'});setTimeout(()=>{f.gate.settle(read,true,'刷新完成');refreshDone=true},1)}
+  else if(refreshDone)rendered=true
+ }
+ f.engine.options.driver.feedback=()=>rendered?'当前页面：课程与排课；流瑜伽 99':'当前弹窗：编辑课程；价格99'
+ f.engine.options.driver.act=async()=>{request=f.gate.intercept({method:'put',baseURL:'/api',url:'/v1/admin/courses/2',data:{fee:99},headers:{}}).then(c=>{f.gate.settle(c,true,'实际成功');received=true});request.catch(()=>{});return '已点击保存'}
+ const t=await f.engine.create('把流瑜伽的价格改为99'),waiting=await terminal(f.engine,t.id)
+ await f.engine.confirm(t.id,waiting.pendingConfirmation.id);await request
+ const done=await terminal(f.engine,t.id);assert.equal(done.status,'SUCCEEDED',done.error)
+})
+
+test('repeated same-state actions receive recovery feedback instead of blindly clicking thirty times',async()=>{
+ let state='价格88'
+ const f=fixture(async body=>body.history.some(h=>h.summary.includes('重复操作'))?(state==='价格99'?{action:'finish',arguments:{}}:{action:'fill',arguments:{ref:'price',value:'99'}}):{action:'click',arguments:{ref:'wrong'}})
+ f.engine.options.driver.fingerprint=()=>state
+ f.engine.options.driver.describe=(action)=>action==='click'?'编辑课程｜流瑜伽':'填写价格99'
+ f.engine.options.driver.act=async action=>{f.actions.push(action);if(action==='fill')state='价格99';return action}
+ const t=await f.engine.create('查看表单并试填价格99，不保存');const done=await terminal(f.engine,t.id)
+ assert.equal(done.status,'SUCCEEDED',done.error);assert.equal(f.actions.filter(a=>a==='click').length,2)
+})
+
+test('persistent and alternating cycles stop repeated actions with a clear request for missing information',async()=>{
+ for(const alternating of [false,true]){
+  let state='list'
+  const f=fixture(async()=>({action:'click',arguments:{ref:'edit'}}))
+  f.engine.options.driver.fingerprint=()=>state;f.engine.options.driver.describe=()=>state==='list'?'编辑课程｜错误课程':'取消'
+  f.engine.options.driver.act=async action=>{f.actions.push(action);if(alternating)state=state==='list'?'dialog':'list';return state}
+  const t=await f.engine.create('查看目标课程')
+  try{const waiting=await terminal(f.engine,t.id);assert.equal(waiting.status,'WAITING_INPUT');assert.match(waiting.question,/重复|循环/);assert.ok(f.actions.length<=4)}finally{f.engine.stop(t.id);await tick()}
+ }
+})
+
+test('natural price-change wording and a restrictive only still require a real submit receipt',async()=>{
+ for(const goal of ['打开课程与排课，把流瑜伽的价格改为99','只把流瑜伽价格改成99，其他课程不修改','把流瑜伽价格设为99']){
+  let n=0;const f=fixture(async()=>++n===1?{action:'fill',arguments:{ref:'price',value:'99'}}:{action:'finish',arguments:{}})
+  const t=await f.engine.create(goal);const done=await terminal(f.engine,t.id);assert.equal(done.status,'FAILED',goal);assert.match(done.error,/回执/)
+ }
+})
+test('stopping while post-action verification is pending cannot publish late success',async()=>{
+ const pending=deferred();let checking=false
+ const f=fixture(async()=>({action:'click',arguments:{ref:'edit'}}))
+ f.engine.options.driver.feedback=()=>{checking=true;return pending.promise}
+ const t=await f.engine.create('查看表单');for(let i=0;i<50&&!checking;i++)await tick();assert.equal(checking,true)
+ f.engine.stop(t.id);pending.resolve('当前弹窗：编辑课程');await tick()
+ assert.equal(f.engine.get(t.id).status,'CANCELLED');assert.ok(!f.engine.get(t.id).steps.some(s=>s.action==='click'&&s.status==='SUCCEEDED'))
+})
+test('a focus preparation interrupted by pause stays paused and is replanned after resume',async()=>{
+ let n=0,acted=false
+ const f=fixture(async()=>++n<3?{action:'fill',arguments:{ref:'field',value:'99'}}:{action:'finish',arguments:{}})
+ f.engine.options.driver.act=async()=>{if(!acted){acted=true;f.engine.pause(f.engine.list()[0].id);throw Object.assign(Error('已暂停，未填写'),{code:'ACTION_INTERRUPTED'})}return '已填写'}
+ const t=await f.engine.create('试填表单，不保存');await tick()
+ try{assert.equal(f.engine.get(t.id).status,'PAUSED');f.engine.resume(t.id);assert.equal((await terminal(f.engine,t.id)).status,'SUCCEEDED')}finally{f.engine.stop(t.id);await tick()}
 })

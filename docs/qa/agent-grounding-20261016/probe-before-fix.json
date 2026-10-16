@@ -1,0 +1,328 @@
+{
+  "at": "2026-10-16T11:18:10.980Z",
+  "cases": [],
+  "errors": [],
+  "blockedOrigins": [],
+  "probe": {
+    "courses": [
+      {
+        "id": 4,
+        "name": "一对一体态评估",
+        "type": "PRIVATE",
+        "description": "教练专属评估与个性化训练建议。",
+        "durationMinutes": 60,
+        "intensity": "MEDIUM",
+        "maxCapacity": 1,
+        "fee": 299,
+        "venueId": 1,
+        "status": "ACTIVE",
+        "createdBy": 1,
+        "createdAt": "2026-10-15T16:18:29.991542",
+        "updatedAt": "2026-10-15T16:18:29.991542"
+      },
+      {
+        "id": 3,
+        "name": "功能性力量",
+        "type": "REGULAR",
+        "description": "复合动作训练，提升力量与运动表现。",
+        "durationMinutes": 60,
+        "intensity": "HIGH",
+        "maxCapacity": 12,
+        "fee": 128,
+        "venueId": 1,
+        "status": "ACTIVE",
+        "createdBy": 1,
+        "createdAt": "2026-10-15T16:18:29.990542",
+        "updatedAt": "2026-10-15T16:18:29.990542"
+      },
+      {
+        "id": 2,
+        "name": "流瑜伽",
+        "type": "GROUP",
+        "description": "改善柔韧性与核心稳定，舒缓压力。",
+        "durationMinutes": 60,
+        "intensity": "LOW",
+        "maxCapacity": 18,
+        "fee": 88,
+        "venueId": 1,
+        "status": "ACTIVE",
+        "createdBy": 1,
+        "createdAt": "2026-10-15T16:18:29.990542",
+        "updatedAt": "2026-10-15T16:18:29.990542"
+      },
+      {
+        "id": 1,
+        "name": "活力燃脂操",
+        "type": "GROUP",
+        "description": "节奏感强的全身有氧训练，适合所有基础。",
+        "durationMinutes": 45,
+        "intensity": "MEDIUM",
+        "maxCapacity": 24,
+        "fee": 68,
+        "venueId": 1,
+        "status": "ACTIVE",
+        "createdBy": 1,
+        "createdAt": "2026-10-15T16:18:29.988542",
+        "updatedAt": "2026-10-15T16:18:29.988542"
+      }
+    ],
+    "observation": {
+      "url": "http://127.0.0.1:4177/courses",
+      "title": "健身房管理系统",
+      "text": "当前控件状态：\n\n页面正文：\nTRAINING PROGRAM课程与排课维护课程模板，安排教练与上课时间 新增课程课程库4 个课程模板私教课总部¥299一对一体态评估教练专属评估与个性化训练建议。60 分钟1 人中强度编辑课程常规课总部¥128功能性力量复合动作训练，提升力量与运动表现。60 分钟12 人高强度编辑课程团体课总部¥88流瑜伽改善柔韧性与核心稳定，舒缓压力。60 分钟18 人低强度编辑课程团体课总部¥68活力燃脂操节奏感强的全身有氧训练，适合所有基础。45 分钟24 人中强度编辑课程近期排课未来 30 天课程安排 批量排课 新增排课时间门店课程教练教室预约进度状态操作10月12日周一19:00 - 20:00总部功能性力量Mia 教练未指定3/12已结束编辑删除10月13日周二10:00 - 11:00总部流瑜伽Leo 教练未指定3/18已结束编辑删除10月14日周三19:00 - 19:45总部活力燃脂操Nina 教练未指定3/24已结束编辑删除10月15日周四10:00 - 11:00总部一对一体态评估Alex 教练未指定1/1已结束编辑删除10月16日周五19:00 - 20:00总部功能性力量Mia 教练未指定4/12可预约编辑删除10月17日周六10:00 - 11:00总部流瑜伽Leo 教练未指定3/18可预约编辑删除10月18日周日19:00 - 19:45总部活力燃脂操Nina 教练未指定3/24可预约编辑删除10月19日周一08:10 - 08:40总部功能性力量隔离测试教练未指定0/20可预约编辑删除10月19日周一10:00 - 11:00总部一对一体态评估Alex 教练未指定1/1可预约编辑删除10月20日周二19:00 - 20:00总部功能性力量Mia 教练未指定3/12可预约编辑删除教室与场地同一时段同一教室不能排两节课；占比按每日 08:00–22:00 计算 新增教室教室门店可容纳今日占用状态操作暂无数据还没有教室，点右上角新增；不指定教室的排课不受影响课程评价汇总各教练平均分与低分记录（≤3 星）0 条评价—门店平均分教练评价数平均分暂无数据低分记录暂无低分记录",
+      "revision": "page_1",
+      "nodes": [
+        {
+          "ref": "r1_0",
+          "role": "menuitem",
+          "name": "经营看板"
+        },
+        {
+          "ref": "r1_1",
+          "role": "menuitem",
+          "name": "经营分析"
+        },
+        {
+          "ref": "r1_2",
+          "role": "menuitem",
+          "name": "消息与渠道"
+        },
+        {
+          "ref": "r1_3",
+          "role": "menuitem",
+          "name": "站内消息"
+        },
+        {
+          "ref": "r1_4",
+          "role": "menuitem",
+          "name": "员工账号"
+        },
+        {
+          "ref": "r1_5",
+          "role": "menuitem",
+          "name": "会员管理"
+        },
+        {
+          "ref": "r1_6",
+          "role": "menuitem",
+          "name": "续费与回访"
+        },
+        {
+          "ref": "r1_7",
+          "role": "menuitem",
+          "name": "潜客与体验课"
+        },
+        {
+          "ref": "r1_8",
+          "role": "menuitem",
+          "name": "交班与日结"
+        },
+        {
+          "ref": "r1_9",
+          "role": "menuitem",
+          "name": "训练计划"
+        },
+        {
+          "ref": "r1_10",
+          "role": "menuitem",
+          "name": "会籍与商业"
+        },
+        {
+          "ref": "r1_11",
+          "role": "menuitem",
+          "name": "课程与排课"
+        },
+        {
+          "ref": "r1_12",
+          "role": "menuitem",
+          "name": "周课表"
+        },
+        {
+          "ref": "r1_13",
+          "role": "menuitem",
+          "name": "预约与签到"
+        },
+        {
+          "ref": "r1_14",
+          "role": "menuitem",
+          "name": "场馆管理"
+        },
+        {
+          "ref": "r1_15",
+          "role": "button",
+          "name": "收起导航",
+          "type": "button"
+        },
+        {
+          "ref": "r1_16",
+          "role": "button",
+          "name": "新增课程",
+          "type": "button"
+        },
+        {
+          "ref": "r1_17",
+          "role": "button",
+          "name": "编辑课程",
+          "type": "button"
+        },
+        {
+          "ref": "r1_18",
+          "role": "button",
+          "name": "编辑课程",
+          "type": "button"
+        },
+        {
+          "ref": "r1_19",
+          "role": "button",
+          "name": "编辑课程",
+          "type": "button"
+        },
+        {
+          "ref": "r1_20",
+          "role": "button",
+          "name": "编辑课程",
+          "type": "button"
+        },
+        {
+          "ref": "r1_21",
+          "role": "button",
+          "name": "批量排课",
+          "type": "button"
+        },
+        {
+          "ref": "r1_22",
+          "role": "button",
+          "name": "新增排课",
+          "type": "button"
+        },
+        {
+          "ref": "r1_23",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_24",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_25",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_26",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_27",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_28",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_29",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_30",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_31",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_32",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_33",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_34",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_35",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_36",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_37",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_38",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_39",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_40",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_41",
+          "role": "button",
+          "name": "编辑",
+          "type": "button"
+        },
+        {
+          "ref": "r1_42",
+          "role": "button",
+          "name": "删除",
+          "type": "button"
+        },
+        {
+          "ref": "r1_43",
+          "role": "button",
+          "name": "新增教室",
+          "type": "button"
+        }
+      ]
+    }
+  },
+  "failure": "Actual repeated course edit buttons lose their course identity"
+}

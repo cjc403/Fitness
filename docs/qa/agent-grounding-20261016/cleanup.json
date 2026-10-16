@@ -1,0 +1,44 @@
+{
+  "ownedPostgresStopped": true,
+  "remainingTestListeners": [],
+  "at": "2026-10-16T14:00:59.8180955Z",
+  "ownedProcessesStopped": [
+    {
+      "ownershipVerified": true,
+      "role": "backend",
+      "name": "java.exe",
+      "pid": 30376
+    },
+    {
+      "ownershipVerified": true,
+      "role": "frontend",
+      "name": "node.exe",
+      "pid": 20524
+    },
+    {
+      "ownershipVerified": true,
+      "role": "runner",
+      "name": "node.exe",
+      "pid": 31416
+    }
+  ],
+  "filesDeleted": false,
+  "normalLocalListeners": [
+    {
+      "LocalAddress": "::1",
+      "LocalPort": 5173,
+      "OwningProcess": 18508
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 9091,
+      "OwningProcess": 36560
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 8080,
+      "OwningProcess": 36560
+    }
+  ],
+  "normalProcessesPreserved": true
+}

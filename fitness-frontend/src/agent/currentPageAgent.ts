@@ -41,9 +41,9 @@ function ensure() {
   engine=new PageTaskEngine({identity,gate:pageRequestGate,
     session:(signal?: AbortSignal)=>api('/computer/session',undefined,signal),
     next:(body: {goal:string;input?:string},signal?: AbortSignal)=>api('/computer/next',{...body,goal:protect(body.goal),...(body.input?{input:protect(body.input)}:{})},signal),
-    driver:{...driver,act:async(action:string,args:Record<string,string>)=>{
+    driver:{...driver,act:async(action:string,args:Record<string,string>,_session:unknown,canAct?:()=>boolean)=>{
       if(action==='fill')args={...args,value:args.value.replace(/\{\{USER_DATA_\d+\}\}/g,key=>{const value=values.get(key);if(!value)throw Error('用户资料引用已失效');return value})}
-      return driver.act(action,args)
+      return driver.act(action,args,canAct)
     }},
     settle:async()=>{await nextTick();await new Promise(resolve=>setTimeout(resolve,400));await nextTick()},
     exportSchedule:(task:ComputerTask & {controller:AbortController;operationController:AbortController},args:{from:string;to:string})=>api<ComputerArtifact>('/page-files/export',{taskId:task.id,...args},AbortSignal.any([task.controller.signal,task.operationController.signal]),true),
