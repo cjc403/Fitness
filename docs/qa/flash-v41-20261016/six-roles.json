@@ -1,0 +1,117 @@
+{
+  "at": "2026-10-16T09:04:49.734Z",
+  "configuredModel": "deepseek-flash",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "model": "deepseek-flash",
+      "configured": true,
+      "status": "SUCCEEDED",
+      "path": "/training-plans",
+      "sameTab": true,
+      "sameDocument": true,
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：训练计划"
+        }
+      ]
+    },
+    {
+      "role": "MANAGER",
+      "model": "deepseek-flash",
+      "configured": true,
+      "status": "SUCCEEDED",
+      "path": "/training-plans",
+      "sameTab": true,
+      "sameDocument": true,
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：训练计划"
+        }
+      ]
+    },
+    {
+      "role": "RECEPTION",
+      "model": "deepseek-flash",
+      "configured": true,
+      "status": "SUCCEEDED",
+      "path": "/schedule-week",
+      "sameTab": true,
+      "sameDocument": true,
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：周课表"
+        }
+      ]
+    },
+    {
+      "role": "COACH",
+      "model": "deepseek-flash",
+      "configured": true,
+      "status": "SUCCEEDED",
+      "path": "/training-plans",
+      "sameTab": true,
+      "sameDocument": true,
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：训练计划"
+        }
+      ]
+    },
+    {
+      "role": "SALES",
+      "model": "deepseek-flash",
+      "configured": true,
+      "status": "SUCCEEDED",
+      "path": "/leads",
+      "sameTab": true,
+      "sameDocument": true,
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：潜客与体验课"
+        }
+      ]
+    },
+    {
+      "role": "MEMBER",
+      "model": "deepseek-flash",
+      "configured": true,
+      "status": "SUCCEEDED",
+      "path": "/member-home",
+      "sameTab": true,
+      "sameDocument": true,
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：我的训练"
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": [],
+  "scope": "Isolated role logins and read-only same-page actions; no form submission"
+}

@@ -13,7 +13,7 @@ public class AiProperties {
     private boolean enabled = true;
     private String baseUrl = "https://api.deepseek.com";
     private String apiKey = "";
-    private String model = "deepseek-v4-flash";
+    private String model = "deepseek-flash";
     private int connectTimeoutSeconds = 5;
     private int readTimeoutSeconds = 25;
     private int maxTokens = 700;

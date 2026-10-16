@@ -1,0 +1,86 @@
+
+> fitness-frontend@1.0.0 build
+> vue-tsc && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1868 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                        0.71 kB │ gzip:   0.44 kB
+dist/assets/VenueList-B8eSSdfg.css                     0.28 kB │ gzip:   0.18 kB
+dist/assets/Chat-CicBGtoG.css                          0.34 kB │ gzip:   0.20 kB
+dist/assets/AccessDenied-DTFizpRG.css                  0.59 kB │ gzip:   0.33 kB
+dist/assets/MemberList-Cu1iwB0X.css                    0.67 kB │ gzip:   0.29 kB
+dist/assets/ChangePassword-Cx7nawHq.css                0.72 kB │ gzip:   0.35 kB
+dist/assets/EmployeeAccounts-8TGhXssc.css              0.78 kB │ gzip:   0.35 kB
+dist/assets/Register-DYSwNjwl.css                      1.12 kB │ gzip:   0.51 kB
+dist/assets/BodyMeasurePanel-C12Ya5pn.css              1.76 kB │ gzip:   0.52 kB
+dist/assets/Analytics-hxF3f2s-.css                     1.82 kB │ gzip:   0.59 kB
+dist/assets/CashShiftCenter-BQdUwFKS.css               1.97 kB │ gzip:   0.72 kB
+dist/assets/Messages-DNcVT0Cc.css                      2.01 kB │ gzip:   0.67 kB
+dist/assets/BookingList-CfZCHB_S.css                   2.21 kB │ gzip:   0.70 kB
+dist/assets/TrainingPanel-2vr9Z3VC.css                 2.28 kB │ gzip:   0.72 kB
+dist/assets/ScheduleWeek-CJiC2EN4.css                  2.38 kB │ gzip:   0.84 kB
+dist/assets/AdvisorWorkbench-BqyBhsQL.css              2.71 kB │ gzip:   0.87 kB
+dist/assets/TrainingPlanPanel-Dzfz9sK8.css             2.84 kB │ gzip:   0.88 kB
+dist/assets/ChatPanel-CmiFeUFY.css                     3.34 kB │ gzip:   0.94 kB
+dist/assets/CourseManagement-C7P0Kub-.css              3.50 kB │ gzip:   1.03 kB
+dist/assets/WorkspaceHero-BSDKgMcK.css                 4.91 kB │ gzip:   1.51 kB
+dist/assets/CoachWorkbench-CRzDRqjr.css                5.01 kB │ gzip:   1.26 kB
+dist/assets/Dashboard-C99Ivn0r.css                     5.75 kB │ gzip:   1.57 kB
+dist/assets/CommercialCenter-DtyJljJt.css              6.51 kB │ gzip:   1.53 kB
+dist/assets/RetentionCenter-DTVSuHnq.css               8.12 kB │ gzip:   1.84 kB
+dist/assets/LeadCenter-BoY9_at-.css                    9.19 kB │ gzip:   2.07 kB
+dist/assets/MemberHome-BN90pMzf.css                    9.81 kB │ gzip:   2.20 kB
+dist/assets/Login-C2qBdJ0v.css                        18.09 kB │ gzip:   4.20 kB
+dist/assets/AdminLayout-BPz0TC-3.css                  24.17 kB │ gzip:   5.20 kB
+dist/assets/index-BoyvQrqW.css                       376.50 kB │ gzip:  51.59 kB
+dist/assets/_plugin-vue_export-helper-DlAUqK2U.js      0.09 kB │ gzip:   0.10 kB
+dist/assets/venue-CXgQlQge.js                          0.18 kB │ gzip:   0.15 kB
+dist/assets/room-k0R8YDti.js                           0.28 kB │ gzip:   0.19 kB
+dist/assets/review-CmBNZSeS.js                         0.28 kB │ gzip:   0.18 kB
+dist/assets/workspaceMotion-B2pRv72c.js                0.34 kB │ gzip:   0.22 kB
+dist/assets/advisor-DMd1kWfL.js                        0.40 kB │ gzip:   0.25 kB
+dist/assets/booking-V6KU65te.js                        0.45 kB │ gzip:   0.26 kB
+dist/assets/course-CXraJcfW.js                         0.51 kB │ gzip:   0.24 kB
+dist/assets/account-B_ECZpSP.js                        0.52 kB │ gzip:   0.25 kB
+dist/assets/member-BJC-fE0q.js                         0.53 kB │ gzip:   0.25 kB
+dist/assets/Chat-BZEoO2MH.js                           0.70 kB │ gzip:   0.56 kB
+dist/assets/TrainingPlanCenter-DKMOprPE.js             0.71 kB │ gzip:   0.44 kB
+dist/assets/AccessDenied-BFZumvlQ.js                   0.89 kB │ gzip:   0.67 kB
+dist/assets/WorkspaceHero-Um7AxKf-.js                  1.25 kB │ gzip:   0.62 kB
+dist/assets/commercial-DGCZgo8Q.js                     1.38 kB │ gzip:   0.55 kB
+dist/assets/finance-D2LoeIBl.js                        1.57 kB │ gzip:   0.54 kB
+dist/assets/ChangePassword-BrkRwigv.js                 2.84 kB │ gzip:   1.46 kB
+dist/assets/Register-C1nS_dZr.js                       4.52 kB │ gzip:   2.02 kB
+dist/assets/VenueList-WTxSwgcr.js                      4.72 kB │ gzip:   2.04 kB
+dist/assets/Login-7qsjiATA.js                          5.33 kB │ gzip:   2.36 kB
+dist/assets/Messages-Cv4nP12s.js                       6.52 kB │ gzip:   2.89 kB
+dist/assets/ChatPanel-BgzBV2ul.js                      6.96 kB │ gzip:   3.07 kB
+dist/assets/Analytics-DQhuP7xp.js                      6.96 kB │ gzip:   3.00 kB
+dist/assets/ScheduleWeek-Bagy8hHg.js                   7.88 kB │ gzip:   3.22 kB
+dist/assets/Dashboard-DNwsocpO.js                      8.24 kB │ gzip:   3.48 kB
+dist/assets/CoachWorkbench-_V-Tof3G.js                 9.57 kB │ gzip:   3.87 kB
+dist/assets/EmployeeAccounts-CNOWx1la.js               9.95 kB │ gzip:   3.75 kB
+dist/assets/BodyMeasurePanel-BVd_s_fT.js              11.17 kB │ gzip:   4.30 kB
+dist/assets/AdvisorWorkbench-C3O-Lndo.js              11.23 kB │ gzip:   4.52 kB
+dist/assets/BookingList-sz2-SqO0.js                   12.12 kB │ gzip:   4.92 kB
+dist/assets/MemberList-BJkQJqMQ.js                    12.32 kB │ gzip:   4.52 kB
+dist/assets/TrainingPanel-rWfiTSx4.js                 14.24 kB │ gzip:   5.63 kB
+dist/assets/RetentionCenter-CUxAJ9mk.js               15.69 kB │ gzip:   6.24 kB
+dist/assets/CashShiftCenter-BvxX2ZjK.js               24.96 kB │ gzip:   8.58 kB
+dist/assets/CourseManagement-BVYgaHML.js              30.11 kB │ gzip:   8.88 kB
+dist/assets/TrainingPlanPanel-Dm4XCzU3.js             34.62 kB │ gzip:  10.95 kB
+dist/assets/LeadCenter-DcbFqA9v.js                    35.62 kB │ gzip:  11.86 kB
+dist/assets/CommercialCenter-Ct4KYp_O.js              55.74 kB │ gzip:  16.21 kB
+dist/assets/MemberHome-CAmb1DKy.js                    57.50 kB │ gzip:  21.26 kB
+dist/assets/auth-Dph2BhV2.js                          63.06 kB │ gzip:  24.20 kB
+dist/assets/AdminLayout-CRALvaZT.js                   68.47 kB │ gzip:  25.33 kB
+dist/assets/index-CsH-Ke74.js                      1,194.54 kB │ gzip: 383.72 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.18s

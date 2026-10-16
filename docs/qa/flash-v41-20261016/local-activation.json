@@ -1,0 +1,21 @@
+{
+  "scope": "Local only; no online server access",
+  "businessCountsUnchanged": true,
+  "backup": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\computer-agent-20261016-170614",
+  "health": "UP",
+  "verifiedJarMatches": true,
+  "counts": {
+    "venues": 2,
+    "bookings": 106,
+    "schedules": 30,
+    "orders": 24,
+    "users": 10,
+    "entitlements": 24,
+    "courses": 11,
+    "members": 19,
+    "trainingPlans": 0
+  },
+  "passwordHashesUnchanged": true,
+  "at": "2026-10-16T17:06:27",
+  "jarSha256": "AF8830BC03FB6A53B4C34061E13835F00237844776CFA7348291127BEE9DBDEB"
+}

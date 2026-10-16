@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-16T08:59:41.955115+00:00",
+  "endpoint": "https://api.deepseek.com",
+  "data": "Synthetic test image and harmless text only",
+  "modelsStatus": 200,
+  "model": {
+    "id": "deepseek-flash",
+    "name": "DeepSeek-V4.1-Flash",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "text": {
+    "status": 200,
+    "passed": true,
+    "responseModel": "deepseek-flash"
+  },
+  "toolCalling": {
+    "status": 200,
+    "passed": true,
+    "action": "navigate",
+    "path": "/training-plans",
+    "responseModel": "deepseek-flash"
+  },
+  "vision": {
+    "status": 200,
+    "passed": true,
+    "imageOnlyCodeMatched": true,
+    "answer": {
+      "code": "V41-79C235",
+      "left_shape": "blue square",
+      "right_shape": "orange circle"
+    },
+    "responseModel": "deepseek-flash",
+    "imageSent": true,
+    "projectScreenshotSent": false
+  }
+}

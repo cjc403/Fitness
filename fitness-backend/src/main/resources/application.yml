@@ -43,7 +43,7 @@ app:
     enabled: ${AI_ENABLED:true}
     base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
     api-key: ${DEEPSEEK_API_KEY:}
-    model: ${DEEPSEEK_MODEL:deepseek-v4-flash}
+    model: ${DEEPSEEK_MODEL:deepseek-flash}
     connect-timeout-seconds: ${DEEPSEEK_CONNECT_TIMEOUT:5}
     read-timeout-seconds: ${DEEPSEEK_READ_TIMEOUT:25}
     max-tokens: ${DEEPSEEK_MAX_TOKENS:700}

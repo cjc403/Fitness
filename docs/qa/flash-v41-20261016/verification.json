@@ -1,0 +1,55 @@
+{
+  "verifiedAt": "2026-10-16T09:10:38.558060+00:00",
+  "scope": "Local default model change only; no cloud update or push",
+  "model": {
+    "name": "DeepSeek-V4.1-Flash",
+    "officialApiId": "deepseek-flash",
+    "configuredIn": [
+      "AiProperties",
+      "application.yml",
+      "configure-deepseek.ps1",
+      ".env.production.example",
+      "Windows User DEEPSEEK_MODEL"
+    ],
+    "oldAliasAlreadyRoutesToV41": true,
+    "officialSources": [
+      "https://api-docs.deepseek.com/zh-cn/",
+      "https://api-docs.deepseek.com/zh-cn/guides/vision/"
+    ]
+  },
+  "capabilityProbe": {
+    "textHTTP": 200,
+    "requiredToolHTTP": 200,
+    "syntheticImageHTTP": 200,
+    "randomCodeVisibleOnlyInImage": true,
+    "projectScreenshotSent": false
+  },
+  "productVisionInputConnected": false,
+  "productInput": "Current-page DOM, text, tool feedback",
+  "backend": {
+    "tests": 377,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 13,
+    "executedPassed": 364,
+    "buildSuccess": true
+  },
+  "frontend": {
+    "testsPassed": 252,
+    "buildSuccess": true
+  },
+  "sixRolesSameDocumentPassed": true,
+  "normalLocalModelVerified": "deepseek-flash",
+  "normalBusinessCountsUnchanged": true,
+  "normalPasswordHashesUnchanged": true,
+  "migrationBytesUnchanged": 23,
+  "normalJarSha256": "AF8830BC03FB6A53B4C34061E13835F00237844776CFA7348291127BEE9DBDEB",
+  "backup": "C:\\Users\\CJC\\Desktop\\fitness-feature-hh\\fitness-feature-hh\\backups\\computer-agent-20261016-170614",
+  "isolatedServicesStopped": true,
+  "normalServicesKept": [
+    8080,
+    9091,
+    5173,
+    5188
+  ]
+}

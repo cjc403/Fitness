@@ -1,0 +1,10 @@
+{
+  "tests": 377,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 13,
+  "executedPassed": 364,
+  "build": "fresh TEMP mvn -B clean package",
+  "includedPostgresAgentTests": 11,
+  "modelTransportTests": 23
+}

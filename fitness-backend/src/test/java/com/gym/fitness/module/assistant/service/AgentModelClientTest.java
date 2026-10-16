@@ -66,7 +66,8 @@ class AgentModelClientTest {
         var result = completed.orElseThrow();
         assertEquals("", result.content());
         assertEquals(List.of(new AgentModelClient.Call("call_13812345678", "courses", "{\"date\":\"2026-10-15\"}")), result.calls());
-        assertEquals("deepseek-v4-flash", result.model());
+        assertEquals("deepseek-flash", result.model());
+        assertEquals("deepseek-flash", payload().path("model").asText());
         assertEquals(31, result.totalTokens());
         assertEquals("available", client.status().state());
         assertTrue(client.status().toolCalling());

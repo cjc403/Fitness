@@ -1,5 +1,5 @@
 param(
-    [string]$Model = 'deepseek-v4-flash'
+    [string]$Model = 'deepseek-flash'
 )
 
 Set-StrictMode -Version Latest
