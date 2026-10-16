@@ -1,0 +1,63 @@
+{
+  "verifiedAt": "2026-10-16T08:37:47.364206+00:00",
+  "scope": "Local current-page correction only; no online deployment or push",
+  "frontend": {
+    "tests": 252,
+    "passed": 252,
+    "build": "vue-tsc and Vite passed; existing main-bundle size warning retained"
+  },
+  "runner": {
+    "tests": 29,
+    "passed": 29,
+    "includesNewFileCapability": true
+  },
+  "startup": {
+    "computerBoundaries": 7,
+    "passed": 7
+  },
+  "backend": {
+    "changed": false,
+    "testsRunThisCorrection": false,
+    "previousStage": {
+      "total": 377,
+      "executedPassed": 364,
+      "skipped": 13
+    },
+    "normalJarUnchanged": true,
+    "jarSha256": "70e9d9341c76c504cd02080d930e5aaac8c34dc4107fece7112211558681da49",
+    "migrationFiles": 23,
+    "migrationBytesUnchanged": true
+  },
+  "browser": {
+    "sixRolesSamePageAndDocument": true,
+    "writeIsolatedOnly": {
+      "before": 0,
+      "after": 1,
+      "duplicateConfirmationRejected": true
+    },
+    "fileCsvBytes": 599,
+    "fileViewer": "OS open requested; window not visually verified",
+    "normalLocalReadonly": true,
+    "normalBusinessMutationsBlockedByTest": true
+  },
+  "review": {
+    "criticalOrImportantRemaining": 0,
+    "regressions": "late create, paused confirm, delayed submissions, paused files, stale DOM and repeated artifacts"
+  },
+  "cleanup": {
+    "isolatedServicesStopped": true,
+    "normalPorts": [
+      8080,
+      9091,
+      5173,
+      5188
+    ]
+  },
+  "evidence": [
+    "real-browser.json",
+    "real-file.json",
+    "normal-local-readonly.json",
+    "frontend-tests.txt",
+    "frontend-build.txt"
+  ]
+}

@@ -4,6 +4,7 @@ import type { LoginResponse } from '@/api/modules/auth'
 import { useAuthStore } from '@/store/modules/auth'
 import { getRefreshToken } from '@/utils/storage'
 import { parseBlobPayload } from '@/utils/financeUi.mjs'
+import { pageRequestGate } from '@/agent/requestGate.mjs'
 
 interface Result<T = any> {
   code: number
@@ -132,7 +133,7 @@ service.interceptors.request.use(
     if (!config.skipAuthRefresh && authStore.token) {
       config.headers.Authorization = `Bearer ${authStore.token}`
     }
-    return config
+    return pageRequestGate.intercept(config).catch((error: Error) => Promise.reject(new axios.CanceledError(error.message, config)))
   },
   error => Promise.reject(error)
 )
@@ -140,6 +141,7 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   (response: AxiosResponse<Result>): any => {
     const config = response.config as RetryableRequestConfig
+    pageRequestGate.settle(config, response.status >= 200 && response.status < 300 && response.data?.code === 0, response.data?.code === 0 ? '当前页业务接口返回成功回执' : '业务接口拒绝提交，请人工核对当前页面')
     if (!isRequestCurrent(config)) return Promise.reject(new axios.CanceledError('请求范围已变更', config))
     if (!config.skipAuthRefresh && !isAuthenticationRequest(config.url) && !isCurrentSession(config._sessionGeneration)) {
       return Promise.reject(new Error('登录会话已变更'))
@@ -172,6 +174,7 @@ service.interceptors.response.use(
     return Promise.reject(new BusinessError(result.code, result.message || '请求失败'))
   },
   async error => {
+    pageRequestGate.settle(error.config, false, '提交未获得成功回执；请人工核对，系统不会自动重试')
     const status = error.response?.status
     const data = error.response?.data
     const originalRequest = error.config as RetryableRequestConfig | undefined

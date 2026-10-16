@@ -1,18 +1,18 @@
 <template>
-  <section class="computer-panel" aria-label="电脑任务">
+  <section class="computer-panel" aria-label="网页任务">
     <header class="computer-head">
-      <div><strong>{{ roleName }} · 电脑任务</strong><small>{{ connectionText }}</small></div>
+      <div><strong>{{ roleName }} · 网页任务</strong><small>{{ connectionText }}</small></div>
       <button type="button" :disabled="!online || connecting || busy" @click="refresh">刷新</button>
     </header>
     <div class="computer-body">
       <p v-if="!online" class="computer-warning" role="status">当前离线，操作已停用。恢复网络后请查看任务状态，再手动继续或确认。</p>
       <div v-else-if="!available && !connecting" class="computer-startup" role="status">
-        <strong>本机电脑执行器尚未连接</strong>
-        <p>请在运行 FitChain 的这台 Windows 电脑上，使用“启动本地服务”或运行项目的 start-local-agent.ps1，再点“刷新”。电脑任务需要从本机 localhost 页面进入。</p>
+        <strong>网页任务服务尚未连接</strong>
+        <p>请确认已经登录、后端和模型服务可用，再点“刷新”。网页操作直接在当前标签页执行。</p>
       </div>
-      <p class="computer-intro">我会在独立的浏览器窗口中查看、操作当前角色可访问的页面。业务提交前会展示实际请求，等待你确认。</p>
+      <p class="computer-intro">我直接操作你正在看的这个网页，切换页面、点击和填写都会在这里发生。任务期间的业务提交（包括手动提交）均需逐次确认；关闭助手或切到其他标签页会暂停。</p>
       <p v-if="error" class="computer-error" role="alert">{{ error }}</p>
-      <div v-if="!task" class="computer-suggestions" aria-label="推荐电脑任务">
+      <div v-if="!task" class="computer-suggestions" aria-label="推荐网页任务">
         <span>从你的工作开始</span>
         <button v-for="goal in suggestions" :key="goal" type="button" :disabled="!canWrite" @click="submitGoal(goal)">{{ goal }}</button>
       </div>
@@ -25,14 +25,16 @@
         <div class="computer-task-title"><h3>{{ task.goal }}</h3><span role="status">{{ statusLabel(task.status) }}</span></div>
         <small>{{ formatTime(task.updatedAt) }} · {{ task.steps.length }} 步</small>
         <p v-if="task.error" class="computer-error">{{ task.error }}</p>
-        <p v-if="task.status === 'SUCCEEDED'" class="computer-success">任务已完成，以下为执行器返回的真实步骤和成果。</p>
+        <p v-if="task.status === 'SUCCEEDED'" class="computer-success">任务已完成，请查看当前页面及下方实际操作结果。</p>
         <p v-if="task.status === 'CANCELLED'" class="computer-muted">任务已停止。</p>
         <p v-if="task.status === 'PAUSED'" class="computer-muted">任务已暂停。点击“继续”后才会继续执行。</p>
         <div class="computer-controls">
           <button v-if="task.status === 'RUNNING'" type="button" :disabled="!canWrite" @click="pauseTask">暂停</button>
           <button v-if="task.status === 'PAUSED'" type="button" :disabled="!canWrite" @click="resumeTask">继续</button>
           <button v-if="isActiveTask(task)" type="button" class="computer-stop" :disabled="!canWrite" @click="stopTask">停止任务</button>
+          <button type="button" :disabled="busy" @click="takeOverCurrentPage">手动接管（刷新当前页）</button>
         </div>
+        <p v-if="['FAILED','CANCELLED','SUCCEEDED'].includes(task.status)" class="computer-muted">旧任务的延迟提交仍被阻止。手动提交前请刷新接管；刷新会清除尚未提交的表单。成功后可直接继续新的网页任务，停止或失败后须先刷新。</p>
         <section v-if="task.status === 'WAITING_CONFIRMATION' && pendingPreview" class="computer-confirm" aria-label="待确认的实际请求">
           <h4>确认后提交这一次请求</h4>
           <p>{{ pendingPreview.summary }}</p>
@@ -56,8 +58,8 @@
       </article>
     </div>
     <form class="computer-goal" @submit.prevent="submitGoal(goalInput)">
-      <label class="sr-only" for="computer-goal">电脑任务目标</label>
-      <textarea id="computer-goal" v-model="goalInput" :disabled="!online || busy || connecting" maxlength="2000" rows="2" :placeholder="task?.status === 'WAITING_INPUT' ? '补充任务所需的信息…' : '说说要在电脑上完成的任务…'" />
+      <label class="sr-only" for="computer-goal">网页任务目标</label>
+      <textarea id="computer-goal" v-model="goalInput" :disabled="!online || busy || connecting" maxlength="2000" rows="2" :placeholder="task?.status === 'WAITING_INPUT' ? '补充任务所需的信息…' : '说说要在当前网页完成的任务…'" />
       <button type="submit" class="computer-primary" :disabled="!canWrite || !goalInput.trim()">{{ task?.status === 'WAITING_INPUT' ? '补充' : '执行' }}</button>
     </form>
   </section>
@@ -66,7 +68,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/store/modules/auth'
-import { getComputerAgentStatus, listComputerTasks, createComputerTask, getComputerTask, pauseComputerTask, resumeComputerTask, stopComputerTask, confirmComputerTask, inputComputerTask, type ComputerTask, type ComputerTaskStatus, type ComputerConfirmation, type ComputerAgentStatus, type ComputerRequestConfig } from '@/api/modules/computerAgent'
+import { getComputerAgentStatus, listComputerTasks, createComputerTask, getComputerTask, pauseComputerTask, resumeComputerTask, stopComputerTask, confirmComputerTask, inputComputerTask, suspendPageTasks, takeOverCurrentPage } from '@/agent/currentPageAgent'
+import type { ComputerTask, ComputerTaskStatus, ComputerConfirmation, ComputerAgentStatus, ComputerRequestConfig } from '@/api/modules/computerAgent'
 
 const props = withDefaults(defineProps<{ active?: boolean }>(), { active: true })
 const emit = defineEmits<{ reply: [text: string] }>()
@@ -84,17 +87,17 @@ const suggestions = computed(() => ({
   SALES: ['打开我的工作台，查看我的潜客', '查看近期体验预约，整理跟进安排'],
   MEMBER: ['打开我的课程，查看我的预约', '导出本周我可预约的课程，生成课表文件并打开']
 } as Record<string, string[]>)[auth.userInfo?.role || ''] || [])
-const connectionText = computed(() => !online.value ? '网络已断开' : connecting.value ? '正在连接本机执行器' : available.value ? '本机执行器已连接 · 独立受控浏览器' : '等待连接本机执行器')
+const connectionText = computed(() => !online.value ? '网络已断开' : connecting.value ? '正在连接网页任务服务' : available.value ? '当前标签页执行 · 页面操作可见' : '等待连接网页任务服务')
 const canWrite = computed(() => props.active && online.value && available.value && !busy.value && !connecting.value && !!auth.token)
 const screenshotSource = computed(() => typeof task.value?.screenshot === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=\s]+$/.test(task.value.screenshot) ? task.value.screenshot : undefined)
 const statusLabel = (status: ComputerTaskStatus) => ({ RUNNING: '执行中', PAUSED: '已暂停', WAITING_CONFIRMATION: '待你确认', WAITING_INPUT: '待补充信息', SUCCEEDED: '已完成', FAILED: '执行失败', CANCELLED: '已停止' })[status] || '状态未知'
 const stepStatusLabel = (status: string) => ({ RUNNING: '执行中', SUCCEEDED: '完成', FAILED: '失败', CANCELLED: '已停止', PAUSED: '暂停', WAITING_CONFIRMATION: '等待确认', WAITING_INPUT: '等待补充', PENDING: '等待执行' } as Record<string, string>)[status] || status
 const isActiveTask = (value: ComputerTask) => ['RUNNING', 'PAUSED', 'WAITING_CONFIRMATION', 'WAITING_INPUT'].includes(value.status)
-const formatTime = (value: string) => value ? value.replace('T', ' ').slice(0, 19) : '—'
+const formatTime = (value: string) => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—'
 const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
 const fieldLabel = (label: string) => ({ name: '姓名 / 名称', phone: '联系电话', source: '咨询来源', intent: '意向程度', ownerId: '负责顾问编号', venueId: '门店编号', memberId: '会员编号', coachId: '教练编号', scheduleId: '排课编号', note: '备注', content: '内容', title: '标题', nextFollowAt: '下次联系时间', startsAt: '开始时间', endsAt: '结束时间', idempotencyKey: '重复提交保护标识', expectedVersion: '资料版本', productId: '商品编号', paidAmount: '实收金额', paymentMethod: '收款方式' } as Record<string,string>)[label] || label
 const fieldValue = (value: string) => ({ WALK_IN: '自然到店', REFERRAL: '转介绍', DOUYIN: '抖音', WECHAT: '微信', OTHER: '其他', HIGH: '高意向', MEDIUM: '中意向', LOW: '低意向' } as Record<string,string>)[value] || value
-const errorText = (failure: unknown) => failure instanceof Error ? failure.message : '电脑执行器连接失败，请检查本地服务后刷新'
+const errorText = (failure: unknown) => failure instanceof Error ? failure.message : '网页任务连接失败，请检查后端服务后刷新'
 const identityKey = () => { const user = auth.userInfo as (typeof auth.userInfo & { venueId?: number }); return JSON.stringify([auth.sessionGeneration, auth.token, user?.id, user?.role, user?.organizationId, user?.venueId]) }
 let disposed = false, mounted = false, epoch = 0, revision = 0, readEpoch = 0, pollTimer: ReturnType<typeof setTimeout> | undefined
 let refreshPromise: Promise<void> | null = null
@@ -116,7 +119,7 @@ const acceptTask = (value: ComputerTask, announce = false) => {
   tasks.value = [copy, ...tasks.value.filter(item => item.id !== copy.id)].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30)
   if (announce && !isActiveTask(copy) && !announced.has(copy.id)) {
     announced.add(copy.id)
-    emit('reply', copy.status === 'SUCCEEDED' ? `电脑任务已完成：${copy.goal}${copy.artifacts.length ? `。已生成 ${copy.artifacts.length} 个成果文件，请在电脑任务中查看。` : '。请在电脑任务中查看实际步骤。'}` : copy.status === 'FAILED' ? `电脑任务执行失败：${copy.error || '请查看任务详情'}。` : `电脑任务已停止：${copy.goal}`)
+    emit('reply', copy.status === 'SUCCEEDED' ? `网页任务已完成：${copy.goal}${copy.artifacts.length ? `。已生成 ${copy.artifacts.length} 个成果文件，请在网页任务中查看。` : '。请在网页任务中查看实际步骤。'}` : copy.status === 'FAILED' ? `网页任务执行失败：${copy.error || '请查看任务详情'}。` : `网页任务已停止：${copy.goal}`)
   }
 }
 const schedulePoll = () => {
@@ -155,7 +158,7 @@ const refresh = async (): Promise<void> => {
 }
 const requireWritable = () => {
   if (!online.value) { error.value = '当前离线，无法提交操作；恢复网络后请手动重试'; return false }
-  if (!canWrite.value || disposed) { if (!available.value) error.value = '请先启动并连接本机电脑执行器，再提交任务'; return false }
+  if (!canWrite.value || disposed) { if (!available.value) error.value = '请先连接网页任务服务，再提交任务'; return false }
   return true
 }
 const mutate = async (operation: (config: ComputerRequestConfig) => Promise<{ data: ComputerTask }>) => {
@@ -173,7 +176,7 @@ const submitGoal = async (text: string): Promise<void> => {
   const goal = text.trim()
   if (!goal || goal.length > 2000) { error.value = '请输入 1–2000 字的任务目标'; return }
   if (task.value?.status === 'WAITING_INPUT') { supplement.value = goal; await sendInput(); if (epoch === submissionEpoch && !error.value && goalInput.value.trim() === goal) goalInput.value = ''; return }
-  if ((task.value && isActiveTask(task.value)) || tasks.value.some(isActiveTask)) { error.value = '已有进行中的电脑任务，请先补充、确认或停止当前任务，再开始新任务'; emit('reply', error.value); return }
+  if ((task.value && isActiveTask(task.value)) || tasks.value.some(isActiveTask)) { error.value = '已有进行中的网页任务，请先补充、确认或停止当前任务，再开始新任务'; emit('reply', error.value); return }
   await mutate(config => createComputerTask(goal, config)); if (epoch === submissionEpoch && !error.value && goalInput.value.trim() === goal) goalInput.value = ''
 }
 const pauseTask = async () => { const current = task.value; if (current?.status === 'RUNNING') await mutate(config => pauseComputerTask(current.id, config)); else if (!online.value) requireWritable() }
@@ -205,7 +208,7 @@ watch(identityKey, () => {
   if (mounted && props.active && online.value && auth.token) void refresh()
 }, { flush: 'sync' })
 onMounted(() => { mounted = true; window.addEventListener('online', syncNetwork); window.addEventListener('offline', syncNetwork); if (props.active) void refresh() })
-onBeforeUnmount(() => { disposed = true; mounted = false; invalidate(); task.value = null; tasks.value = []; pendingPreview.value = null; window.removeEventListener('online', syncNetwork); window.removeEventListener('offline', syncNetwork) })
+onBeforeUnmount(() => { suspendPageTasks(); disposed = true; mounted = false; invalidate(); task.value = null; tasks.value = []; pendingPreview.value = null; window.removeEventListener('online', syncNetwork); window.removeEventListener('offline', syncNetwork) })
 defineExpose({ submitGoal, refresh })
 </script>
 

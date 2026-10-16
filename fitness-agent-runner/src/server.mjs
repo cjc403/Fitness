@@ -2,6 +2,7 @@ import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { TaskEngine } from './engine.mjs';
 import { AgentError, exactObject } from './policy.mjs';
+import { PageFiles } from './page-files.mjs';
 
 export function normalizeConfig(config){
  const c={port:5188,host:'127.0.0.1',headless:false,maxSteps:30,taskTimeoutMs:600000,waitTimeoutMs:300000,decisionIntervalMs:8000,...config};
@@ -15,7 +16,7 @@ export function normalizeConfig(config){
 async function bodyOf(req){let bytes=0,parts=[];for await(const p of req){bytes+=p.length;if(bytes>65536)throw new AgentError('请求内容过大',413);parts.push(p);}try{return JSON.parse(Buffer.concat(parts).toString('utf8')||'{}');}catch{throw new AgentError('请求必须为JSON对象');}}
 const secretEqual=(a,b)=>typeof a==='string'&&Buffer.byteLength(a)===Buffer.byteLength(b)&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 export function createServer(config,dependencies={}){
- const c=normalizeConfig(config),engine=new TaskEngine(c,dependencies);
+ const c=normalizeConfig(config),engine=new TaskEngine(c,dependencies),files=new PageFiles(engine.backend,engine.artifacts);
  const server=http.createServer(async(req,res)=>{
   const send=(status,data,message='成功')=>{res.writeHead(status,{'content-type':'application/json;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify({code:status<400?0:status,message,data}));};
   try{
@@ -30,6 +31,7 @@ export function createServer(config,dependencies={}){
    if(req.method==='GET'&&u.pathname==='/v1/status')return send(200,{available:process.platform==='win32',platform:process.platform,scope:'仅当前FitChain项目受控浏览器和专属成果目录',outputDirectory:c.outputDirectory});
    if(req.method==='GET'&&u.pathname==='/v1/tasks')return send(200,engine.list(session));
    if(req.method==='POST'&&u.pathname==='/v1/tasks'){const body=await bodyOf(req);exactObject(body,['goal']);return send(200,engine.create(body.goal,session,token));}
+   if(req.method==='POST'&&['/v1/page-files/export','/v1/page-files/open'].includes(u.pathname))return send(200,await files.handle(u.pathname.endsWith('/export')?'export':'open',await bodyOf(req),session,token,()=>!res.destroyed));
    const match=/^\/v1\/tasks\/([A-Za-z0-9-]{1,80})(?:\/(pause|resume|stop|confirm|input))?$/.exec(u.pathname);
    if(!match)throw new AgentError('接口不存在',404);
    const t=engine.get(match[1],session);

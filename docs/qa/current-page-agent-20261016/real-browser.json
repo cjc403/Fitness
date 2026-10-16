@@ -1,0 +1,272 @@
+{
+  "at": "2026-10-16T08:27:35.745Z",
+  "roles": [
+    {
+      "role": "SUPER_ADMIN",
+      "status": "SUCCEEDED",
+      "url": "/training-plans",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：训练计划"
+        }
+      ],
+      "pages": 1
+    },
+    {
+      "role": "MANAGER",
+      "status": "SUCCEEDED",
+      "url": "/training-plans",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：训练计划"
+        }
+      ],
+      "pages": 1
+    },
+    {
+      "role": "RECEPTION",
+      "status": "SUCCEEDED",
+      "url": "/schedule-week",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：周课表"
+        }
+      ],
+      "pages": 1
+    },
+    {
+      "role": "COACH",
+      "status": "SUCCEEDED",
+      "url": "/training-plans",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：训练计划"
+        }
+      ],
+      "pages": 1
+    },
+    {
+      "role": "SALES",
+      "status": "SUCCEEDED",
+      "url": "/leads",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：潜客与体验课"
+        }
+      ],
+      "pages": 1
+    },
+    {
+      "role": "MEMBER",
+      "status": "SUCCEEDED",
+      "url": "/member-home",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：我的训练"
+        }
+      ],
+      "pages": 1
+    }
+  ],
+  "errors": [],
+  "blockedOrigins": [],
+  "write": {
+    "status": "SUCCEEDED",
+    "url": "/leads",
+    "steps": [
+      {
+        "index": 1,
+        "action": "click",
+        "label": "点击页面控件",
+        "status": "SUCCEEDED",
+        "detail": "已点击当前页控件：潜客与体验课"
+      },
+      {
+        "index": 2,
+        "action": "click",
+        "label": "点击页面控件",
+        "status": "SUCCEEDED",
+        "detail": "已点击当前页控件：新建潜客"
+      },
+      {
+        "index": 3,
+        "action": "fill",
+        "label": "填写页面表单",
+        "status": "SUCCEEDED",
+        "detail": "已填写当前页控件：姓名"
+      },
+      {
+        "index": 4,
+        "action": "fill",
+        "label": "填写页面表单",
+        "status": "SUCCEEDED",
+        "detail": "已填写当前页控件：联系电话"
+      },
+      {
+        "index": 5,
+        "action": "click",
+        "label": "点击页面控件",
+        "status": "SUCCEEDED",
+        "detail": "已点击当前页控件：意向程度"
+      },
+      {
+        "index": 6,
+        "action": "click",
+        "label": "点击页面控件",
+        "status": "SUCCEEDED",
+        "detail": "已点击当前页控件：高意向"
+      },
+      {
+        "index": 7,
+        "action": "click",
+        "label": "点击页面控件",
+        "status": "SUCCEEDED",
+        "detail": "已点击当前页控件：咨询来源"
+      },
+      {
+        "index": 8,
+        "action": "click",
+        "label": "点击页面控件",
+        "status": "SUCCEEDED",
+        "detail": "已点击当前页控件：转介绍"
+      },
+      {
+        "index": 9,
+        "action": "fill",
+        "label": "填写页面表单",
+        "status": "SUCCEEDED",
+        "detail": "已填写当前页控件：备注"
+      },
+      {
+        "index": 10,
+        "action": "click",
+        "label": "点击页面控件",
+        "status": "SUCCEEDED",
+        "detail": "已点击当前页控件：保存记录"
+      },
+      {
+        "index": 11,
+        "action": "submit",
+        "label": "业务提交回执",
+        "status": "SUCCEEDED",
+        "detail": "当前页业务接口返回成功回执"
+      }
+    ],
+    "receipt": {
+      "id": "42a229d3-70bb-4da0-aba7-a44ac7912464",
+      "goal": "打开当前网页的潜客与体验课，新建潜客。姓名字段原样填写“网页验收315636”，联系电话13900315636，咨询来源选转介绍，意向程度选高意向；门店和顾问保留默认，不填下次联系时间，备注填“隔离测试”。点击保存记录，等待我确认，确认后核对成功并结束任务。",
+      "status": "SUCCEEDED",
+      "createdAt": "2026-10-16T08:28:35.981Z",
+      "updatedAt": "2026-10-16T08:29:47.541Z",
+      "steps": [
+        {
+          "index": 1,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：潜客与体验课"
+        },
+        {
+          "index": 2,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：新建潜客"
+        },
+        {
+          "index": 3,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：姓名"
+        },
+        {
+          "index": 4,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：联系电话"
+        },
+        {
+          "index": 5,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：意向程度"
+        },
+        {
+          "index": 6,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：高意向"
+        },
+        {
+          "index": 7,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：咨询来源"
+        },
+        {
+          "index": 8,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：转介绍"
+        },
+        {
+          "index": 9,
+          "action": "fill",
+          "label": "填写页面表单",
+          "status": "SUCCEEDED",
+          "detail": "已填写当前页控件：备注"
+        },
+        {
+          "index": 10,
+          "action": "click",
+          "label": "点击页面控件",
+          "status": "SUCCEEDED",
+          "detail": "已点击当前页控件：保存记录"
+        },
+        {
+          "index": 11,
+          "action": "submit",
+          "label": "业务提交回执",
+          "status": "SUCCEEDED",
+          "detail": "当前页业务接口返回成功回执"
+        }
+      ],
+      "artifacts": []
+    },
+    "actualCount": 1,
+    "before": 0,
+    "after": 1,
+    "duplicateRejected": true,
+    "oneTab": true
+  }
+}

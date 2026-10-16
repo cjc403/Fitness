@@ -6,6 +6,7 @@ import axios from 'axios'
 import * as vue from 'vue'
 import { createPinia, setActivePinia, defineStore } from 'pinia'
 import * as financeUi from '../src/utils/financeUi.mjs'
+import { pageRequestGate } from '../src/agent/requestGate.mjs'
 
 // Compile and execute production TS/SFC setup; substitute only transport, storage and lifecycle boundaries.
 function execute(path, deps, names = []) {
@@ -15,6 +16,7 @@ function execute(path, deps, names = []) {
   const code = transformSync(source, { loader: 'ts', format: 'cjs', define: { 'import.meta.env': '{}' } }).code
   const module = { exports: {} }
   new Function('require', 'module', 'exports', 'defineProps', code)(name => {
+    if (name === '@/agent/requestGate.mjs') return { pageRequestGate }
     if (!(name in deps)) throw new Error('Uncontrolled import: ' + name)
     return deps[name]
   }, module, module.exports, () => ({}))
@@ -185,7 +187,8 @@ test('chat poll response finishing after a contact switch cannot overwrite its t
   assert.equal(p.thread.value.userId, 2)
 })
 test('assistant history keeps six turns with at most 500 UTF-16 characters per turn', async () => {
-  const calls = [], p = componentRuntime('components/AssistantPanel.vue', { chat: async (text, history) => { calls.push({ text, history }); return { data: { answer: '答'.repeat(700), suggestions: [], source: 'test' } } } }, ['input', 'send', 'messages'])
+  const calls = [], p = componentRuntime('components/AssistantPanel.vue', { chat: async (text, history) => { calls.push({ text, history }); return { data: { answer: '答'.repeat(700), suggestions: [], source: 'test' } } } }, ['input', 'send', 'messages', 'executionMode'])
+  p.executionMode.value = 'business'
   for (let i = 0; i < 5; i++) { p.input.value = '问'.repeat(501); await p.send() }
   assert.equal(calls.at(-1).history.length, 6)
   assert.ok(calls.at(-1).history.every(turn => turn.content.length <= 500))

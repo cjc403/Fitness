@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-16T08:33:22.412Z",
+  "kind": "Normal local database: navigation only, business mutations blocked",
+  "errors": [],
+  "blockedWrites": [],
+  "result": {
+    "status": "SUCCEEDED",
+    "url": "/training-plans",
+    "sameTab": true,
+    "sameDocument": true,
+    "pages": 1,
+    "steps": [
+      {
+        "index": 1,
+        "action": "click",
+        "label": "点击页面控件",
+        "status": "SUCCEEDED",
+        "detail": "已点击当前页控件：训练计划"
+      }
+    ]
+  }
+}

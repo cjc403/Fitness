@@ -46,6 +46,7 @@ function runtime(options = {}) {
   const deps = { vue: { ...vue, onMounted: fn => mounted.push(fn), onBeforeUnmount: fn => unmounted.push(fn) }, '@/store/modules/auth': { useAuthStore: () => auth } }
   const api = execute('api/modules/computerAgent.ts', deps, globals)
   deps['@/api/modules/computerAgent'] = api
+  deps['@/agent/currentPageAgent'] = { ...api, suspendPageTasks() {} }
   const scope = vue.effectScope()
   const panel = scope.run(() => execute('components/ComputerAgentPanel.vue', deps, globals, ['submitGoal', 'refresh', 'task', 'tasks', 'online', 'error', 'busy', 'confirmTask', 'pauseTask', 'resumeTask', 'stopTask', 'sendInput', 'supplement', 'goalInput', 'selectTask', 'roleName', 'suggestions', 'statusLabel', 'screenshotSource', 'pendingPreview']))
   return { ...panel, api, auth, props, navigator, calls, timers, listeners, replies, mount: async () => { mounted.forEach(fn => fn()); await flush() }, unmount() { unmounted.forEach(fn => fn()); scope.stop() }, async tick() { const next = timers.entries().next().value; if (next) { timers.delete(next[0]); await next[1](); await flush() } } }

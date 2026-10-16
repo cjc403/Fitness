@@ -5,6 +5,7 @@ import { transformSync } from 'esbuild'
 import axios from 'axios'
 import * as vue from 'vue'
 import * as helpers from '../src/utils/financeUi.mjs'
+import { pageRequestGate } from '../src/agent/requestGate.mjs'
 
 // Run actual TS modules and SFC setup bodies; stub only browser and authenticated transport boundaries.
 function execute(path, dependencies, exports = [], props = {}) {
@@ -14,6 +15,7 @@ function execute(path, dependencies, exports = [], props = {}) {
   const code = transformSync(source, { loader:'ts', format:'cjs', define:{'import.meta.env':'{}'} }).code
   const module = { exports:{} }
   new Function('require','module','exports','defineProps','defineEmits','defineExpose', code)(name => {
+    if(name==='@/agent/requestGate.mjs') return {pageRequestGate}
     if (!(name in dependencies)) throw new Error('Uncontrolled import: ' + name)
     return dependencies[name]
   }, module, module.exports, () => props, () => () => {}, () => {})

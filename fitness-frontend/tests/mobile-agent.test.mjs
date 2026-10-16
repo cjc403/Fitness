@@ -37,6 +37,7 @@ function runtime(overrides = {}) {
   deps['@/api/modules/assistant'] = api
   const scope = vue.effectScope()
   const page = scope.run(() => execute('components/AssistantPanel.vue', deps, ['input', 'send', 'messages', 'profile', 'actions', 'selectedTool', 'toolForm', 'runTool', 'confirmAction', 'cancelAction', 'online', 'result', 'toolError', 'loading', 'loadProfile', 'loadActions', 'syncViewport', 'viewportHeight', 'viewportTop', 'serviceText', 'executionMode', 'computerRef', 'tab']))
+  page.executionMode.value = 'business' // These tests exercise the separate business-answer protocol.
   return { ...page, api, auth, calls, notices, mount: () => Promise.all(mounted.map(fn => fn())), unmount() { unmounted.forEach(fn => fn()); scope.stop() } }
 }
 

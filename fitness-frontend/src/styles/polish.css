@@ -135,3 +135,7 @@ body.wb-portal-active[data-wb-motion="reduced"] :is(.el-dialog,.el-message-box) 
   .wb-workspace :is(.coach-page,.advisor-page) .stats-grid > article > div { min-width: 0; }
   .wb-workspace .stats-grid .icon { width: 34px; height: 34px; font-size: 17px; }
 }
+/* The Agent operates this document. Highlight without changing layout. */
+[data-page-agent-target="true"] { outline: 3px solid #4c8dff !important; outline-offset: 3px; box-shadow: 0 0 0 6px #4c8dff20 !important; }
+/* Confirmation and stop remain reachable above Element Plus business dialogs. */
+.assistant[data-page-agent-exclude] { z-index: 2147483000; }

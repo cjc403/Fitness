@@ -41,7 +41,7 @@ try {
         $identity = $null
         try { $identity = Invoke-RestMethod 'http://127.0.0.1:5188/v1/health' -TimeoutSec 3 } catch {}
         if (-not (Test-ComputerRunnerIdentity $identity $listeners $fingerprint)) { throw 'Port 5188 could not be verified as this local executor. No process has been stopped.' }
-        Write-Host 'Computer task executor is already healthy (local only).' -ForegroundColor Green
+        Write-Host 'Local file capability is already healthy (optional). Page tasks run in the current tab.' -ForegroundColor Green
         return
     }
     if (-not (Test-Path -LiteralPath $entry)) { throw 'Computer executor files are missing.' }
@@ -88,7 +88,7 @@ try {
         Start-Sleep -Milliseconds 400
     }
     if (-not $ready) { throw 'Computer executor did not become ready. Check logs/computer-agent-error.log.' }
-    Write-Host 'Computer task executor is ready (local only). Use the assistant Computer mode.' -ForegroundColor Cyan
+    Write-Host 'Local file capability is ready (optional). Page tasks run in the current tab.' -ForegroundColor Cyan
 } finally {
     if ($locked) { $mutex.ReleaseMutex() }
     $mutex.Dispose()

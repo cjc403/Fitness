@@ -1,0 +1,34 @@
+{
+  "at": "2026-10-16T08:30:48.393Z",
+  "kind": "Real model, same-page file generation and viewer request, isolated backend",
+  "errors": [],
+  "blockedOrigins": [],
+  "result": {
+    "status": "SUCCEEDED",
+    "sameDocument": true,
+    "pages": 1,
+    "independentTasks": 0,
+    "steps": [
+      {
+        "index": 1,
+        "action": "export_schedule",
+        "label": "生成课表文件",
+        "status": "SUCCEEDED",
+        "detail": "已生成 FitChain课表_2026-10-16_2026-10-22_ea4c5dd3.csv"
+      },
+      {
+        "index": 2,
+        "action": "open_artifact",
+        "label": "请求打开成果文件",
+        "status": "SUCCEEDED",
+        "detail": "已请求 Windows 打开文件；尚未验证文件窗口"
+      }
+    ],
+    "artifact": {
+      "name": "FitChain课表_2026-10-16_2026-10-22_ea4c5dd3.csv",
+      "bytes": 599,
+      "sha256": "c7050c44c3615e4e5903643c56913a77a7cc504bb259a65b02e55f7d4e5e9bd7"
+    },
+    "bom": true
+  }
+}

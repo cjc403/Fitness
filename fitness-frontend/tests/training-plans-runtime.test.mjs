@@ -7,10 +7,11 @@ import * as vue from 'vue'
 import axios from 'axios'
 import * as financeUi from '../src/utils/financeUi.mjs'
 import * as access from '../src/utils/accessControl.mjs'
+import { pageRequestGate } from '../src/agent/requestGate.mjs'
 function execute(path, deps) {
  const url = new URL('../src/' + path, import.meta.url); assert.ok(existsSync(url), `${path} must exist`)
  let source = readFileSync(url, 'utf8'); if (path.endsWith('.vue')) source = compileScript(parse(source).descriptor, {id:'training-test'}).content
- const module={exports:{}}; new Function('require','module','exports', transformSync(source,{loader:'ts',format:'cjs',define:{'import.meta.env':'{}'}}).code)(name=> { if(name.startsWith('@/components/')) return {}; assert.ok(name in deps, `Uncontrolled import ${name}`); return deps[name] },module,module.exports); return module.exports
+ const module={exports:{}}; new Function('require','module','exports', transformSync(source,{loader:'ts',format:'cjs',define:{'import.meta.env':'{}'}}).code)(name=> { if(name==='@/agent/requestGate.mjs')return {pageRequestGate}; if(name.startsWith('@/components/')) return {}; assert.ok(name in deps, `Uncontrolled import ${name}`); return deps[name] },module,module.exports); return module.exports
 }
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject}}
 const plan=(extra={})=>({id:1,memberId:20,memberName:'学员甲',memberNo:'M20',coachId:10,coachName:'教练甲',venueId:1,venueName:'一店',title:'体能计划',goal:'GENERAL',startDate:'2026-10-01',endDate:'2026-10-30',note:null,status:'ACTIVE',version:3,exerciseCount:2,sessionCount:1,lastSessionOn:null,canEdit:false,canPublish:false,canArchive:true,canRecord:true,canViewBody:true,...extra})
