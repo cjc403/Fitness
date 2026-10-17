@@ -17,6 +17,10 @@ public class AiProperties {
     private int connectTimeoutSeconds = 5;
     private int readTimeoutSeconds = 25;
     private int maxTokens = 700;
+    private int plannerFastTokens = 1024;
+    private int plannerThinkingTokens = 8192;
+    private int plannerReadTimeoutSeconds = 90;
+    private boolean plannerThinkingEnabled = true;
     private int requestsPerMinute = 10;
     private int circuitFailureThreshold = 3;
     private int circuitOpenSeconds = 60;

@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -87,9 +88,20 @@ public class AgentModelClient {
     }
 
     public Optional<Completion> complete(List<Map<String, Object>> messages, List<Map<String, Object>> tools, boolean requireAction) {
+        return Optional.ofNullable(exchange(messages, tools, requireAction, false, false).completion());
+    }
+
+    /** V2 only: callers own the entire provider episode, including opaque assistant context. */
+    public Outcome completePlanning(List<Map<String, Object>> messages, List<Map<String, Object>> tools, boolean thinking) {
+        return exchange(messages, tools, true, true, thinking && properties.isPlannerThinkingEnabled());
+    }
+
+    private Outcome exchange(List<Map<String,Object>> messages,List<Map<String,Object>> tools,
+                             boolean requireAction,boolean planning,boolean thinking) {
+        String trace=java.util.UUID.randomUUID().toString();
         if (!isConfigured() || Instant.now().isBefore(circuitOpenUntil.get())) {
             fallbacks.increment();
-            return Optional.empty();
+            return Outcome.failed(isConfigured()?"CIRCUIT_OPEN":"NOT_CONFIGURED",isConfigured(),trace);
         }
         try {
             URI endpoint = chatEndpoint();
@@ -97,51 +109,60 @@ public class AgentModelClient {
             var preparedTools = prepareTools(tools, names);
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("model", modelName());
-            payload.put("messages", prepareMessages(messages, names));
-            payload.put("thinking", Map.of("type", "disabled"));
-            payload.put("temperature", 0.3);
-            payload.put("max_tokens", bounded(properties.getMaxTokens(), 128, 4096));
+            payload.put("messages", prepareMessages(messages, names, planning));
+            payload.put("thinking", Map.of("type", thinking?"enabled":"disabled"));
+            if(thinking)payload.put("reasoning_effort","high");else payload.put("temperature", 0.3);
+            payload.put("max_tokens", planning?bounded(thinking?properties.getPlannerThinkingTokens():properties.getPlannerFastTokens(),1024,16384):bounded(properties.getMaxTokens(),128,4096));
             payload.put("stream", false);
             if (!preparedTools.isEmpty()) {
                 payload.put("tools", preparedTools);
-                payload.put("tool_choice", requireAction ? "required" : "auto");
+                payload.put("tool_choice", requireAction&&!thinking ? "required" : "auto");
             }
             byte[] body = mapper.writeValueAsBytes(payload);
-            require(body.length <= MAX_REQUEST_BYTES, "Model request exceeded limit");
+            require(body.length <= (planning?262_144:MAX_REQUEST_BYTES), "Model request exceeded limit");
             HttpRequest request = HttpRequest.newBuilder(endpoint)
-                    .timeout(Duration.ofSeconds(bounded(properties.getReadTimeoutSeconds(), 3, 60)))
+                    .timeout(Duration.ofSeconds(planning?bounded(properties.getPlannerReadTimeoutSeconds(),30,120):bounded(properties.getReadTimeoutSeconds(),3,60)))
                     .header("Authorization", "Bearer " + properties.getApiKey().trim())
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(body)).build();
             if (!acquireRatePermit()) {
                 fallbacks.increment();
-                return Optional.empty();
+                return Outcome.failed("RATE_LIMITED",true,trace);
             }
             // JDK 17 cancels its request timer after headers. The future deadline also
             // bounds body consumption; cancellation aborts a stalled provider exchange.
-            var pending = http.sendAsync(request, ignored -> new LimitedBodySubscriber());
+            var pending = http.sendAsync(request, ignored -> new LimitedBodySubscriber(planning?262_144:MAX_RESPONSE_BYTES));
             HttpResponse<byte[]> response;
             try {
                 response = pending.get(request.timeout().orElseThrow().toMillis(), TimeUnit.MILLISECONDS);
             } finally {
                 if (!pending.isDone()) pending.cancel(true);
             }
-            require(response.statusCode() >= 200 && response.statusCode() < 300, "Provider HTTP failure");
-            Completion result = parse(response.body(), names);
+            if(response.statusCode()<200||response.statusCode()>=300){
+                int status=response.statusCode();
+                if(status!=429)registerFailure();
+                return Outcome.failed(status==429?"RATE_LIMITED":status==401||status==403?"PROVIDER_AUTH":status==402?"PROVIDER_BALANCE":status==400?"PROVIDER_PROTOCOL":"PROVIDER_UNAVAILABLE",status==429||status>=500,trace);
+            }
+            Completion result = parse(response.body(), names,planning);
             consecutiveFailures.set(0);
             circuitOpenUntil.set(Instant.EPOCH);
             state.set("available");
             if (!result.calls().isEmpty()) toolCalling.set(true);
             successes.increment();
-            return Optional.of(result);
+            return new Outcome(result,null);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             registerFailure();
+            return Outcome.failed("CANCELLED",false,trace);
+        } catch (java.util.concurrent.TimeoutException | java.net.http.HttpTimeoutException timeout) {
+            registerFailure();return Outcome.failed("MODEL_TIMEOUT",true,trace);
+        } catch (Truncated truncated) {
+            registerFailure();return Outcome.failed("MODEL_TRUNCATED",false,trace);
         } catch (Exception ignored) {
             // Provider bodies, exception messages and request credentials must never reach logs.
             registerFailure();
         }
-        return Optional.empty();
+        return Outcome.failed("MODEL_PROTOCOL",false,trace);
     }
 
     public boolean isConfigured() {
@@ -185,8 +206,8 @@ public class AgentModelClient {
         return prepared;
     }
 
-    private List<Map<String, Object>> prepareMessages(List<Map<String, Object>> messages, Set<String> names) throws IOException {
-        require(messages != null && !messages.isEmpty() && messages.size() <= 24, "Invalid message history");
+    private List<Map<String, Object>> prepareMessages(List<Map<String, Object>> messages, Set<String> names,boolean planning) throws IOException {
+        require(messages != null && !messages.isEmpty() && messages.size() <= (planning?64:24), "Invalid message history");
         List<Map<String, Object>> prepared = new ArrayList<>();
         for (Map<String, Object> message : messages) {
             require(message != null, "Invalid message");
@@ -221,18 +242,24 @@ public class AgentModelClient {
                 }
                 item.put("tool_calls", sanitizedCalls);
             }
+            if(planning&&message.containsKey("reasoning_content")){
+                require("assistant".equals(role)&&message.get("reasoning_content") instanceof String,"Invalid provider context");
+                String context=(String)message.get("reasoning_content");require(context.length()<=131072,"Provider context exceeded limit");
+                item.put("reasoning_content",context);
+            }
             prepared.add(item);
         }
         return prepared;
     }
 
-    private Completion parse(byte[] body, Set<String> names) throws IOException {
-        require(body != null && body.length > 0 && body.length <= MAX_RESPONSE_BYTES, "Invalid provider body");
+    private Completion parse(byte[] body, Set<String> names,boolean planning) throws IOException {
+        require(body != null && body.length > 0 && body.length <= (planning?262144:MAX_RESPONSE_BYTES), "Invalid provider body");
         JsonNode root = readJson(new String(body, StandardCharsets.UTF_8));
         require(root.isObject() && root.path("choices").isArray() && root.path("choices").size() == 1, "Invalid provider choices");
         JsonNode choice = root.path("choices").get(0);
         String reason = choice.path("finish_reason").asText("");
-        require(!Set.of("length", "content_filter", "insufficient_system_resource").contains(reason), "Incomplete provider response");
+        if("length".equals(reason))throw new Truncated();
+        require(!Set.of("content_filter", "insufficient_system_resource","aborted").contains(reason), "Incomplete provider response");
         JsonNode message = choice.path("message");
         require(message.isObject() && "assistant".equals(message.path("role").asText()), "Invalid provider message");
         JsonNode contentNode = message.path("content");
@@ -241,7 +268,10 @@ public class AgentModelClient {
         require(!content.isBlank() || !calls.isEmpty(), "Empty provider response");
         JsonNode tokens = root.path("usage").path("total_tokens");
         int totalTokens = tokens.isIntegralNumber() && tokens.canConvertToInt() ? Math.max(0, tokens.asInt()) : 0;
-        return new Completion(content, List.copyOf(calls), modelName(), totalTokens);
+        Map<String,Object> turn=new LinkedHashMap<>();turn.put("role","assistant");turn.put("content",content);
+        if(!calls.isEmpty())turn.put("tool_calls",calls.stream().map(c->Map.of("id",c.id(),"type","function","function",Map.of("name",c.name(),"arguments",c.arguments()))).toList());
+        if(planning&&message.has("reasoning_content"))turn.put("reasoning_content",text(message.get("reasoning_content"),131072));
+        return new Completion(content, List.copyOf(calls), modelName(), totalTokens,Collections.unmodifiableMap(turn));
     }
 
     private List<Call> parseCalls(JsonNode nodes, Set<String> names) throws IOException {
@@ -362,6 +392,8 @@ public class AgentModelClient {
     }
 
     private static final class LimitedBodySubscriber implements HttpResponse.BodySubscriber<byte[]> {
+        private final int limit;
+        LimitedBodySubscriber(int limit){this.limit=limit;}
         private final CompletableFuture<byte[]> result = new CompletableFuture<>();
         private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         private Flow.Subscription subscription;
@@ -377,7 +409,7 @@ public class AgentModelClient {
         @Override public void onNext(List<ByteBuffer> items) {
             if (result.isDone()) return;
             long incomingSize = items.stream().mapToLong(ByteBuffer::remaining).sum();
-            if (incomingSize > MAX_RESPONSE_BYTES - buffer.size()) {
+            if (incomingSize > limit - buffer.size()) {
                 subscription.cancel();
                 result.completeExceptionally(new IOException("Provider response exceeded limit"));
                 return;
@@ -395,6 +427,16 @@ public class AgentModelClient {
     }
 
     public record Call(String id, String name, String arguments) { }
-    public record Completion(String content, List<Call> calls, String model, int totalTokens) { }
+    private static final class Truncated extends IOException {}
+    public record Completion(String content, List<Call> calls, String model, int totalTokens,
+                             @com.fasterxml.jackson.annotation.JsonIgnore Map<String,Object> providerTurn) {
+        public Completion(String content,List<Call> calls,String model,int totalTokens){this(content,calls,model,totalTokens,Map.of());}
+        @Override public String toString(){return "Completion[model="+model+", totalTokens="+totalTokens+"]";}
+    }
+    public record Failure(String code,boolean retryable,String traceId){}
+    public record Outcome(Completion completion,Failure failure){
+        public boolean success(){return completion!=null;}
+        static Outcome failed(String code,boolean retryable,String trace){return new Outcome(null,new Failure(code,retryable,trace));}
+    }
     public record Status(boolean configured, String model, boolean toolCalling, String state) { }
 }
