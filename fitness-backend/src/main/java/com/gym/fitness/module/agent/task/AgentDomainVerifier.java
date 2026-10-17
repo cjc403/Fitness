@@ -30,7 +30,7 @@ public class AgentDomainVerifier {
   if(path.contains("/bookings")){
    if(!self&&!me.permissions().contains(path.endsWith("/check-in")||path.endsWith("/no-show")?"CHECKIN_WRITE":"BOOKING_WRITE"))throw com.gym.fitness.module.agent.AgentIdentity.denied();
    out.put("kind","booking");long id=pathId(path,"bookings");
-   if(id>0){var row=find(business.query("bookings",json.createObjectNode()).data(),id);if(row.isMissingNode())throw com.gym.fitness.module.agent.AgentIdentity.denied();out.put("id",id);out.put("courseName",row.path("courseName").asText(row.path("schedule").path("course").path("name").asText()));out.put("memberName",row.path("member").path("realName").asText());return out;}
+   if(id>0){var row=business.bookingEvidence(id,0);if(row.isMissingNode())throw com.gym.fitness.module.agent.AgentIdentity.denied();out.put("id",id);out.put("courseName",row.path("courseName").asText(row.path("schedule").path("course").path("name").asText()));out.put("memberName",row.path("member").path("realName").asText());return out;}
    if(!self){var m=members.get(body.path("memberId").asLong());out.put("memberId",m.getId()).put("memberName",m.getRealName());}
    long schedule=body.path("scheduleId").asLong();out.put("scheduleId",schedule);boolean found=false;
    if(self){for(var s:portal.schedules())if(s.getScheduleId()==schedule){out.put("courseName",s.getCourseName());out.put("startTime",s.getStartTime().toString());found=true;}}
@@ -53,10 +53,10 @@ public class AgentDomainVerifier {
  }
  public void guard(String goal,JsonNode before,JsonNode body){
   String kind=before.path("kind").asText();
-  if(before.path("id").asLong()>0&&!AgentGoalBinding.labelMatches(goal,before.path("name").asText(before.path("courseName").asText()),before.path("id").asLong()))throw com.gym.fitness.module.agent.AgentIdentity.invalid("操作对象与任务不匹配，请补充准确名称或编号");
-  if(!before.path("memberName").asText().isBlank()&&before.path("id").asLong()==0&&!AgentGoalBinding.labelMatches(goal,before.path("memberName").asText(),before.path("memberId").asLong()))throw com.gym.fitness.module.agent.AgentIdentity.invalid("会员与任务要求不匹配");
-  if("booking".equals(kind)&&before.path("id").asLong()==0&&!AgentGoalBinding.labelMatches(goal,before.path("courseName").asText(),before.path("scheduleId").asLong()))throw com.gym.fitness.module.agent.AgentIdentity.invalid("排课与任务要求不匹配");
-  if("schedule".equals(kind)&&before.path("id").asLong()==0&&!AgentGoalBinding.labelMatches(goal,before.path("name").asText(),before.path("courseId").asLong()))throw com.gym.fitness.module.agent.AgentIdentity.invalid("排课课程与任务要求不匹配");
+  if(before.path("id").asLong()>0&&!AgentGoalBinding.labelMatches(goal,before.path("name").asText(before.path("courseName").asText()),before.path("id").asLong(),kind))throw com.gym.fitness.module.agent.AgentIdentity.invalid("操作对象与任务不匹配，请补充准确名称或编号");
+  if(!before.path("memberName").asText().isBlank()&&before.path("id").asLong()==0&&!AgentGoalBinding.labelMatches(goal,before.path("memberName").asText(),before.path("memberId").asLong(),"member"))throw com.gym.fitness.module.agent.AgentIdentity.invalid("会员与任务要求不匹配");
+  if("booking".equals(kind)&&before.path("id").asLong()==0&&!AgentGoalBinding.labelMatches(goal,before.path("courseName").asText(),before.path("scheduleId").asLong(),"schedule"))throw com.gym.fitness.module.agent.AgentIdentity.invalid("排课与任务要求不匹配");
+  if("schedule".equals(kind)&&before.path("id").asLong()==0&&!AgentGoalBinding.labelMatches(goal,before.path("name").asText(),before.path("courseId").asLong(),"course"))throw com.gym.fitness.module.agent.AgentIdentity.invalid("排课课程与任务要求不匹配");
   if(body.hasNonNull("name")&&!goal.contains(body.path("name").asText()))throw com.gym.fitness.module.agent.AgentIdentity.invalid("拟创建名称与任务要求不匹配");
   if(body.hasNonNull("title")&&!goal.contains(body.path("title").asText()))throw com.gym.fitness.module.agent.AgentIdentity.invalid("拟创建标题与任务要求不匹配");
   if(body.hasNonNull("realName")&&!goal.contains(body.path("realName").asText()))throw com.gym.fitness.module.agent.AgentIdentity.invalid("拟登记会员姓名与任务要求不匹配");
@@ -65,7 +65,7 @@ public class AgentDomainVerifier {
  public boolean verify(String type,AgentMutationReceiptService.Receipt r,String goal,boolean member){
   try{
    JsonNode data=r.result().path("data"),actual;long id=data.path("id").asLong();
-   if(r.before().path("id").asLong()>0&&!r.before().path("name").asText().isBlank()&&!AgentGoalBinding.labelMatches(goal,r.before().path("name").asText(),r.before().path("id").asLong()))return false;
+   if(r.before().path("id").asLong()>0&&!r.before().path("name").asText().isBlank()&&!AgentGoalBinding.labelMatches(goal,r.before().path("name").asText(),r.before().path("id").asLong(),type))return false;
    for(String key:new String[]{"name","title"})if(r.request().hasNonNull(key)&&!goal.contains(r.request().get(key).asText()))return false;
    switch(type){
     case "course":
@@ -78,20 +78,21 @@ public class AgentDomainVerifier {
      catch(com.gym.fitness.common.exception.BusinessException missing){return "DELETE".equals(r.method())&&missing.getErrorCode()==com.gym.fitness.common.constant.ErrorCode.NOT_FOUND;}
     case "booking":
      if(id==0)id=pathId(r.path(),"bookings");
-     var result=business.query("bookings",json.createObjectNode());
-     actual=find(result.data(),id);
-     if(id==0&&r.request().path("scheduleId").asLong()>0&&result.data().isArray()){
-      long schedule=r.request().path("scheduleId").asLong();for(var b:result.data())if(b.path("scheduleId").asLong()==schedule&&java.util.Set.of("BOOKED","WAITLISTED").contains(b.path("status").asText())){actual=b;break;}
-     }
+     actual=business.bookingEvidence(id,r.request().path("scheduleId").asLong());
      if(r.path().endsWith("/cancel")&&!"CANCELLED".equals(actual.path("status").asText()))return false;
      if(r.path().endsWith("/leave")&&!actual.hasNonNull("leaveRequestedAt"))return false;
-     return !actual.isMissingNode()&&matches(data,actual,"status","memberId","scheduleId");
+     return !actual.isMissingNode()&&matches(data,actual,"id","status","memberId","scheduleId");
     case "training":
      id=data.path("plan").path("id").asLong(pathId(r.path(),"training-plans"));if(id<=0)return false;
      var detail=training.detail(id,1,20,member);actual=json.valueToTree(detail);
-     if(r.path().endsWith("/feedback")){long sessionId=pathId(r.path(),"sessions");return detail.sessions().records().stream().anyMatch(s->s.id()==sessionId&&s.feedbackRating()!=null&&s.feedbackRating()==r.request().path("rating").asInt());}
+     if(r.path().endsWith("/feedback")){long sessionId=pathId(r.path(),"sessions");return detail.sessions().records().stream().anyMatch(s->s.id()==sessionId&&s.feedbackRating()!=null&&s.feedbackRating()==r.request().path("rating").asInt()&&hashMatches(r.request(),"contentHash",json.valueToTree(s.feedbackContent())));}
      if(r.path().endsWith("/void")){long sessionId=pathId(r.path(),"sessions");return detail.sessions().records().stream().anyMatch(s->s.id()==sessionId&&"VOIDED".equals(s.status()));}
-     return matches(data.path("plan"),actual.path("plan"),"id","title","memberId")&&(!r.path().endsWith("/publish")||"ACTIVE".equals(actual.path("plan").path("status").asText()))&&(!r.path().endsWith("/archive")||"ARCHIVED".equals(actual.path("plan").path("status").asText()));
+     if(r.request().has("exercises")&&!r.path().endsWith("/sessions")){
+      if(!matches(r.request(),actual.path("plan"),"title","memberId","goal","startDate","endDate"))return false;
+      var expectedExercises=r.request().path("exercises");var savedExercises=actual.path("exercises");if(!savedExercises.isArray()||savedExercises.size()!=expectedExercises.size())return false;
+      for(int i=0;i<expectedExercises.size();i++)if(!matches(expectedExercises.get(i),savedExercises.get(i),"name","mode","sets","reps","weightKg","minutes")||!hashMatches(expectedExercises.get(i),"noteHash",savedExercises.get(i).path("note")))return false;
+     }
+     return matches(data.path("plan"),actual.path("plan"),"id","title","memberId","status","version")&&hashMatches(r.request(),"noteHash",actual.path("plan").path("note"))&&(!r.path().endsWith("/publish")||"ACTIVE".equals(actual.path("plan").path("status").asText()))&&(!r.path().endsWith("/archive")||"ARCHIVED".equals(actual.path("plan").path("status").asText()));
     case "trial": case "lead":
      id=data.path("lead").path("id").asLong(pathId(r.path(),"leads"));if(id<=0)return false;
      actual=json.valueToTree(leads.detail(id));
@@ -108,7 +109,11 @@ public class AgentDomainVerifier {
    }
   }catch(com.gym.fitness.common.exception.BusinessException denied){return false;}
  }
- private boolean matches(JsonNode expected,JsonNode actual,String...fields){if(actual.isMissingNode()||actual.isNull())return false;for(var field:fields)if(expected.hasNonNull(field)&&!expected.get(field).asText().equals(actual.path(field).asText()))return false;return true;}
+ private boolean hashMatches(JsonNode expected,String key,JsonNode actual){
+  if(!expected.hasNonNull(key))return true;
+  try{var normalized=actual.isMissingNode()||actual.isNull()||actual.isTextual()&&actual.asText().isBlank()?json.nullNode():actual;return expected.path(key).asText().equals(java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes(normalized))));}catch(Exception e){return false;}
+ }
+ private boolean matches(JsonNode expected,JsonNode actual,String...fields){if(actual.isMissingNode()||actual.isNull())return false;for(var field:fields)if(expected.hasNonNull(field)){var a=expected.get(field);var b=actual.path(field);if(a.isNumber()&&b.isNumber()){if(a.decimalValue().compareTo(b.decimalValue())!=0)return false;}else if(!a.asText().equals(b.asText()))return false;}return true;}
  private JsonNode find(JsonNode value,long id){if(id<=0)return com.fasterxml.jackson.databind.node.MissingNode.getInstance();if(value.isArray()){for(var v:value)if(v.path("id").asLong()==id)return v;}if(value.isObject()&&value.has("records"))return find(value.get("records"),id);return com.fasterxml.jackson.databind.node.MissingNode.getInstance();}
  private long pathId(String path,String resource){var m=Pattern.compile("/"+resource+"/(\\d+)(?:/|$)").matcher(path);return m.find()?Long.parseLong(m.group(1)):0;}
 }

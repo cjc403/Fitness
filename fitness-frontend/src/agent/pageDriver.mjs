@@ -20,7 +20,7 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     const chinese=header.match(/(?:^|\D)(1[0-2]|0?[1-9])\s*月/),english=['january','february','march','april','may','june','july','august','september','october','november','december'].findIndex(m=>header.toLowerCase().includes(m)),month=chinese?Number(chinese[1]):english+1
     return month&&day?'选择日期：'+year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'选择日期：'+header+' '+compact(e.innerText)
   }
-  const rawName=e=>compact(calendarName(e)||e.getAttribute('aria-label')||(e.getAttribute('aria-labelledby')||'').split(/\s+/).map(id=>document.getElementById(id)?.innerText||'').join(' ')||e.labels?.[0]?.innerText||label(e)||e.innerText||e.getAttribute('placeholder')||e.getAttribute('title'))
+  const rawName=e=>compact(calendarName(e)||e.getAttribute('aria-label')||(e.getAttribute('aria-labelledby')||'').split(/\s+/).map(id=>document.getElementById(id)?.innerText||'').join(' ')||e.labels?.[0]?.innerText||label(e)||e.innerText||e.getAttribute('placeholder')||e.getAttribute('title')||(['radio','checkbox'].includes(type(e))?e.closest('tr,[role="row"]')?.innerText:''))
   const safe=e=>visible(e)&&!['password','hidden','file'].includes(type(e))&&!/password|token|secret|api.?key/i.test([e.id,e.getAttribute('name'),e.getAttribute('autocomplete')].join(' '))&&!/退出登录|切换账号|修改密码/.test(rawName(e))
   const entity=e=>{
     if(calendarCell(e)||e.matches('[role="menuitem"],[role="tab"],[role="option"]'))return null
@@ -97,7 +97,7 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     checkUrl(window.location.href);clear();refs=new Map();observedUrl=window.location.href;sequence++
     const {root,related,list}=entries();observedScope=root
     // Long teleported calendars/options must leave room for parent fields and recovery.
-    const protectedNodes=related.length?list.filter(e=>!related.some(p=>p.contains(e))&&(['INPUT','TEXTAREA','SELECT'].includes(e.tagName)||e.matches('button,[role="button"]')&&(root||/取消|关闭|保存|确定|确认/.test(rawName(e))))).slice(0,16):[]
+    const protectedNodes=related.length?list.filter(e=>!related.some(p=>p.contains(e))&&(['INPUT','TEXTAREA','SELECT'].includes(e.tagName)||e.matches('button,[role="button"]')&&(root||/取消|关闭|保存|确定|确认/.test(rawName(e))))).slice(0,16):root?list.filter(e=>e.closest('[data-agent-field]')&&e.matches('input,textarea,select,[role="combobox"]')||e.matches('button,[role="button"]')&&/^(?:取消|关闭|保存|确定|确认)/.test(rawName(e))).slice(0,32):[]
     const reserved=new Set(protectedNodes)
     const chosen=new Set([...protectedNodes,...list.filter(e=>!reserved.has(e)).slice(0,60-protectedNodes.length)])
     const selected=list.filter(e=>chosen.has(e)),nodes=[]
@@ -107,8 +107,8 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     const index=entities.map(o=>redactPage(o.text,160)).join('\n').slice(0,1900)
     const roots=root?[root,...related]:[...document.querySelectorAll('main')].filter(visible)
     const body=(roots.length?roots:[document.body]).map(textOf).join('\n')
-    const text=`当前作用域：${root?'弹窗':'页面'} ${title(root)}\n当前控件状态（实际值）：\n${states}\n${root?'弹窗正文':'目标附近对象及行'}：\n${root?body.slice(0,2400):index}\n${root?'':'页面正文：\n'+body.slice(0,Math.max(0,5600-states.length-index.length))}\n可操作控件：${selected.length}/${list.length}；仅使用本轮引用，不以同名按钮顺序猜测对象。`
-    lastContext=contextAdapter?.build({document,window,root,nodes,resolve:ref=>refs.get(ref)?.e,title:title(root)})
+    const text=context.v2?`当前作用域：${root?'弹窗':'页面'} ${title(root)}\n业务正文：${body.slice(0,1800)}\n可操作控件：${selected.length}/${list.length}；值与对象见context，仅用本轮引用。`:`当前作用域：${root?'弹窗':'页面'} ${title(root)}\n当前控件状态（实际值）：\n${states}\n${root?'弹窗正文':'目标附近对象及行'}：\n${root?body.slice(0,2400):index}\n${root?'':'页面正文：\n'+body.slice(0,Math.max(0,5600-states.length-index.length))}\n可操作控件：${selected.length}/${list.length}；仅使用本轮引用，不以同名按钮顺序猜测对象。`
+    lastContext=contextAdapter?.build({document,window,root,nodes,candidateCount:list.length,resolve:ref=>refs.get(ref)?.e,title:title(root)})
     return {url:window.location.href,title:redactPage(document.title,200),text:redactPage(text),revision:`page_${sequence}`,nodes,...(context.v2?{context:lastContext}:{})}
   }
   const feedback=()=>{
@@ -129,10 +129,10 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     if(action==='use_skill'){
       if(args.kind==='fill_fields'){
         if(!Array.isArray(args.fields)||!args.fields.length||args.fields.length>8||new Set(args.fields.map(f=>f.field)).size!==args.fields.length)throw Error('表单技能须包含1至8个不同字段')
-        const originalScope=scope(),results=[]
+        const originalScope=scope(),originalUrl=window.location.href,results=[]
         for(const field of args.fields){
           if(!canAct())throw interrupted()
-          if(scope()!==originalScope)throw stale()
+          if(scope()!==originalScope||window.location.href!==originalUrl)throw stale()
           observe({v2:true})
           results.push(await act('use_skill',{kind:'fill_field',field:field.field,value:field.value,...(args.id?{id:args.id}:{})},canAct))
           await Promise.resolve();await Promise.resolve()
@@ -141,6 +141,22 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
       }
       const semantic=contextAdapter?.choose(lastContext,args)
       if(!semantic)throw Object.assign(Error('业务对象或字段不唯一，请重新观察并指定编号和门店'),{code:'STALE_PAGE'})
+      if(semantic.action==='select_option'){
+        const originalScope=scope(),originalUrl=window.location.href
+        await act('click',{ref:semantic.arguments.ref},canAct)
+        const deadline=Date.now()+5000
+        let choices=[]
+        while(Date.now()<deadline){
+          await new Promise(resolve=>setTimeout(resolve,80))
+          if(!canAct())throw interrupted()
+          if(scope()!==originalScope||window.location.href!==originalUrl)throw stale()
+          const current=observe({v2:true});choices=current.nodes.filter(n=>n.role==='option')
+          const options=choices.filter(n=>n.name===semantic.arguments.value)
+          if(options.length===1)return act('click',{ref:options[0].ref},canAct)
+          if(options.length>1)break
+        }
+        throw Object.assign(Error('未找到唯一可见选项：'+semantic.arguments.value+'；当前选项：'+choices.slice(0,8).map(n=>n.name).join('、')),{code:'STALE_PAGE'})
+      }
       return act(semantic.action,semantic.arguments,canAct)
     }
     if(['navigate','back'].includes(action)&&scope())throw Object.assign(Error('当前有业务弹窗，请先核对或关闭它，再切换页面'),{code:'STALE_PAGE'})

@@ -67,4 +67,22 @@ class AgentMutationReceiptTest {
         jdbc.update("INSERT INTO course VALUES(2,'力量','GROUP',1,'课程',60,20,88,'LOW')");task=tasks.revise(me,task.id(),0,"document-a","改为任务：把流瑜伽价格改成99，把力量价格改成109");
         assertNotNull(receipts.prepare(me,task.id(),task.version(),"document-a","PUT","/api/v1/admin/courses/1",json.valueToTree(Map.of("fee",99))));
     }
+    @Test void changingACancelReasonCannotConsumeTheFrozenPermitAndRawReasonIsNotStoredInTheSummary(){
+        task=tasks.revise(me,task.id(),0,"document-a","改为任务：取消预约编号#7");String target="/api/v1/admin/bookings/7/cancel?reason=%E5%90%8E%E5%8F%B0%E5%8F%96%E6%B6%88";
+        var p=receipts.prepare(me,task.id(),task.version(),"document-a","PUT",target,json.nullNode());receipts.approve(me,p.id(),task.version(),"document-a");
+        assertFalse(p.request().toString().contains("后台取消"));assertTrue(p.request().has("queryHash"));
+        assertThrows(RuntimeException.class,()->receipts.execute(me,p.id(),"PUT","/api/v1/admin/bookings/7/cancel?reason=changed",json.nullNode(),()->{fail("must not invoke business");return null;}));
+    }
+    @Test void notesAreRepresentedByHashesAndBlankOptionalContentUsesTheStoredNullForm(){
+        task=tasks.revise(me,task.id(),0,"document-a","改为任务：新建潜客，姓名小李，备注私有备注");
+        var p=receipts.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/leads",json.valueToTree(Map.of("name","小李","note","私有备注","content"," ")));
+        assertTrue(p.request().hasNonNull("noteHash"));assertFalse(p.request().toString().contains("私有备注"));
+        assertEquals("74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",p.request().path("contentHash").asText());
+    }
+    @Test void duplicateCourseNamesRequireAnExplicitCourseIdBeforeApproval(){
+        jdbc.update("INSERT INTO course VALUES(2,'流瑜伽','GROUP',1,'另一课程',60,20,88,'LOW')");
+        assertThrows(RuntimeException.class,()->receipts.prepare(me,task.id(),0,"document-a","PUT","/api/v1/admin/courses/1",json.valueToTree(Map.of("fee",99))));
+        task=tasks.revise(me,task.id(),0,"document-a","改为任务：把课程编号#1价格改成99");
+        assertNotNull(receipts.prepare(me,task.id(),task.version(),"document-a","PUT","/api/v1/admin/courses/1",json.valueToTree(Map.of("fee",99))));
+    }
 }

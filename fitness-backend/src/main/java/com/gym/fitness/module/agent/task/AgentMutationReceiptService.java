@@ -23,22 +23,24 @@ public class AgentMutationReceiptService {
     private record Row(Receipt view,String document,String hash){}
     private static final Set<String> SAFE=Set.of("id","memberId","scheduleId","courseId","recipientUserId","venueId","version","expectedVersion","status","fee","maxCapacity","durationMinutes","intensity","type","name","title","startDate","endDate","startsAt","endsAt","scheduledStartTime","scheduledEndTime","plan","lead","booking","trial","data","message","success","code","goal","exercises","mode","sets","reps","minutes","weightKg","actualSets","actualReps","actualMinutes","actualWeightKg","hostId","coachId","roomId","maxStudents","trials","sessions","records","rating");
     public Receipt prepare(Session me,String task,long version,String document,String method,String path,JsonNode body){
-        method=method.toUpperCase(Locale.ROOT);if(!supported(method,path))throw invalid("此操作尚未注册为可核验网页技能，请使用原业务页面手动办理");
+        method=method.toUpperCase(Locale.ROOT);var target=AgentRequestTarget.parse(method,path);if(!supported(method,target.path()))throw invalid("此操作尚未注册为可核验网页技能，请使用原业务页面手动办理");
         if(body==null||!(body.isObject()||body.isNull())||body.toString().length()>65536)throw invalid("只支持有界JSON请求");
         final String verb=method;
+        final String route=target.path();
         return tx.execute(ignored->{
             tasks.get(me,task);lockTask(task);var current=tasks.check(me,task,version,document);if(!"RUNNING".equals(current.status()))throw invalid("任务当前不可提交");
             Integer pending=jdbc.queryForObject("SELECT count(*) FROM agent_task_receipt WHERE task_id=? AND status IN ('PENDING','APPROVED') AND expires_at>?",Integer.class,task,LocalDateTime.now());if(pending!=null&&pending>0)throw invalid("已有待确认请求，请先核对");
-            Integer duplicate=jdbc.queryForObject("SELECT count(*) FROM agent_task_receipt WHERE task_id=? AND method=? AND path=? AND request_hash=? AND status='SUCCEEDED'",Integer.class,task,verb,path,digest(body));if(duplicate!=null&&duplicate>0)throw invalid("该请求已经成功提交，禁止重复办理；请核对任务回执");
-            JsonNode before=snapshot(me,verb,path,false,body);guardGoal(current.goal(),verb,path,body,before);
-            if(!path.contains("/courses")&&!path.equals("/api/v1/messages/send"))domains.guard(current.goal(),before,body);
-            if(path.equals("/api/v1/messages/send")){
+            Integer duplicate=jdbc.queryForObject("SELECT count(*) FROM agent_task_receipt WHERE task_id=? AND method=? AND path=? AND request_hash=? AND status='SUCCEEDED'",Integer.class,task,verb,route,fingerprint(body,target));if(duplicate!=null&&duplicate>0)throw invalid("该请求已经成功提交，禁止重复办理；请核对任务回执");
+            JsonNode before=snapshot(me,verb,route,false,body);guardGoal(me,current.goal(),verb,route,body,before);
+            if(!route.contains("/courses")&&!route.equals("/api/v1/messages/send"))domains.guard(current.goal(),before,body);
+            if(route.equals("/api/v1/messages/send")){
                 var contacts=chat.contacts();var contact=java.util.stream.Stream.concat(contacts.staff().stream(),contacts.members().stream()).filter(c->c.userId()==body.path("recipientUserId").asLong()).findFirst().orElseThrow(com.gym.fitness.module.agent.AgentIdentity::denied);
                 if(!AgentGoalBinding.messageMatches(current.goal(),contact.name(),contact.userId(),body.path("content").asText()))throw invalid("收件人或消息内容与任务要求不一致，请补充明确收件人及完整内容");
                 ((ObjectNode)before).put("recipientName",contact.name()).put("recipientUserId",contact.userId());
             }
             String id=UUID.randomUUID().toString();var now=LocalDateTime.now();
-            jdbc.update("INSERT INTO agent_task_receipt(id,task_id,task_version,document_nonce,method,path,request_hash,request_summary,before_json,status,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?,'PENDING',?,?)",id,task,version,document,verb,path,digest(body),write(project(body)),write(before),now,now.plusMinutes(2));return get(me,id);
+            JsonNode summary=project(body);if(!target.query().isEmpty()){if(!summary.isObject())summary=json.createObjectNode();((ObjectNode)summary).put("queryHash",digest(target.query()));}
+            jdbc.update("INSERT INTO agent_task_receipt(id,task_id,task_version,document_nonce,method,path,request_hash,request_summary,before_json,status,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?,'PENDING',?,?)",id,task,version,document,verb,route,fingerprint(body,target),write(summary),write(before),now,now.plusMinutes(2));return get(me,id);
         });
     }
     public Receipt get(Session me,String id){var row=row(id,false);tasks.get(me,row.view.taskId());return row.view;}
@@ -46,11 +48,11 @@ public class AgentMutationReceiptService {
     public void revokePending(Session me,String task){tasks.get(me,task);jdbc.update("UPDATE agent_task_receipt SET status='EXPIRED' WHERE task_id=? AND status IN ('PENDING','APPROVED')",task);}
     public Receipt approve(Session me,String id,long version,String document){var initial=get(me,id);return tx.execute(ignored->{lockTask(initial.taskId());var row=row(id,true);tasks.check(me,row.view.taskId(),version,document);if(row.view.taskVersion()!=version||!row.document.equals(document))throw invalid("旧目标或网页的确认已失效");if("APPROVED".equals(row.view.status())){valid(row,"APPROVED");return row.view;}valid(row,"PENDING");jdbc.update("UPDATE agent_task_receipt SET status='APPROVED' WHERE id=? AND status='PENDING'",id);return get(me,id);});}
     public JsonNode execute(Session me,String id,String method,String path,JsonNode body,Supplier<JsonNode> work){
-        var initial=get(me,id);
+        var initial=get(me,id);var target=AgentRequestTarget.parse(method,path);
         try{return tx.execute(ignored->{
             lockTask(initial.taskId());var row=row(id,true);var receipt=row.view;var task=tasks.check(me,receipt.taskId(),receipt.taskVersion(),row.document);
             if(!"RUNNING".equals(task.status()))throw invalid("任务已暂停或结束");valid(row,"APPROVED");
-            if(!receipt.method().equals(method)||!receipt.path().equals(path)||!row.hash.equals(digest(body)))throw invalid("请求与已确认的冻结内容不一致");
+            if(!receipt.method().equals(method)||!receipt.path().equals(target.path())||!row.hash.equals(fingerprint(body,target)))throw invalid("请求与已确认的冻结内容不一致");
             if(path.matches("/api/v1/admin/courses/\\d+")&&!digest(receipt.before()).equals(digest(snapshot(me,method,path,true,body))))throw invalid("业务对象已经变化，请重新观察和确认");
             JsonNode result=work.get();if(result==null||!result.path("code").isIntegralNumber()||result.path("code").asInt()!=0)throw invalid("业务未成功，已回滚，禁止自动重发");
             jdbc.update("UPDATE agent_task_receipt SET status='SUCCEEDED',result_json=? WHERE id=?",write(project(result)),id);
@@ -75,8 +77,9 @@ public class AgentMutationReceiptService {
             ||path.matches("/api/v1/(member/)?training-plans(/\\d+(/(draft|publish|archive|sessions)|/sessions/\\d+/(feedback|void)))?")
             ||path.matches("/api/v1/admin/members(/\\d+(/follow-ups)?)?");
     }
+    private String fingerprint(JsonNode body,AgentRequestTarget.Target target){if(target.query().isEmpty())return digest(body);var value=json.createObjectNode();value.set("body",body);value.set("query",target.query());return digest(value);}
     private void lockTask(String id){jdbc.queryForList("SELECT id FROM agent_task WHERE id=? FOR UPDATE",id);}
-    private void guardGoal(String goal,String method,String path,JsonNode body,JsonNode before){
+    private void guardGoal(Session me,String goal,String method,String path,JsonNode body,JsonNode before){
         if(!goal.matches("(?s).*(?:新建|新增|创建|修改|改为|改成|调整|设为|更新|删除|提交|保存|发送|发(?:个|一条)?消息|发给|发布|预约|签到|录入|登记|安排|跟进|归档|反馈).*"))throw invalid("当前任务没有业务写入目标");
         if(path.equals("/api/v1/messages/send")&&!goal.matches("(?s).*(?:发送|发(?:个|一条)?消息|发给).*"))throw invalid("当前任务没有发送消息目标");
         if(path.startsWith("/api/v1/admin/members")&&!goal.matches("(?s).*(?:会员|回访|续费).*"))throw invalid("当前任务没有会员操作目标");
@@ -87,7 +90,7 @@ public class AgentMutationReceiptService {
         if(path.endsWith("/publish")&&(!goal.contains("发布")||goal.matches(".*(?:不发布|不要发布).*")))throw invalid("用户未授权发布计划");
         if(path.endsWith("/send")&&goal.matches(".*(?:不发送|不要发送).*"))throw invalid("用户要求不发送消息");
         if(path.matches("/api/v1/admin/courses/\\d+")&&"PUT".equals(method)){
-            String name=before.path("name").asText();String id=before.path("id").asText();
+            String name=before.path("name").asText();String id=before.path("id").asText();Integer matching="SUPER_ADMIN".equals(me.role())?jdbc.queryForObject("SELECT count(*) FROM course WHERE name=?",Integer.class,name):jdbc.queryForObject("SELECT count(*) FROM course WHERE name=? AND venue_id=?",Integer.class,name,me.venueId());if(matching!=null&&matching>1&&!AgentGoalBinding.labelMatches(goal,null,Long.parseLong(id),"course"))throw invalid("当前范围有同名课程，请补充目标课程编号；不会猜测要修改哪一条");
             if(!goal.contains(name)&&!goal.matches("(?s).*(?:编号|#)\\s*"+java.util.regex.Pattern.quote(id)+"(?:\\D|$).*"))throw invalid("课程编号与用户目标不匹配，请先定位唯一课程");
             goal=AgentGoalClauses.courseTarget(goal,name,Long.parseLong(id));
             var matcher=java.util.regex.Pattern.compile("(?:价格|费用|售价).*?(?:改为|改成|改到|设为|设成|调整为|调整到|调整成|修改为)\\s*[¥￥]?\\s*(\\d+(?:\\.\\d{1,2})?)").matcher(goal);String expected=null;while(matcher.find())expected=matcher.group(1);
@@ -106,7 +109,7 @@ public class AgentMutationReceiptService {
         }
     }
     private JsonNode project(JsonNode n){
-        if(n.isObject()){var o=json.createObjectNode();n.fields().forEachRemaining(e->{if(SAFE.contains(e.getKey()))o.set(e.getKey(),project(e.getValue()));else if("content".equals(e.getKey()))o.put("contentHash",digest(e.getValue()));});return o;}
+        if(n.isObject()){var o=json.createObjectNode();n.fields().forEachRemaining(e->{if(SAFE.contains(e.getKey()))o.set(e.getKey(),project(e.getValue()));else if(Set.of("content","note","feedbackContent").contains(e.getKey())){var value=e.getValue();if(value.isTextual())value=value.asText().isBlank()?NullNode.instance:TextNode.valueOf(value.asText().trim());o.put(e.getKey()+"Hash",digest(value));}});return o;}
         if(n.isArray()){var a=json.createArrayNode();for(int i=0;i<Math.min(n.size(),100);i++)a.add(project(n.get(i)));return a;}
         return n.deepCopy();
     }

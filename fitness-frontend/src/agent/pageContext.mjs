@@ -1,6 +1,6 @@
 const compact=s=>String(s??'').replace(/\s+/g,' ').trim()
 const privateText=s=>String(s??'').replace(/(?<!\d)\d{17}[\dXx](?!\d)|(?<!\d)1[3-9]\d{9}(?!\d)|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g,'[资料已隐藏]').replace(/Bearer\s+\S+|sk-[A-Za-z0-9]{15,}/gi,'[凭据已隐藏]')
-export function buildPageContext({document,window,root,nodes,resolve,title}){
+export function buildPageContext({document,window,root,nodes,resolve,title,candidateCount=nodes.length}){
   const visible=e=>{if(!e||e.closest('[data-page-agent-exclude],[aria-hidden="true"],[hidden]'))return false;const r=e.getBoundingClientRect(),s=window.getComputedStyle(e);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'}
   const area=root||document.querySelector('main')||document.body,entities=new Map(),fields=[]
   const scopeHost=root?.querySelector('[data-agent-type][data-agent-id]')||root?.closest('[data-agent-type][data-agent-id]')
@@ -10,15 +10,16 @@ export function buildPageContext({document,window,root,nodes,resolve,title}){
     if(host){
       const type=host.getAttribute('data-agent-type'),id=host.getAttribute('data-agent-id'),venueId=host.getAttribute('data-agent-venue')||'',key=JSON.stringify([type,id,venueId])
       if(!entities.has(key))entities.set(key,{type,id,venueId,label:privateText(compact(host.getAttribute('data-agent-label')||host.querySelector('h1,h2,h3,h4,strong')?.textContent)),actions:[]})
-      const action=e.getAttribute('data-agent-action')
+      const actionOwner=e.closest('[data-agent-action]'),action=actionOwner&&host.contains(actionOwner)?actionOwner.getAttribute('data-agent-action'):null
       if(action)entities.get(key).actions.push({action,ref:node.ref,label:node.name})
     }
-    if(['INPUT','TEXTAREA','SELECT'].includes(e.tagName))fields.push({ref:node.ref,key:field?.getAttribute('data-agent-field')||'',name:node.name,value:privateText(e.value),controlType:e.type||e.tagName.toLowerCase(),checked:e.checked===true,writable:!e.disabled&&!e.readOnly,entityType:host?.getAttribute('data-agent-type')||scopeHost?.getAttribute('data-agent-type')||'',entityId:host?.getAttribute('data-agent-id')||scopeHost?.getAttribute('data-agent-id')||''})
+    const select=e.matches('[role="combobox"]')&&e.closest('.el-select')
+    if(select||['INPUT','TEXTAREA','SELECT'].includes(e.tagName))fields.push({ref:node.ref,key:field?.getAttribute('data-agent-field')||'',name:node.name,value:privateText(select?compact(select.querySelector('.el-select__selected-item:not(.is-transparent)')?.textContent):e.value),controlType:select?'combobox':e.type||e.tagName.toLowerCase(),checked:e.checked===true,writable:select?!select.classList.contains('is-disabled')&&!e.disabled:!e.disabled&&!e.readOnly,entityType:host?.getAttribute('data-agent-type')||scopeHost?.getAttribute('data-agent-type')||'',entityId:host?.getAttribute('data-agent-id')||scopeHost?.getAttribute('data-agent-id')||''})
   }
   const errors=[...area.querySelectorAll('.el-form-item__error,[role="alert"],.el-alert--error')].filter(visible).map(e=>privateText(compact(e.textContent))).filter(Boolean).slice(0,8)
   const selectedTabs=[...document.querySelectorAll('[role="tab"][aria-selected="true"],.el-tabs__item.is-active')].filter(visible).map(e=>privateText(compact(e.textContent))).slice(0,10)
   const loading=[...area.querySelectorAll('.el-loading-mask,.el-button.is-loading,[aria-busy="true"]')].some(visible)
-  const result={path:window.location.pathname,scope:{type:root?'dialog':'page',title:privateText(title),...(scopeHost?{entityType:scopeHost.getAttribute('data-agent-type'),entityId:scopeHost.getAttribute('data-agent-id'),venueId:scopeHost.getAttribute('data-agent-venue')||''}:{})},entities:[...entities.values()].slice(0,60),fields,errors,selectedTabs,loading,truncated:entities.size>60}
+  const result={path:window.location.pathname,scope:{type:root?'dialog':'page',title:privateText(title),...(scopeHost?{entityType:scopeHost.getAttribute('data-agent-type'),entityId:scopeHost.getAttribute('data-agent-id'),venueId:scopeHost.getAttribute('data-agent-venue')||''}:{})},entities:[...entities.values()].slice(0,60),fields,errors,selectedTabs,loading,truncated:candidateCount>nodes.length||entities.size>60}
   return result
 }
 export function summarizePageContext(context={}){
@@ -34,6 +35,7 @@ export function chooseSemanticAction(context={},args={}){
   if(args.kind==='fill_field'){
     const aliases={'价格':'fee','容量':'maxCapacity','课程名称':'name','备注':'note','训练目标':'goal'}
     const key=aliases[args.field]||args.field
+    const requestedValue=key==='goal'?({'综合体能':'体能','体能训练':'体能','减脂塑形':'减脂','增肌训练':'增肌','综合健身':'综合训练'}[String(args.value)]||String(args.value)):String(args.value)
     let fields=(context.fields||[]).filter(f=>(f.key===key||f.name===args.field)&&f.writable&&(!args.id||String(f.entityId)===String(args.id)))
     if(fields.some(f=>f.controlType==='radio')){
       fields=fields.filter(f=>f.controlType==='radio'&&(f.value===String(args.value)||f.name===String(args.value)))
@@ -42,6 +44,7 @@ export function chooseSemanticAction(context={},args={}){
     }
     if(fields.length!==1)return null
     if(String(fields[0].value)===String(args.value))return {action:'observe',arguments:{},alreadySatisfied:true}
+    if(fields[0].controlType==='combobox')return {action:'select_option',arguments:{ref:fields[0].ref,value:requestedValue}}
     return {action:'fill',arguments:{ref:fields[0].ref,value:String(args.value)}}
   }
   return null

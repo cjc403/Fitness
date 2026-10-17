@@ -21,17 +21,17 @@ public class AgentTools {
   if(!ALL.contains(identity.role()))throw denied();
   var list=new ArrayList<Tool>();
   list.add(tool("profile","我的身份","查看当前登录身份与服务门店",false,obj()));
-  list.add(tool("courses","课程查询","查询有权查看的课程；会员可看可预约课程，教练只看自己课程",false,obj("from",date("起始日期"),"to",date("结束日期"),"keyword",text("课程关键词",100))));
-  if(role("MEMBER","RECEPTION","MANAGER","SUPER_ADMIN","COACH"))list.add(tool("bookings","预约查询","查看本人或权限范围内的预约，不含完整会员隐私档案",false,obj("keyword",text("课程或会员关键词",100))));
+  list.add(tool("courses","课程查询","查询有权查看的课程；会员可看可预约课程，教练只看自己课程",false,obj("from",date("起始日期"),"to",date("结束日期"),"keyword",text("课程关键词",100),"page",integer("页码，每页20条，按pagination.nextPage继续",1,10000))));
+  if(role("MEMBER","RECEPTION","MANAGER","SUPER_ADMIN","COACH"))list.add(tool("bookings","预约查询","查看本人或权限范围内的预约，不含完整会员隐私档案",false,obj("keyword",text("课程或会员关键词",100),"page",integer("页码，每页20条",1,10000))));
   if(role("MEMBER","COACH","MANAGER","SUPER_ADMIN"))list.add(tool("training_plans","训练计划","查看权限范围内的训练计划，会员不显示草稿",false,obj("keyword",text("计划关键词",100),"page",integer("页码",1,10000))));
   if(role("COACH"))list.add(tool("students","我的学员","查询与本人存在服务关系的学员",false,obj("keyword",text("学员关键词",100),"page",integer("页码",1,10000))));
   if(role("RECEPTION","MANAGER","SUPER_ADMIN"))list.add(tool("members","会员查询","查找权限门店内会员的编号和状态，用于办理预约",false,obj("keyword",text("会员姓名或编号",100),"page",integer("页码",1,10000))));
   if(role("SALES","MANAGER","SUPER_ADMIN")){
-   list.add(tool("retention","续费与回访","查看本人负责或权限门店内的续费回访概况",false,obj("keyword",text("回访关键词",100))));
+   list.add(tool("retention","续费与回访","查看本人负责或权限门店内的续费回访概况",false,obj("keyword",text("回访关键词",100),"page",integer("页码，每页20条",1,10000))));
    list.add(tool("leads","潜客查询","查询有权访问的潜客，可返回版本和接待顾问信息供体验预约使用",false,obj("keyword",text("潜客姓名关键词",100),"page",integer("页码",1,10000),"leadId",integer("潜客ID（填写后查询详情）",1,Long.MAX_VALUE))));
-   list.add(tool("lead_options","接待顾问","查询可选接待顾问及所属门店",false,obj()));
+   list.add(tool("lead_options","接待顾问","查询可选接待顾问及所属门店",false,obj("page",integer("页码，每页20条",1,10000))));
   }
-  if(role("RECEPTION","MANAGER","SUPER_ADMIN"))list.add(tool("cash_summary","交班与日结概况","只读查询门店交班情况，不代为收款、退款、交班或复核",false,obj("day",date("营业日期"))));
+  if(role("RECEPTION","MANAGER","SUPER_ADMIN"))list.add(tool("cash_summary","交班与日结概况","只读查询门店交班情况，不代为收款、退款、交班或复核",false,obj("day",date("营业日期"),"page",integer("页码，每页20条",1,10000))));
   if(role("MANAGER","SUPER_ADMIN"))list.add(tool("analytics","经营概况","查询有权查看的门店经营汇总",false,obj("from",date("起始日期"),"to",date("结束日期"))));
   if(role("MEMBER","RECEPTION","MANAGER","SUPER_ADMIN")&&(role("MEMBER")||authority("BOOKING_WRITE"))){
    var p=obj("scheduleId",integer("排课ID",1,Long.MAX_VALUE),"entitlementId",integer("权益ID（付费课程按需填写）",1,Long.MAX_VALUE));

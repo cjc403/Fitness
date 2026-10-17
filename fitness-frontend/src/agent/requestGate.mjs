@@ -115,3 +115,9 @@ export function createRequestGate() {
   return gate
 }
 export const pageRequestGate = createRequestGate()
+export function frozenRequestTarget(path,params){
+  const keys=Object.keys(params||{})
+  if(!keys.length)return path
+  if(path.includes('?')||!/^\/api\/v1\/admin\/bookings\/\d+\/cancel$/.test(path)||keys.length!==1||keys[0]!=='reason'||typeof params.reason!=='string'||params.reason.length>200)throw Error('此操作只允许冻结200字以内的取消原因')
+  return path+'?'+new URLSearchParams({reason:params.reason}).toString()
+}

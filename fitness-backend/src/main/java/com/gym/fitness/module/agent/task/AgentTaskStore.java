@@ -37,8 +37,16 @@ public class AgentTaskStore {
         return tx.execute(ignored->{var row=owned(me,id,true);checkVersion(row,expected,document);if(!"RUNNING".equals(row.view.status()))throw invalid("任务当前不可规划");
             int last=row.view.checkpoint().path("modelCalls").asInt();
             for(var detail:jdbc.queryForList("SELECT detail_json FROM agent_task_step WHERE task_id=? AND kind='MODEL_CALL'",String.class,id))last=Math.max(last,decode(detail).path("call").asInt());
-            if(last>=100)throw invalid("任务规划预算已用尽，请核对已有结果");
+            if(last>=100||row.view.checkpoint().path("totalTokens").asInt()>=100000)throw invalid("任务规划预算已用尽，请核对已有结果");
             int next=last+1;jdbc.update("INSERT INTO agent_task_step(id,task_id,task_version,kind,detail_json,created_at) VALUES(?,?,?,'MODEL_CALL',?,?)",UUID.randomUUID().toString(),id,expected,encode(Map.of("call",next)),LocalDateTime.now());return next;
+        });
+    }
+    public void recordModelUsage(Session me,String id,int call,int tokens){
+        if(call<1||call>100||tokens<0||tokens>1000000)throw invalid("模型用量格式不正确");
+        tx.execute(ignored->{var row=owned(me,id,true);boolean reserved=jdbc.queryForList("SELECT detail_json FROM agent_task_step WHERE task_id=? AND kind='MODEL_CALL'",String.class,id).stream().anyMatch(s->decode(s).path("call").asInt()==call);if(!reserved)throw invalid("模型调用没有预留记录");
+            String event=UUID.nameUUIDFromBytes(("usage:"+id+":"+call).getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString();
+            var existing=jdbc.queryForList("SELECT detail_json FROM agent_task_step WHERE id=?",String.class,event);if(!existing.isEmpty()){if(decode(existing.get(0)).path("tokens").asInt()!=tokens)throw invalid("模型用量记录不一致");return null;}
+            jdbc.update("INSERT INTO agent_task_step(id,task_id,task_version,kind,detail_json,created_at) VALUES(?,?,?,'MODEL_USAGE',?,?)",event,id,row.view.version(),encode(Map.of("call",call,"tokens",tokens)),LocalDateTime.now());return null;
         });
     }
     public List<View> list(Session me){return jdbc.query("SELECT * FROM agent_task WHERE user_id=? AND session_hash=? AND role=? AND venue_id=? ORDER BY updated_at DESC LIMIT 30",(r,i)->view(r),me.userId(),me.sessionKey(),me.role(),me.venueId());}
@@ -72,7 +80,10 @@ public class AgentTaskStore {
         if(id==null||!id.matches("[a-f0-9-]{36}"))throw denied();
         var rows=jdbc.query("SELECT * FROM agent_task WHERE id=?"+(lock?" FOR UPDATE":""),(r,i)->new Row(view(r),r.getLong("user_id"),r.getLong("venue_id"),r.getString("role"),r.getString("session_hash"),r.getString("document_nonce")),id);
         if(rows.size()!=1)throw denied();var row=rows.get(0);
-        if(row.user!=me.userId()||row.venue!=me.venueId()||!row.role.equals(me.role())||!row.session.equals(me.sessionKey()))throw denied();return row;
+        if(row.user!=me.userId()||row.venue!=me.venueId()||!row.role.equals(me.role())||!row.session.equals(me.sessionKey()))throw denied();
+        int tokens=0;for(var detail:jdbc.queryForList("SELECT detail_json FROM agent_task_step WHERE task_id=? AND kind='MODEL_USAGE'",String.class,id))tokens+=decode(detail).path("tokens").asInt();
+        var checkpoint=row.view.checkpoint().isObject()?(com.fasterxml.jackson.databind.node.ObjectNode)row.view.checkpoint().deepCopy():json.createObjectNode();checkpoint.put("totalTokens",Math.max(tokens,checkpoint.path("totalTokens").asInt()));
+        var view=row.view;return new Row(new View(view.id(),view.version(),view.goal(),view.status(),view.plan(),checkpoint,view.createdAt(),view.updatedAt()),row.user,row.venue,row.role,row.session,row.document);
     }
     private void checkVersion(Row row,long expected,String document){if(row.view.version()!=expected||!row.document.equals(document))throw invalid("任务版本或当前网页租约已失效，请重新读取或恢复");}
     private View view(java.sql.ResultSet r)throws java.sql.SQLException{return new View(r.getString("id"),r.getLong("version"),r.getString("goal"),r.getString("status"),decode(r.getString("plan_json")),decode(r.getString("checkpoint_json")),r.getTimestamp("created_at").toLocalDateTime(),r.getTimestamp("updated_at").toLocalDateTime());}

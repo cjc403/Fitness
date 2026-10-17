@@ -23,7 +23,7 @@ final class AgentGoalClauses {
   for(String raw:parts){
    for(String piece:raw.split("然后|再(?=告诉|查询|查看|发送|创建|安排|打开|给)")){
     String part=piece.trim();if(part.isBlank())continue;
-    boolean detail=(part.matches("^(?:姓名|电话|手机|联系电话|咨询来源|来源|意向|自然到店|转介绍|高意向|中意向|低意向|其他默认|其他字段|标题|计划标题|评分|内容|备注|结果|接待顾问|训练目标|综合体能|减脂|增肌|深蹲|自重|时长|每组|每次|不发布|不保存|不提交|不要|保持|等待|确认后|保存后|核对成功后).*" )||part.matches("^\\d{4}-\\d{2}-\\d{2}(?:到|至|~).*"))&&!part.matches(".*(?:改为|改成|调整|设为).*" );
+    boolean detail=(part.matches("^(?:姓名|电话|手机|联系电话|咨询来源|来源|意向|自然到店|转介绍|高意向|中意向|低意向|其他默认|其他字段|标题|计划标题|时间|日期|评分|内容|备注|结果|接待顾问|训练目标|综合体能|减脂|增肌|深蹲|自重|时长|每组|每次|不发布|不保存|不提交|不要|保持|等待|确认后|保存后|核对成功后|点击保存|点击提交|保存记录|保存草稿|确认预约).*" )||part.matches("^\\d{4}-\\d{2}-\\d{2}(?:到|至|~).*"))&&!part.matches(".*(?:改为|改成|调整|设为).*" );
     boolean messageContinuation=!result.isEmpty()&&result.get(result.size()-1).matches(".*(?:发送|发(?:个|一条)?消息|发给).*" )&&!part.matches(".*(?:查询|查看|打开|创建|新增|发送|发(?:个|一条)?消息|发给|帮我|修改|改成|安排).*" );
     if(!result.isEmpty()&&(detail||messageContinuation))result.set(result.size()-1,result.get(result.size()-1)+"，"+part);else result.add(part);
    }

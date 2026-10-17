@@ -15,6 +15,12 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.any;
 
 class AgentModelPolicyTest {
+    @Test void callerDeadlineBoundsTheWholeProviderExchange() throws Exception {
+        var client=client(200,body("tool_calls","opaque"));
+        assertTrue(client.completePlanning(List.of(Map.of("role","user","content","任务")),tools,true,java.time.Duration.ofMillis(1250)).success());
+        assertEquals(1250,sent.timeout().orElseThrow().toMillis());
+        assertEquals("MODEL_TIMEOUT",client.completePlanning(List.of(Map.of("role","user","content","任务")),tools,true,java.time.Duration.ZERO).failure().code());
+    }
     private final ObjectMapper json=new ObjectMapper();
     private final AiProperties properties=new AiProperties();
     private HttpRequest sent;

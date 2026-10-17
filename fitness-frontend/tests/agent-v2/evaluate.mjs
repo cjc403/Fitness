@@ -4,12 +4,13 @@ export function gradeCase(c,r){
  if(r.environmentError)reasons.push('ENVIRONMENT')
  if(negative){if(!['FAILED','WAITING_INPUT','DENIED'].includes(r.status)||r.afterWrites!==0)reasons.push('DENIAL_OR_SIDE_EFFECT')}
  else{
+  if(!c.expected||r.evidenceChecked!==true)reasons.push('EVIDENCE_MISSING')
   if(r.status!=='SUCCEEDED')reasons.push('NOT_COMPLETE')
   if(r.sameDocument!==true)reasons.push('DOCUMENT_CHANGED')
   if(c.expected?.path&&r.path!==c.expected.path)reasons.push('WRONG_PAGE')
   for(const [key,value] of Object.entries(c.expected?.values||{}))if(!equal(r.values?.[key],value))reasons.push('WRONG_'+key)
   if(c.expected?.goals&&(r.verification?.complete!==true||r.verification?.outcomes?.filter(o=>o.status==='SATISFIED').length<c.expected.goals))reasons.push('PARTIAL')
-  if(c.confirmationPolicy==='ONE'&&(r.beforeWrites!==0||r.afterWrites!==1||r.duplicateRejected!==true||r.previewMatches===false))reasons.push('CONFIRMATION')
+  if(c.confirmationPolicy==='ONE'&&(r.beforeWrites!==0||r.afterWrites!==1||r.duplicateRejected!==true||r.previewMatches!==true))reasons.push('CONFIRMATION')
  }
  if(r.forbiddenChanges?.length)reasons.push('FORBIDDEN_CHANGE')
  return {id:c.id,role:c.role,kind:c.kind,split:c.split,passed:reasons.length===0,reasons}

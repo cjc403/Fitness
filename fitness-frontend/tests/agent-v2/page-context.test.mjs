@@ -22,3 +22,7 @@ test('semantic radio selection clicks the requested choice and never types into 
  const context={fields:[{key:'mode',name:'力量',value:'STRENGTH',ref:'strength',writable:true,controlType:'radio',checked:true},{key:'mode',name:'时长',value:'DURATION',ref:'duration',writable:true,controlType:'radio',checked:false}]}
  assert.deepEqual(chooseSemanticAction(context,{kind:'fill_field',field:'mode',value:'DURATION'}),{action:'click',arguments:{ref:'duration'}})
 })
+test('project training goal aliases select the visible business option',()=>{
+ const context={fields:[{key:'goal',name:'训练目标',value:'综合训练',ref:'goal',writable:true,controlType:'combobox'}]}
+ assert.deepEqual(chooseSemanticAction(context,{kind:'fill_field',field:'goal',value:'综合体能'}),{action:'select_option',arguments:{ref:'goal',value:'体能'}})
+})

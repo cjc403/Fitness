@@ -57,13 +57,24 @@ public class AgentBusiness {
    case "leads" -> args.has("leadId")?leads.detail(args.get("leadId").asLong()):leads.workbench(null,"ALL","ALL",keyword,page,20);
    case "lead_options" -> leads.options(null);
    case "retention" -> retention.workbench("ALL",keyword);
-   case "cash_summary" -> cash.workbench(null,day(args,"day",LocalDate.now()),"ALL",1,20);
+   case "cash_summary" -> cash.workbench(null,day(args,"day",LocalDate.now()),"ALL",page,20);
    case "analytics" -> analytics.overview(from,to);
    default -> throw denied();
   };
-  var clean=clean(value);return new ToolResult(name,tool.label(),clean.data(),"FitChain 本地业务数据库",LocalDateTime.now(),clean.truncated());
+  var slice=AgentQueryPaging.slice(name,json.valueToTree(value),page);boolean[] cut={false};var data=project(slice.data(),cut,new int[]{24000},0,false);var pagination=slice.pagination()==null?null:slice.pagination().contentTruncated(cut[0]);return new ToolResult(name,tool.label(),data,"FitChain 本地业务数据库",LocalDateTime.now(),cut[0]||pagination!=null&&pagination.total()>pagination.returned(),pagination);
  }
  private static boolean match(String s,String keyword){return keyword.isEmpty()||(s!=null&&s.toLowerCase(Locale.ROOT).contains(keyword.toLowerCase(Locale.ROOT)));}
+ /** A fixed scoped lookup for receipt verification, independent of display paging. */
+ @Transactional(readOnly=true)
+ public JsonNode bookingEvidence(long id,long scheduleId){
+  tools.validate("bookings",json.createObjectNode(),false);var actor=identity.actor();
+  Object values="MEMBER".equals(actor.getRole().getCode())?portal.bookings():bookings.list().stream().map(BookingResponse::from).toList();
+  for(var row:json.valueToTree(values)){
+   long schedule=row.path("scheduleId").asLong(row.path("schedule").path("id").asLong());
+   if(id>0?row.path("id").asLong()==id:scheduleId>0&&schedule==scheduleId&&Set.of("BOOKED","WAITLISTED").contains(row.path("status").asText()))return clean(row).data();
+  }
+  return MissingNode.getInstance();
+ }
  private static LocalDate day(JsonNode a,String key,LocalDate fallback){return a.has(key)?LocalDate.parse(a.get(key).asText()):fallback;}
  private Map<String,Object> scheduleView(CourseScheduleEntity s){var v=new LinkedHashMap<String,Object>();v.put("scheduleId",s.getId());v.put("courseName",s.getCourse()==null?"课程":s.getCourse().getName());v.put("type",s.getCourse()==null?null:s.getCourse().getType());v.put("coachId",s.getCoachId());v.put("coachName",s.getCoachName());v.put("venueId",s.getVenueId());v.put("startTime",s.getScheduledStartTime());v.put("endTime",s.getScheduledEndTime());v.put("maxStudents",s.getMaxStudents());v.put("enrolledCount",s.getEnrolledCount());v.put("status",s.getStatus());return v;}
 
@@ -143,15 +154,16 @@ public class AgentBusiness {
  }
  public record Projection(JsonNode data,boolean truncated) {}
  private static final Set<String> MODEL_PRIVATE=Set.of("name","realname","membername","coachname","ownername","actorname","hostname","memberno","note","content","description","reason","cancelreason","resultnote","feedbackcontent","traininggoalnote","lastfollowcontent","events");
- public Object modelContext(ToolResult result){var minimal=withoutPersonalContext(result.data());boolean[] truncated={result.truncated()};var data=project(minimal,truncated,new int[]{6000},0);return Map.of("tool",result.tool(),"data",data,"asOf",result.asOf(),"truncated",truncated[0]);}
+ public Object modelContext(ToolResult result){var minimal=withoutPersonalContext(result.data());boolean[] truncated={result.truncated()};var data=project(minimal,truncated,new int[]{6000},0);var context=new LinkedHashMap<String,Object>();context.put("tool",result.tool());context.put("data",data);context.put("asOf",result.asOf());context.put("truncated",truncated[0]);if(result.pagination()!=null)context.put("pagination",result.pagination());return context;}
  private JsonNode withoutPersonalContext(JsonNode n){if(n.isObject()){var o=json.createObjectNode();n.fields().forEachRemaining(e->{if(!MODEL_PRIVATE.contains(e.getKey().toLowerCase(Locale.ROOT)))o.set(e.getKey(),withoutPersonalContext(e.getValue()));});return o;}if(n.isArray()){var a=json.createArrayNode();n.forEach(e->a.add(withoutPersonalContext(e)));return a;}return n;}
  private static final Set<String> PRIVATE=Set.of("phone","email","idcard","address","birthday","password","passwordhash","accountusername","accountstatus","traininggoalnote");
  public Projection clean(Object source){boolean[] truncated={false};int[] budget={24000};var data=project(json.valueToTree(source),truncated,budget,0);return new Projection(data,truncated[0]);}
- private JsonNode project(JsonNode n,boolean[] cut,int[] budget,int depth){
+ private JsonNode project(JsonNode n,boolean[] cut,int[] budget,int depth){return project(n,cut,budget,depth,true);}
+ private JsonNode project(JsonNode n,boolean[] cut,int[] budget,int depth,boolean partialPages){
   if(n==null)return NullNode.instance;
   if(depth>12||budget[0]<=0){cut[0]=true;return TextNode.valueOf("内容已截断，请打开业务页面查看完整记录");}
-  if(n.isObject()){var o=json.createObjectNode();var fields=n.fields();while(fields.hasNext()){var e=fields.next();if(PRIVATE.contains(e.getKey().toLowerCase(Locale.ROOT)))continue;budget[0]-=e.getKey().length()+4;o.set(e.getKey(),project(e.getValue(),cut,budget,depth+1));if(budget[0]<=0){cut[0]=true;break;}}if(n.has("total")&&n.has("records")&&n.get("records").isArray()&&n.path("total").asLong()>n.get("records").size())cut[0]=true;return o;}
-  if(n.isArray()){var a=json.createArrayNode();int i=0;for(var e:n){if(i++>=20||budget[0]<=0){cut[0]=true;break;}a.add(project(e,cut,budget,depth+1));}return a;}
+  if(n.isObject()){var o=json.createObjectNode();var fields=n.fields();while(fields.hasNext()){var e=fields.next();if(PRIVATE.contains(e.getKey().toLowerCase(Locale.ROOT)))continue;budget[0]-=e.getKey().length()+4;o.set(e.getKey(),project(e.getValue(),cut,budget,depth+1,partialPages));if(budget[0]<=0){cut[0]=true;break;}}if(partialPages&&n.has("total")&&n.has("records")&&n.get("records").isArray()&&n.path("total").asLong()>n.get("records").size())cut[0]=true;return o;}
+  if(n.isArray()){var a=json.createArrayNode();int i=0;for(var e:n){if(i++>=20||budget[0]<=0){cut[0]=true;break;}a.add(project(e,cut,budget,depth+1,partialPages));}return a;}
   if(n.isTextual()){String s=n.asText();int len=Math.max(0,Math.min(1000,budget[0]));if(s.length()>len){s=s.substring(0,len)+"…";cut[0]=true;}budget[0]-=s.length()+2;return TextNode.valueOf(s);}
   budget[0]-=n.toString().length()+1;return n;
  }

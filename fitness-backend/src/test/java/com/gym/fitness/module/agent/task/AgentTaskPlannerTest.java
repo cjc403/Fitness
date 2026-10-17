@@ -38,30 +38,46 @@ class AgentTaskPlannerTest {
         return new AgentModelClient.Outcome(new AgentModelClient.Completion("",List.of(call),"fixture",1,turn),null);
     }
     @Test void genuineProviderHistoryIsRetainedAndNeverReturnedToBrowser()throws Exception{
-        when(model.completePlanning(anyList(),anyList(),anyBoolean())).thenReturn(action("navigate","{\"path\":\"/training-plans\"}","opaque internal context"));
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("navigate","{\"path\":\"/training-plans\"}","opaque internal context"));
         var first=planner.next(task.id(),request());assertEquals("navigate",first.decision().action());
         assertFalse(json.writeValueAsString(first).contains("opaque internal context"));
-        when(model.completePlanning(anyList(),anyList(),anyBoolean())).thenAnswer(i->{List<Map<String,Object>> messages=i.getArgument(0);assertTrue(messages.stream().anyMatch(m->"opaque internal context".equals(m.get("reasoning_content"))));assertTrue(messages.stream().anyMatch(m->"tool".equals(m.get("role"))&&"provider-id".equals(m.get("tool_call_id"))));return action("finish","{}","new context");});
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenAnswer(i->{List<Map<String,Object>> messages=i.getArgument(0);assertTrue(messages.stream().anyMatch(m->"opaque internal context".equals(m.get("reasoning_content"))));assertTrue(messages.stream().anyMatch(m->"tool".equals(m.get("role"))&&"provider-id".equals(m.get("tool_call_id"))));return action("finish","{}","new context");});
         var second=(com.fasterxml.jackson.databind.node.ObjectNode)request();second.put("version",1);planner.next(task.id(),second);
+    }
+    @Test void aServerVerificationVersionKeepsTheGenuineQueryResultAvailable()throws Exception{
+        when(tools.available()).thenReturn(List.of(new AgentDtos.Tool("students","学员","真实关系",false,json.createObjectNode())));
+        when(business.query(eq("students"),any())).thenReturn(new AgentDtos.ToolResult("students","学员",json.valueToTree(List.of(Map.of("id",17,"name","宁安"))),"db",LocalDateTime.now(),false));
+        when(business.modelContext(any())).thenReturn(Map.of("tool","students","data",List.of(Map.of("id",17,"name","宁安"))));
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("query_students","{}","genuine student reasoning"));
+        planner.next(task.id(),request());planner.acknowledgeVerification(task.id(),1,2);
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenAnswer(i->{String messages=i.getArgument(0).toString();assertTrue(messages.contains("genuine student reasoning"));assertTrue(messages.contains("宁安"));assertTrue(messages.contains("17"));return action("navigate","{\"path\":\"/training-plans\"}","next");});
+        var r=(com.fasterxml.jackson.databind.node.ObjectNode)request();r.put("version",2);assertEquals("navigate",planner.next(task.id(),r).decision().action());
     }
     @Test void staleLeaseIsRejectedBeforeCallingModel(){
         when(store.check(eq(me),anyString(),anyLong(),anyString())).thenThrow(new IllegalArgumentException("stale lease"));
         assertThrows(RuntimeException.class,()->planner.next(task.id(),request()));verifyNoInteractions(model);
     }
+    @Test void earlierPageSnapshotsDoNotAccumulateBesideTheCurrentObservation()throws Exception{
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("observe","{}","opaque"));
+        var first=(com.fasterxml.jackson.databind.node.ObjectNode)request();((com.fasterxml.jackson.databind.node.ObjectNode)first.get("observation")).put("text","old observation sentinel");planner.next(task.id(),first);
+        var second=(com.fasterxml.jackson.databind.node.ObjectNode)request();second.put("version",1);((com.fasterxml.jackson.databind.node.ObjectNode)second.get("observation")).put("text","current observation sentinel");
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenAnswer(i->{assertFalse(i.getArgument(0).toString().contains("old observation sentinel"));assertTrue(i.getArgument(0).toString().contains("current observation sentinel"));assertTrue(((java.time.Duration)i.getArgument(3)).toMillis()<=90000);return action("finish","{}","new");});
+        planner.next(task.id(),second);
+    }
     @Test void providerFailureReturnsTypedMetadataWithoutInventingAction(){
-        when(model.completePlanning(anyList(),anyList(),anyBoolean())).thenReturn(new AgentModelClient.Outcome(null,new AgentModelClient.Failure("RATE_LIMITED",true,"trace-test")));
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(new AgentModelClient.Outcome(null,new AgentModelClient.Failure("RATE_LIMITED",true,"trace-test")));
         var turn=planner.next(task.id(),request());assertNull(turn.decision());assertEquals("RATE_LIMITED",turn.failure().code());assertEquals("RATE_LIMITED",turn.task().checkpoint().path("lastFailure").path("code").asText());assertEquals(1,turn.task().checkpoint().path("modelCalls").asInt());
     }
     @Test void parallelToolActionsAreNeverDispatched()throws Exception{
         var one=action("navigate","{}","").completion();
-        when(model.completePlanning(anyList(),anyList(),anyBoolean())).thenReturn(new AgentModelClient.Outcome(new AgentModelClient.Completion("",List.of(one.calls().get(0),one.calls().get(0)),"fixture",1,one.providerTurn()),null));
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(new AgentModelClient.Outcome(new AgentModelClient.Completion("",List.of(one.calls().get(0),one.calls().get(0)),"fixture",1,one.providerTurn()),null));
         assertThrows(RuntimeException.class,()->planner.next(task.id(),request()));
     }
     @Test void proseOnlyTurnGetsOneBoundedCorrectionInsteadOfFailingTheTask()throws Exception{
         var prose=new AgentModelClient.Completion("我将打开页面",List.of(),"fixture",12,Map.of("role","assistant","content","我将打开页面","reasoning_content","opaque"));
-        when(model.completePlanning(anyList(),anyList(),anyBoolean())).thenReturn(new AgentModelClient.Outcome(prose,null),action("navigate","{\"path\":\"/training-plans\"}","fixed"));
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(new AgentModelClient.Outcome(prose,null),action("navigate","{\"path\":\"/training-plans\"}","fixed"));
         assertEquals("navigate",planner.next(task.id(),request()).decision().action());
-        verify(model,times(2)).completePlanning(anyList(),anyList(),eq(false));
+        verify(model,times(2)).completePlanning(anyList(),anyList(),eq(false),any());
     }
     @Test void persistedBudgetCannotBeResetByForgettingTheInMemoryEpisode(){
         var cp=json.createObjectNode().put("modelCalls",100).put("totalTokens",1000);
@@ -70,7 +86,13 @@ class AgentTaskPlannerTest {
         assertThrows(RuntimeException.class,()->planner.next(task.id(),request()));verifyNoInteractions(model);
     }
     @Test void boundedSemanticFormIsOneExplicitNonSubmittingAction()throws Exception{
-        when(model.completePlanning(anyList(),anyList(),anyBoolean())).thenReturn(action("use_skill","{\"kind\":\"fill_fields\",\"fields\":[{\"field\":\"title\",\"value\":\"基础训练\"},{\"field\":\"exercises.0.name\",\"value\":\"深蹲\"}]}","opaque"));
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("use_skill","{\"kind\":\"fill_fields\",\"fields\":[{\"field\":\"title\",\"value\":\"基础训练\"},{\"field\":\"exercises.0.name\",\"value\":\"深蹲\"}]}","opaque"));
         assertEquals("use_skill",planner.next(task.id(),request()).decision().action());
+    }
+    @Test void aRejectedPageActionGetsAGenuineToolErrorBeforeTheModelRepairsIt()throws Exception{
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("click","{\"ref\":\"old-ref\"}","original"),action("navigate","{\"path\":\"/training-plans\"}","repaired"));
+        when(computer.validatePlannedAction(eq("click"),any(),any())).thenThrow(com.gym.fitness.module.agent.AgentIdentity.invalid("节点引用已经过期"));
+        assertEquals("navigate",planner.next(task.id(),request()).decision().action());
+        var calls=org.mockito.ArgumentCaptor.forClass(List.class);verify(model,times(2)).completePlanning(calls.capture(),anyList(),anyBoolean(),any());assertTrue(calls.getAllValues().get(1).stream().anyMatch(v->v.toString().contains("INVALID_ACTION")));
     }
 }

@@ -15,7 +15,7 @@ export class PageTaskEngine {
   constructor(options) {this.options={interval:7000,timeout:900000,waitTimeout:600000,...options};this.tasks=[];this.lifecycle=0}
   owned(t) {return t && t.identity===this.options.identity()}
   current(t) {return this.owned(t) && !terminal(t.status) && !t.controller.signal.aborted}
-  public(t) {const {identity,session,controller,operationController,version,input,history,pausedStatus,remoteTransition,...value}=t;return copy(value)}
+  public(t) {const {identity,session,controller,operationController,version,input,history,pausedStatus,remoteTransition,factFingerprints,...value}=t;return copy(value)}
   list() {return this.tasks.filter(t=>this.owned(t)).map(t=>this.public(t))}
   raw(id) {const t=this.tasks.find(t=>t.id===id);if(!this.owned(t))throw Error('网页任务不属于当前登录身份');return t}
   get(id) {return this.public(this.raw(id))}
@@ -87,7 +87,8 @@ export class PageTaskEngine {
     let effects=0,lastDecision=0,retries=0,blockedDecisions=0
     const attempts=new Map()
     const started=Date.now()
-    const fail=message=>{if(!terminal(t.status)){t.error=message;t.status='FAILED';t.controller.abort();this.options.gate.cancel();this.touch(t)}}
+    const completedWork=()=>t.verification?.partial||t.steps.some(s=>s.action==='submit'&&s.status==='SUCCEEDED')
+    const fail=message=>{if(!terminal(t.status)){t.error=message;t.status=completedWork()?'PARTIAL':'FAILED';t.controller.abort();this.options.gate.cancel();this.touch(t)}}
     const deadline=setTimeout(()=>fail('任务达到执行时限，已停止；已提交的请求请人工核对'),this.options.timeout)
     let checking=false
     const watch=setInterval(async()=>{
@@ -102,13 +103,23 @@ export class PageTaskEngine {
         await this.verify(t);await this.options.settle();await this.options.gate.idle(()=>this.current(t))
         await this.options.driver.ready?.(()=>this.current(t)&&t.status==='RUNNING')
         const version=t.version,observation=await this.options.driver.observe({goal:t.goal+(t.input?'\n'+t.input:''),v2:t.durable===true})
+        const submits=t.steps.filter(s=>s.action==='submit'&&s.status==='SUCCEEDED').length,evidenceKey=`${submits}:${t.factVersion||0}`
+        if(t.durable&&(submits>0||t.factVersion>0)&&evidenceKey!==t.verifiedEvidence){
+          const report=await this.options.persistence.finish(t,observation.context||{},t.controller.signal)
+          if(!this.current(t))throw Error('任务已停止或身份已变更')
+          if(t.version!==version){await this.runnable(t);continue}
+          t.verification=report;t.verifiedEvidence=evidenceKey
+          if(report.complete){t.status='SUCCEEDED';this.touch(t);break}
+          const missing=report.outcomes?.filter(o=>o.status!=='SATISFIED').map(o=>o.label||o.id).join('；')
+          if(missing)t.history.push({action:'observe',summary:('服务端核验：仍需完成'+missing+'；成功回执不可重放。').slice(0,500),ok:false})
+        }
         const beforeState=await this.options.driver.fingerprint?.()
         const delay=Math.max(0,this.options.interval-(Date.now()-lastDecision));if(delay)await sleep(delay)
         await this.runnable(t);if(t.version!==version)continue
         let decision
         try {
           lastDecision=Date.now();const body={goal:t.goal,observation,history:t.history.slice(-12),artifacts:t.artifacts.map(({id,name})=>({id,name})),...(t.input?{input:t.input}:{})}
-          if(t.durable){const turn=await this.options.persistence.next(t,body,t.controller.signal);t.remoteVersion=Math.max(t.remoteVersion,turn.task.version);t.plan=turn.task.plan||t.plan;t.facts=[...(t.facts||[]),...(turn.facts||[])].slice(-12);if(turn.failure)throw Object.assign(Error(turn.failure.message||turn.failure.code),{failureCode:turn.failure.code,traceId:turn.failure.traceId});decision=turn.decision}
+          if(t.durable){const turn=await this.options.persistence.next(t,body,t.controller.signal);t.remoteVersion=Math.max(t.remoteVersion,turn.task.version);t.plan=turn.task.plan||t.plan;t.facts=[...(t.facts||[]),...(turn.facts||[])].slice(-12);if(turn.facts?.length){const proof=turn.task.checkpoint?.queryProofs?.at(-1),fingerprint=JSON.stringify({facts:turn.facts.map(({tool,data})=>({tool,data})),arguments:proof?.arguments});t.factFingerprints=t.factFingerprints||[];if(!t.factFingerprints.includes(fingerprint)){t.factFingerprints.push(fingerprint);t.factVersion=(t.factVersion||0)+1}}if(turn.failure)throw Object.assign(Error(turn.failure.message||turn.failure.code),{failureCode:turn.failure.code,traceId:turn.failure.traceId});decision=turn.decision}
           else decision=await this.options.next(body,t.controller.signal)
         }
         catch(error){const recovery=classifyFailure(error);if(t.durable&&recovery.retryable&&retries++<2){t.steps.push({index:t.steps.length+1,action:'observe',label:'恢复规划',status:'RUNNING',detail:recovery.label+(error.traceId?' · '+error.traceId:'')});if(recovery.strategy==='WAIT')await sleep(this.options.recoveryDelay??10000);continue}if(error.code===1001&&retries++<2)continue;throw error}
@@ -143,7 +154,7 @@ export class PageTaskEngine {
         if(beforeState!==undefined&&['click','fill','select','observe','navigate','back','scroll','use_skill'].includes(action)){
           const target=this.options.driver.describe?.(action,args)||JSON.stringify({action,args})
           const receipts=t.steps.filter(s=>s.action==='submit'&&s.status==='SUCCEEDED').length
-          const key=JSON.stringify([beforeState,target,receipts]),seen=attempts.get(key)||0
+          const key=JSON.stringify([beforeState,target,receipts,t.factVersion||0]),seen=attempts.get(key)||0
           if(seen>=2){
             const detail=`重复操作已阻止：相同页面状态下已执行两次“${target}”。请核对具体对象、字段值和当前弹窗，改用正确对象或关闭错误弹窗后重新定位，不重复同一动作。`
             t.history.push({action,summary:detail.slice(0,500),ok:false});blockedDecisions++
@@ -192,7 +203,7 @@ export class PageTaskEngine {
         this.touch(t)
       }
       if(this.current(t))throw Error('已达到30步上限，请查看实际结果后继续')
-    } catch(error) {if(!terminal(t.status)){t.status=this.owned(t)?'FAILED':'CANCELLED';t.error=error.message;this.touch(t)}}
+    } catch(error) {if(!terminal(t.status)){t.status=this.owned(t)?completedWork()?'PARTIAL':'FAILED':'CANCELLED';t.error=error.message;this.touch(t)}}
     finally {clearTimeout(deadline);clearInterval(watch);t.controller.abort();t.pendingConfirmation=undefined;this.options.gate.unbind({completed:t.status==='SUCCEEDED'});this.options.driver.clear();this.options.cleanup?.();t.input='';if(t.durable)try{await this.options.persistence.close(t,t.status)}catch(error){t.syncError='任务停止记录尚未同步，请刷新核对；不会自动重放业务请求'}if(this.runningTask===t)this.runningTask=null}
   }
 }

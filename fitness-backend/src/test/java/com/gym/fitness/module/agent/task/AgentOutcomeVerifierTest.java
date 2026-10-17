@@ -10,6 +10,30 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AgentOutcomeVerifierTest {
+ @Test void aPagedQueryNeedsEveryDistinctRowAndRejectsMissingOrDuplicatePages(){
+  var first=Map.of("tool","bookings","arguments",Map.of("page",1),"asOf",LocalDateTime.now().toString(),"truncated",true,"pagination",Map.of("page",1,"size",20,"total",21,"returned",20,"keys",java.util.stream.IntStream.rangeClosed(1,20).mapToObj(i->"id:"+i).toList(),"contentTruncated",false));
+  for(var last:List.of(Map.of("page",2,"size",20,"total",21,"returned",1,"keys",List.of("id:21"),"contentTruncated",false),Map.of("page",2,"size",20,"total",21,"returned",1,"keys",List.of("id:1"),"contentTruncated",false),Map.of("page",2,"size",20,"total",21,"returned",1,"keys",List.of("id:21"),"contentTruncated",true))){
+   var second=Map.of("tool","bookings","arguments",Map.of("page",2),"asOf",LocalDateTime.now().toString(),"truncated",true,"pagination",last);
+   var checkpoint=json.createObjectNode();checkpoint.set("queryProofs",json.valueToTree(List.of(first,second)));var task=new AgentTaskStore.View("id",0,"查询预约","RUNNING",json.createObjectNode(),checkpoint,LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);when(receipts.list(me,"id")).thenReturn(List.of());
+   boolean complete=new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,mock(AgentDomainVerifier.class)).verify(me,"id",0,"document",json.createObjectNode()).complete();assertEquals(last.get("keys").equals(List.of("id:21"))&&Boolean.FALSE.equals(last.get("contentTruncated")),complete);
+  }
+ }
+ @Test void ordinaryBookingCheckInAndTrainingRecordWordingUsesActualMutationEvidence(){
+  for(var spec:List.of(List.of("为会员张三预约流瑜伽","/api/v1/admin/bookings","booking"),List.of("为预约编号#2签到","/api/v1/admin/bookings/2/check-in","booking"),List.of("为计划编号#2登记今天的训练","/api/v1/training-plans/2/sessions","training"))){
+   var task=new AgentTaskStore.View("id",0,spec.get(0),"RUNNING",json.createObjectNode(),json.createObjectNode(),LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);
+   var receipt=new AgentMutationReceiptService.Receipt("r","id",0,"POST",spec.get(1),"SUCCEEDED",json.createObjectNode(),json.createObjectNode(),json.valueToTree(Map.of("code",0)),LocalDateTime.now());when(receipts.list(me,"id")).thenReturn(List.of(receipt));
+   var domains=mock(AgentDomainVerifier.class);when(domains.verify(spec.get(2),receipt,spec.get(0),false)).thenReturn(true);
+   assertTrue(new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,domains).verify(me,"id",0,"document",json.createObjectNode()).complete(),spec.get(0));
+  }
+ }
+ @Test void clickNavigationStillRequiresTheActualDestination(){
+  for(String verb:List.of("点击","点开","帮我打开")){
+   var task=new AgentTaskStore.View("id",0,verb+"周课表","RUNNING",json.createObjectNode(),json.createObjectNode(),LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);when(receipts.list(me,"id")).thenReturn(List.of());
+   var v=new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,mock(AgentDomainVerifier.class));
+   assertFalse(v.verify(me,"id",0,"document",json.valueToTree(Map.of("path","/dashboard"))).complete());
+   assertTrue(v.verify(me,"id",0,"document",json.valueToTree(Map.of("path","/schedule-week"))).complete());
+  }
+ }
  final ObjectMapper json=new ObjectMapper();final AgentTaskStore store=mock(AgentTaskStore.class);final AgentMutationReceiptService receipts=mock(AgentMutationReceiptService.class);
  final ComputerAgentService computer=mock(ComputerAgentService.class);final CourseService courses=mock(CourseService.class);final ChatService chat=mock(ChatService.class);
  final ComputerAgentDtos.Session me=new ComputerAgentDtos.Session(1L,"SUPER_ADMIN",1L,"session","/dashboard",List.of("ASSISTANT_USE","COURSE_READ"),null);
@@ -40,5 +64,10 @@ class AgentOutcomeVerifierTest {
    var checkpoint=json.createObjectNode();checkpoint.set("queryProofs",json.valueToTree(List.of(proof)));var task=new AgentTaskStore.View("id",0,"查询姓名为小周的潜客","RUNNING",json.createObjectNode(),checkpoint,LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);when(receipts.list(me,"id")).thenReturn(List.of());
    assertFalse(new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,mock(AgentDomainVerifier.class)).verify(me,"id",0,"document",json.createObjectNode()).complete());
   }
+ }
+ @Test void aLaterDifferentQueryCannotEraseAnAlreadyVerifiedMatchingSearch(){
+  var checkpoint=json.createObjectNode();checkpoint.set("queryProofs",json.valueToTree(List.of(Map.of("tool","leads","truncated",false,"asOf",LocalDateTime.now().toString(),"arguments",Map.of("keyword","小周")),Map.of("tool","leads","truncated",false,"asOf",LocalDateTime.now().toString(),"arguments",Map.of("keyword","小李")))));
+  var task=new AgentTaskStore.View("id",0,"查询姓名为小周的潜客","RUNNING",json.createObjectNode(),checkpoint,LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);when(receipts.list(me,"id")).thenReturn(List.of());
+  assertTrue(new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,mock(AgentDomainVerifier.class)).verify(me,"id",0,"document",json.createObjectNode()).complete());
  }
 }

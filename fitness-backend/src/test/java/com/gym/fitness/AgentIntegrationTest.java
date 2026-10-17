@@ -26,6 +26,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:agent;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=ROLE", "spring.jpa.hibernate.ddl-auto=create-drop", "spring.flyway.enabled=false", "app.ai.enabled=false", "fitness.operations.enabled=false"})
 @AutoConfigureMockMvc
 class AgentIntegrationTest {
+ @Test void courseQueriesCanReadPastTwentyWithoutRemovingPayloadBounds()throws Exception{
+  var u=account("SUPER_ADMIN",0);String keyword="分页隔离"+UUID.randomUUID().toString().substring(0,8);
+  for(int i=0;i<21;i++){var s=schedule(u,20);var c=s.getCourse();c.setName(keyword+i);courses.saveAndFlush(c);}
+  var r=post(u,"/query",tool("courses",Map.of("keyword",keyword,"page",2,"from",java.time.LocalDate.now().plusDays(1).toString(),"to",java.time.LocalDate.now().plusDays(3).toString())),0);
+  assertThat(r.path("data").size()).isEqualTo(1);assertThat(r.path("pagination").path("total").asLong()).isEqualTo(21);assertThat(r.path("pagination").path("contentTruncated").asBoolean(true)).isFalse();
+ }
  @Autowired MockMvc mvc; @Autowired ObjectMapper json; @Autowired SysUserRepository users; @Autowired RoleRepository roles; @Autowired VenueRepository venues;
  @Autowired MemberRepository members; @Autowired JwtTokenProvider jwt; @Autowired CourseRepository courses; @Autowired CourseScheduleRepository schedules;
  @Autowired BookingRepository bookings; @Autowired JdbcTemplate jdbc;

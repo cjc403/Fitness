@@ -93,14 +93,22 @@ public class AgentModelClient {
 
     /** V2 only: callers own the entire provider episode, including opaque assistant context. */
     public Outcome completePlanning(List<Map<String, Object>> messages, List<Map<String, Object>> tools, boolean thinking) {
+        return completePlanning(messages,tools,thinking,Duration.ofSeconds(90));
+    }
+    public Outcome completePlanning(List<Map<String, Object>> messages, List<Map<String, Object>> tools, boolean thinking, Duration remaining) {
+        if(remaining==null||remaining.isZero()||remaining.isNegative())return Outcome.failed("MODEL_TIMEOUT",true,java.util.UUID.randomUUID().toString());
         if(!planningSlots.tryAcquire())return Outcome.failed("MODEL_BUSY",true,java.util.UUID.randomUUID().toString());
-        try{return exchange(messages, tools, true, true, thinking && properties.isPlannerThinkingEnabled());}
+        try{return exchange(messages, tools, true, true, thinking && properties.isPlannerThinkingEnabled(),remaining);}
         finally{planningSlots.release();}
     }
     private final java.util.concurrent.Semaphore planningSlots=new java.util.concurrent.Semaphore(2);
 
     private Outcome exchange(List<Map<String,Object>> messages,List<Map<String,Object>> tools,
                              boolean requireAction,boolean planning,boolean thinking) {
+        return exchange(messages,tools,requireAction,planning,thinking,null);
+    }
+    private Outcome exchange(List<Map<String,Object>> messages,List<Map<String,Object>> tools,
+                             boolean requireAction,boolean planning,boolean thinking,Duration remaining) {
         String trace=java.util.UUID.randomUUID().toString();
         if (!isConfigured() || Instant.now().isBefore(circuitOpenUntil.get())) {
             fallbacks.increment();
@@ -123,8 +131,10 @@ public class AgentModelClient {
             }
             byte[] body = mapper.writeValueAsBytes(payload);
             require(body.length <= (planning?262_144:MAX_REQUEST_BYTES), "Model request exceeded limit");
+            Duration timeout=Duration.ofSeconds(planning?bounded(properties.getPlannerReadTimeoutSeconds(),30,120):bounded(properties.getReadTimeoutSeconds(),3,60));
+            if(remaining!=null&&remaining.compareTo(timeout)<0)timeout=remaining;
             HttpRequest request = HttpRequest.newBuilder(endpoint)
-                    .timeout(Duration.ofSeconds(planning?bounded(properties.getPlannerReadTimeoutSeconds(),30,120):bounded(properties.getReadTimeoutSeconds(),3,60)))
+                    .timeout(timeout)
                     .header("Authorization", "Bearer " + properties.getApiKey().trim())
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(body)).build();

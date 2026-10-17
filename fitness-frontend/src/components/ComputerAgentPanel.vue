@@ -27,7 +27,7 @@
         <p v-if="task.syncError" class="computer-warning">{{ task.syncError }}</p>
         <section v-if="task.plan?.steps?.length" class="computer-plan" aria-label="任务计划"><strong>任务计划 · 完成情况以结果核验为准</strong><ol><li v-for="item in task.plan.steps" :key="item.id">{{ item.label }}</li></ol></section>
         <section v-if="task.verification?.outcomes?.length" class="computer-plan" aria-label="目标核验"><strong>{{ task.verification.complete ? '目标核验通过' : task.verification.partial ? '已保留完成部分，继续处理剩余目标' : '目标尚未完成' }}</strong><ul><li v-for="item in task.verification.outcomes" :key="item.id">{{ item.status === 'SATISFIED' ? '✓' : '○' }} {{ item.label }}</li></ul></section>
-        <section v-if="task.facts?.length" class="computer-plan" aria-label="真实业务查询结果"><strong>真实查询结果</strong><details v-for="(fact,index) in businessFacts" :key="index" :open="index === businessFacts.length-1"><summary>{{ fact.label }} · {{ formatTime(fact.asOf) }}</summary><p v-if="fact.truncated" class="computer-warning">结果较多，当前只显示部分；完整记录请在业务页面查看。</p><AgentData :value="fact.data" /></details></section>
+        <section v-if="task.facts?.length" class="computer-plan" aria-label="真实业务查询结果"><strong>真实查询结果</strong><details v-for="(fact,index) in businessFacts" :key="index" :open="index === businessFacts.length-1"><summary>{{ fact.label }} · {{ formatTime(fact.asOf) }}</summary><p v-if="fact.pagination">第 {{ fact.pagination.page }} 页 · 本页 {{ fact.pagination.returned }} 条 / 共 {{ fact.pagination.total }} 条</p><p v-if="fact.pagination?.contentTruncated || fact.truncated && !fact.pagination" class="computer-warning">内容超出本次读取范围，请缩小筛选条件。</p><AgentData :value="fact.data" /></details></section>
         <p v-if="task.error" class="computer-error">{{ task.error }}</p>
         <p v-if="task.status === 'SUCCEEDED'" class="computer-success">任务已完成，请查看当前页面及下方实际操作结果。</p>
         <p v-if="task.status === 'CANCELLED'" class="computer-muted">任务已停止。</p>
@@ -38,7 +38,7 @@
           <button v-if="isActiveTask(task)" type="button" class="computer-stop" :disabled="!canWrite" @click="stopTask">停止任务</button>
           <button type="button" :disabled="busy" @click="takeOverCurrentPage">手动接管（刷新当前页）</button>
         </div>
-        <p v-if="['FAILED','CANCELLED','SUCCEEDED'].includes(task.status)" class="computer-muted">旧任务的延迟提交仍被阻止。手动提交前请刷新接管；刷新会清除尚未提交的表单。成功后可直接继续新的网页任务，停止或失败后须先刷新。</p>
+        <p v-if="['FAILED','PARTIAL','CANCELLED','SUCCEEDED'].includes(task.status)" class="computer-muted">旧任务的延迟提交仍被阻止。手动提交前请刷新接管；刷新会清除尚未提交的表单。成功后可直接继续新的网页任务，停止或未全部完成后须先刷新；已成功提交的业务仍保留。</p>
         <section v-if="task.status === 'WAITING_CONFIRMATION' && pendingPreview" class="computer-confirm" aria-label="待确认的实际请求">
           <h4>确认后提交这一次请求</h4>
           <p>{{ pendingPreview.summary }}</p>
@@ -106,7 +106,7 @@ const formatTime = (value: string) => value ? new Date(value).toLocaleString('zh
 const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
 const fieldLabel = (label: string) => ({ fee: '价格（元）', maxCapacity: '容量', durationMinutes: '时长（分钟）', intensity: '强度', type: '类型', description: '简介', name: '姓名 / 名称', phone: '联系电话', source: '咨询来源', intent: '意向程度', ownerId: '负责顾问编号', venueId: '门店编号', memberId: '会员编号', recipientUserId: '收件人账号编号', coachId: '教练编号', scheduleId: '排课编号', note: '备注', content: '内容', title: '标题', nextFollowAt: '下次联系时间', startsAt: '开始时间', endsAt: '结束时间', idempotencyKey: '重复提交保护标识', expectedVersion: '资料版本', productId: '商品编号', paidAmount: '实收金额', paymentMethod: '收款方式' } as Record<string,string>)[label] || label
 const fieldValue = (value: string) => ({ WALK_IN: '自然到店', REFERRAL: '转介绍', DOUYIN: '抖音', WECHAT: '微信', OTHER: '其他', HIGH: '高意向', MEDIUM: '中意向', LOW: '低意向' } as Record<string,string>)[value] || value
-const businessFacts = computed(() => (task.value?.facts || []) as {label:string;tool:string;data:unknown;asOf:string;truncated:boolean}[])
+const businessFacts = computed(() => (task.value?.facts || []) as {label:string;tool:string;data:unknown;asOf:string;truncated:boolean;pagination?:{page:number;returned:number;total:number;contentTruncated:boolean}}[])
 const confirmationChanges = computed(() => {
   const p=pendingPreview.value;if(!p)return []
   const before=p.before as Record<string,unknown>|undefined
@@ -135,7 +135,7 @@ const acceptTask = (value: ComputerTask, announce = false) => {
   tasks.value = [copy, ...tasks.value.filter(item => item.id !== copy.id)].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30)
   if (announce && !isActiveTask(copy) && !announced.has(copy.id)) {
     announced.add(copy.id)
-    emit('reply', copy.status === 'SUCCEEDED' ? `网页任务已完成：${copy.goal}${copy.artifacts.length ? `。已生成 ${copy.artifacts.length} 个成果文件，请在网页任务中查看。` : '。请在网页任务中查看实际步骤。'}` : copy.status === 'FAILED' ? `网页任务执行失败：${copy.error || '请查看任务详情'}。` : `网页任务已停止：${copy.goal}`)
+    emit('reply', copy.status === 'SUCCEEDED' ? `网页任务已完成：${copy.goal}${copy.artifacts.length ? `。已生成 ${copy.artifacts.length} 个成果文件，请在网页任务中查看。` : '。请在网页任务中查看实际步骤。'}` : copy.status === 'PARTIAL' ? `任务部分完成，已成功提交的业务仍保留；剩余部分：${copy.error || '请查看目标核验'}。` : copy.status === 'FAILED' ? `网页任务执行失败：${copy.error || '请查看任务详情'}。` : `网页任务已停止：${copy.goal}`)
   }
 }
 const schedulePoll = () => {

@@ -34,7 +34,7 @@ class AgentTaskIntegrationTest {
     Map<String,Object> courseBody(CourseEntity c){return Map.of("name",c.getName(),"venueId",c.getVenueId(),"type","GROUP","durationMinutes",60,"maxCapacity",20,"fee",99,"intensity","LOW");}
     @Test void actualCourseControllerWriteAndReceiptAreAtomicAndSingleUse()throws Exception{
         var u=account("SUPER_ADMIN");var c=course(u);String path="/api/v1/admin/courses/"+c.getId();var body=courseBody(c);
-        String task=postTask(u,"",Map.of("document","document-v2","goal","把V2隔离课程价格改为99"),0).path("id").asText();
+        String task=postTask(u,"",Map.of("document","document-v2","goal","把课程编号#"+c.getId()+"价格改为99"),0).path("id").asText();
         String receipt=postTask(u,"/"+task+"/prepare",Map.of("version",0,"document","document-v2","method","PUT","path",path,"body",body),0).path("id").asText();
         mvc.perform(put(path).header("Authorization",token(u,"v2-session")).header("X-FitChain-Agent-Permit",receipt).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(body))).andExpect(status().isBadRequest());
         assertThat(courses.findById(c.getId()).orElseThrow().getFee()).isEqualByComparingTo("88");
@@ -46,7 +46,7 @@ class AgentTaskIntegrationTest {
     }
     @Test void changedCourseBeforeConfirmationCannotBeOverwritten()throws Exception{
         var u=account("SUPER_ADMIN");var c=course(u);String path="/api/v1/admin/courses/"+c.getId();var body=courseBody(c);
-        String task=postTask(u,"",Map.of("document","document-v2","goal","把V2隔离课程价格改为99"),0).path("id").asText();
+        String task=postTask(u,"",Map.of("document","document-v2","goal","把课程编号#"+c.getId()+"价格改为99"),0).path("id").asText();
         String receipt=postTask(u,"/"+task+"/prepare",Map.of("version",0,"document","document-v2","method","PUT","path",path,"body",body),0).path("id").asText();
         postTask(u,"/"+task+"/approve/"+receipt,Map.of("version",0,"document","document-v2"),0);
         c.setFee(new BigDecimal("109"));courses.saveAndFlush(c);

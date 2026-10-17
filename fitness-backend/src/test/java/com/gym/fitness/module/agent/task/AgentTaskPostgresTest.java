@@ -53,4 +53,16 @@ class AgentTaskPostgresTest {
   assertThrows(RuntimeException.class,()->receipts.execute(me,p.id(),"PUT",p.path(),body,()->{jdbc.update("UPDATE course SET fee=99 WHERE id=1");throw new IllegalStateException("fixture failure");}));
   assertEquals(88,jdbc.queryForObject("SELECT fee FROM course WHERE id=1",Integer.class));assertEquals("FAILED",receipts.get(me,p.id()).status());
  }
+ @Test void retentionRemovesOnlyOldTerminalTaskDiagnostics(){
+  var p=receipts.prepare(me,task.id(),0,"document-a","PUT","/api/v1/admin/courses/1",json.valueToTree(Map.of("fee",99)));
+  tasks.update(me,task.id(),0,"document-a","FAILED",Map.of(),Map.of());
+  jdbc.update("UPDATE agent_task SET updated_at=current_timestamp-interval '31 days' WHERE id=?",task.id());
+  var active=tasks.create(me,"document-b","打开训练计划");jdbc.update("UPDATE agent_task SET updated_at=current_timestamp-interval '31 days' WHERE id=?",active.id());
+  new AgentTaskMaintenance(jdbc,new DataSourceTransactionManager(jdbc.getDataSource())).purgeExpired();
+  assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM agent_task WHERE id=?",Integer.class,task.id()));
+  assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM agent_task_step WHERE task_id=?",Integer.class,task.id()));
+  assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM agent_task_receipt WHERE id=?",Integer.class,p.id()));
+  assertEquals(1,jdbc.queryForObject("SELECT count(*) FROM agent_task WHERE id=?",Integer.class,active.id()));
+  assertEquals(88,jdbc.queryForObject("SELECT fee FROM course WHERE id=1",Integer.class));assertEquals(1,jdbc.queryForObject("SELECT count(*) FROM sys_user",Integer.class));
+ }
 }

@@ -12,7 +12,7 @@ export interface AgentSchema {
   required?: string[]; properties?: Record<string, AgentSchema>; items?: AgentSchema; default?: unknown
 }
 export interface AgentTool { name: string; label: string; description: string; write: boolean; parameters: AgentSchema }
-export interface ToolResult { tool: string; label: string; data: unknown; source: string; asOf: string; truncated: boolean }
+export interface ToolResult { tool: string; label: string; data: unknown; source: string; asOf: string; truncated: boolean; pagination?: { page: number; size: number; total: number; returned: number; keys: string[]; nextPage: number | null; contentTruncated: boolean } }
 export interface AgentAction {
   id: string; tool: string; title: string; summary: string; parameters: Record<string, unknown>
   status: 'PENDING' | 'SUCCEEDED' | 'CANCELLED' | 'EXPIRED' | 'FAILED'

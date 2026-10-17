@@ -4,9 +4,10 @@ import { useAuthStore } from '@/store/modules/auth'
 import { canAccessRoute } from '@/utils/accessControl.mjs'
 import { createPageDriver } from './pageDriver.mjs'
 import { PageTaskEngine } from './pageTaskEngine.mjs'
-import { pageRequestGate } from './requestGate.mjs'
+import { pageRequestGate, frozenRequestTarget } from './requestGate.mjs'
 import { buildPageContext, chooseSemanticAction } from './pageContext.mjs'
 import { createDocumentLeaseId } from './taskLease.mjs'
+import { loadAgentVersion } from './capabilities.mjs'
 import type { ComputerTask, ComputerRequestConfig, ComputerResult, ComputerAgentStatus, ComputerArtifact } from '@/api/modules/computerAgent'
 
 let engine: PageTaskEngine | undefined
@@ -24,8 +25,8 @@ async function api<T>(path: string, body?: unknown, signal?: AbortSignal, local=
     const response=await fetch((local?'/local-agent/v1':'/api/v1/agent')+path,{method:body===undefined?'GET':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),credentials:'same-origin',redirect:'error',cache:'no-store',signal:signal?AbortSignal.any([signal,controller.signal]):controller.signal})
     if(identity()!==key)throw Error('登录身份已变更')
     let result
-    try {result=await response.json()}catch{throw Error(local?'本机文件能力未连接，请启动本地服务':'网页规划服务返回格式不正确')}
-    if(!response.ok||result.code!==0)throw Object.assign(Error(result.message||'网页任务请求失败'),{code:result.code})
+    try {result=await response.json()}catch{throw Object.assign(Error(local?'本机文件能力未连接，请启动本地服务':'网页规划服务返回格式不正确'),{httpStatus:response.status})}
+    if(!response.ok||result.code!==0)throw Object.assign(Error(result.message||'网页任务请求失败'),{code:result.code,httpStatus:response.status})
     return result.data
   } finally {clearTimeout(timer)}
 }
@@ -52,7 +53,7 @@ function ensure() {
       if(turn.failure)turn.failure.message=(failureText[turn.failure.code]||'模型规划未完成')+'（诊断编号 '+turn.failure.traceId+'）'
       return turn
     },
-    prepare:async(task:any,request:any)=>{if(request.params&&Object.keys(request.params).length)throw Error('此带查询参数的写操作尚未注册，请在原业务页手动办理');return api<any>(`/tasks/${task.id}/prepare`,{...command(task),method:request.method,path:request.path,body:request.body})},
+    prepare:async(task:any,request:any)=>api<any>(`/tasks/${task.id}/prepare`,{...command(task),method:request.method,path:frozenRequestTarget(request.path,request.params),body:request.body}),
     approve:(task:any,receipt:string)=>api(`/tasks/${task.id}/approve/${receipt}`,command(task)),
     finish:async(task:any,context:any,signal:AbortSignal)=>{const report=await api<any>(`/tasks/${task.id}/verify`,{...command(task),context},signal);task.remoteVersion=report.task.version;return report},
     pause:(task:any)=>api<RemoteTask>(`/tasks/${task.id}/pause`,{document:documentNonce}),
@@ -90,7 +91,7 @@ async function result<T>(operation:()=>T|Promise<T>,config:ComputerRequestConfig
   const key=identity(),assert=()=>{if(key!==identity()||config.signal?.aborted||config.isRequestCurrent?.()===false)throw Error('网页任务请求已失效')}
   assert();const data=await operation();assert();return {code:0,message:'成功',data}
 }
-export const getComputerAgentStatus=(config?:ComputerRequestConfig)=>result<ComputerAgentStatus>(async()=>{await api('/computer/session');try{v2Available=(await api<any>('/tasks/capabilities')).version===2}catch{v2Available=false}const current=ensure();current.options.persistence=v2Available?current.options.v2Persistence:undefined;return {available:true,platform:v2Available?'current-page-v2':'current-page',scope:'正在使用的 FitChain 标签页',outputDirectory:'本机文件能力连接后可保存课表'}},config)
+export const getComputerAgentStatus=(config?:ComputerRequestConfig)=>result<ComputerAgentStatus>(async()=>{await api('/computer/session');v2Available=await loadAgentVersion(()=>api('/tasks/capabilities'))===2;const current=ensure();current.options.persistence=v2Available?current.options.v2Persistence:undefined;return {available:true,platform:v2Available?'current-page-v2':'current-page',scope:'正在使用的 FitChain 标签页',outputDirectory:'本机文件能力连接后可保存课表'}},config)
 const remoteView=(t:RemoteTask)=>({...t,remoteVersion:t.version,durable:true,restorable:!['SUCCEEDED','FAILED','PARTIAL','CANCELLED'].includes(t.status),status:!['SUCCEEDED','FAILED','PARTIAL','CANCELLED'].includes(t.status)?'PAUSED':t.status,steps:[],artifacts:[],pauseReason:'USER'}) as ComputerTask
 export const listComputerTasks=(config?:ComputerRequestConfig)=>result(async()=>{const local=ensure().list() as ComputerTask[];if(!v2Available)return local;const remote=await api<RemoteTask[]>('/tasks',undefined,config?.signal);return [...local,...remote.filter(t=>!local.some(l=>l.id===t.id)).map(remoteView)]},config)
 export const createComputerTask=(goal:string,config?:ComputerRequestConfig)=>result(()=>ensure().create(goal,config) as Promise<ComputerTask>,config)
