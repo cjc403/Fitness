@@ -49,4 +49,10 @@ class AgentTaskStoreTest {
         var task=store.create(me,"document-a","查看课程");
         assertThrows(RuntimeException.class,()->store.update(me,task.id(),0,"document-a","ANYTHING",Map.of(),Map.of()));
     }
+    @Test void modelReservationsSurviveLostResponsesAndDoNotChangeTheDocumentVersion(){
+        var task=store.create(me,"document-a","查看课程");
+        for(int i=1;i<=100;i++)assertEquals(i,store.reserveModelCall(me,task.id(),0,"document-a"));
+        assertEquals(0,store.get(me,task.id()).version());
+        assertThrows(RuntimeException.class,()->store.reserveModelCall(me,task.id(),0,"document-a"));
+    }
 }

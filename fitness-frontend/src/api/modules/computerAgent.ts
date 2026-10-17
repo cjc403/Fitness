@@ -1,13 +1,17 @@
 import { useAuthStore } from '@/store/modules/auth'
 
-export type ComputerTaskStatus = 'RUNNING' | 'PAUSED' | 'WAITING_CONFIRMATION' | 'WAITING_INPUT' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED'
+export type ComputerTaskStatus = 'RUNNING' | 'PAUSED' | 'WAITING_CONFIRMATION' | 'WAITING_INPUT' | 'SUCCEEDED' | 'PARTIAL' | 'FAILED' | 'CANCELLED'
 export interface ComputerTaskStep { index: number; action: string; label: string; status: string; detail?: string }
 export interface ComputerArtifact { id: string; name: string; bytes: number; sha256: string; path?: string }
-export interface ComputerConfirmation { id: string; method: string; path: string; summary: string; fields: { label: string; value: string }[] }
+export interface ComputerConfirmation { id: string; method: string; path: string; summary: string; fields: { label: string; value: string }[];serverPermitId?:string;before?:Record<string,unknown>;expected?:Record<string,unknown> }
 export interface ComputerTask {
   id: string; goal: string; status: ComputerTaskStatus; createdAt: string; updatedAt: string
   steps: ComputerTaskStep[]; artifacts: ComputerArtifact[]; pendingConfirmation?: ComputerConfirmation
   question?: string; error?: string; screenshot?: string
+  durable?:boolean;restorable?:boolean;remoteVersion?:number;syncError?:string
+  plan?:{steps?:{id:string;label:string;kind:string}[]}
+  verification?:{complete:boolean;partial?:boolean;outcomes:{id:string;label:string;status:string;evidence?:string}[]}
+  facts?:unknown[]
   pauseReason?: 'USER' | 'PAGE_HIDDEN' | 'ASSISTANT_CLOSED' | 'OFFLINE'
 }
 export interface ComputerAgentStatus { available: boolean; platform: string; scope: string; outputDirectory: string }

@@ -24,13 +24,17 @@
       <article v-if="task" class="computer-task" :class="task.status.toLowerCase()">
         <div class="computer-task-title"><h3>{{ task.goal }}</h3><span role="status">{{ statusLabel(task.status) }}</span></div>
         <small>{{ formatTime(task.updatedAt) }} · {{ task.steps.length }} 步</small>
+        <p v-if="task.syncError" class="computer-warning">{{ task.syncError }}</p>
+        <section v-if="task.plan?.steps?.length" class="computer-plan" aria-label="任务计划"><strong>任务计划 · 完成情况以结果核验为准</strong><ol><li v-for="item in task.plan.steps" :key="item.id">{{ item.label }}</li></ol></section>
+        <section v-if="task.verification?.outcomes?.length" class="computer-plan" aria-label="目标核验"><strong>{{ task.verification.complete ? '目标核验通过' : task.verification.partial ? '已保留完成部分，继续处理剩余目标' : '目标尚未完成' }}</strong><ul><li v-for="item in task.verification.outcomes" :key="item.id">{{ item.status === 'SATISFIED' ? '✓' : '○' }} {{ item.label }}</li></ul></section>
+        <section v-if="task.facts?.length" class="computer-plan" aria-label="真实业务查询结果"><strong>真实查询结果</strong><details v-for="(fact,index) in businessFacts" :key="index" :open="index === businessFacts.length-1"><summary>{{ fact.label }} · {{ formatTime(fact.asOf) }}</summary><p v-if="fact.truncated" class="computer-warning">结果较多，当前只显示部分；完整记录请在业务页面查看。</p><AgentData :value="fact.data" /></details></section>
         <p v-if="task.error" class="computer-error">{{ task.error }}</p>
         <p v-if="task.status === 'SUCCEEDED'" class="computer-success">任务已完成，请查看当前页面及下方实际操作结果。</p>
         <p v-if="task.status === 'CANCELLED'" class="computer-muted">任务已停止。</p>
         <p v-if="task.status === 'PAUSED'" class="computer-muted" role="status">{{ pauseExplanation(task.pauseReason) }}点击“继续”后才会继续执行；若有待确认的提交，继续后仍需单独确认。</p>
         <div class="computer-controls">
           <button v-if="task.status === 'RUNNING'" type="button" :disabled="!canWrite" @click="pauseTask">暂停</button>
-          <button v-if="task.status === 'PAUSED'" type="button" :disabled="!canWrite" @click="resumeTask">继续</button>
+          <button v-if="task.status === 'PAUSED'" type="button" :disabled="!canWrite" @click="resumeTask">{{ task.restorable ? '在当前网页恢复' : '继续' }}</button>
           <button v-if="isActiveTask(task)" type="button" class="computer-stop" :disabled="!canWrite" @click="stopTask">停止任务</button>
           <button type="button" :disabled="busy" @click="takeOverCurrentPage">手动接管（刷新当前页）</button>
         </div>
@@ -38,8 +42,11 @@
         <section v-if="task.status === 'WAITING_CONFIRMATION' && pendingPreview" class="computer-confirm" aria-label="待确认的实际请求">
           <h4>确认后提交这一次请求</h4>
           <p>{{ pendingPreview.summary }}</p>
-          <code>{{ pendingPreview.method }} {{ pendingPreview.path }}</code>
-          <dl><template v-for="(field, index) in pendingPreview.fields" :key="index"><dt>{{ fieldLabel(field.label) }}</dt><dd>{{ fieldValue(field.value) }}</dd></template></dl>
+          <p v-if="pendingPreview.before?.name">操作对象：{{ pendingPreview.before.name }}</p>
+          <p v-if="pendingPreview.before?.memberName">会员：{{ pendingPreview.before.memberName }}</p><p v-if="pendingPreview.before?.courseName">课程：{{ pendingPreview.before.courseName }} · {{ pendingPreview.before.startTime || '' }}</p>
+          <p v-if="pendingPreview.before?.recipientName">收件人：{{ pendingPreview.before.recipientName }}</p>
+          <dl><template v-for="(field, index) in confirmationChanges" :key="index"><dt>{{ fieldLabel(field.label) }}</dt><dd><span v-if="field.before !== undefined">{{ fieldValue(field.before) }} → </span>{{ fieldValue(field.value) }}</dd></template></dl>
+          <details><summary>核对完整请求</summary><code>{{ pendingPreview.method }} {{ pendingPreview.path }}</code><dl><template v-for="(field, index) in pendingPreview.fields" :key="index"><dt>{{ fieldLabel(field.label) }}</dt><dd>{{ fieldValue(field.value) }}</dd></template></dl></details>
           <small>预览参数已冻结。此按钮仅放行当前请求；后续提交仍需再次确认。</small>
           <button type="button" class="computer-primary" :disabled="!canWrite" @click="confirmTask">确认并提交这一次</button>
         </section>
@@ -68,7 +75,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/store/modules/auth'
-import { getComputerAgentStatus, listComputerTasks, createComputerTask, getComputerTask, pauseComputerTask, resumeComputerTask, stopComputerTask, confirmComputerTask, inputComputerTask, suspendPageTasks, takeOverCurrentPage } from '@/agent/currentPageAgent'
+import AgentData from '@/components/AgentData.vue'
+import { getComputerAgentStatus, listComputerTasks, createComputerTask, getComputerTask, pauseComputerTask, resumeComputerTask, recoverComputerTask, stopComputerTask, confirmComputerTask, inputComputerTask, suspendPageTasks, takeOverCurrentPage } from '@/agent/currentPageAgent'
 import type { ComputerTask, ComputerTaskStatus, ComputerConfirmation, ComputerAgentStatus, ComputerRequestConfig } from '@/api/modules/computerAgent'
 
 const props = withDefaults(defineProps<{ active?: boolean }>(), { active: true })
@@ -87,17 +95,24 @@ const suggestions = computed(() => ({
   SALES: ['打开我的工作台，查看我的潜客', '查看近期体验预约，整理跟进安排'],
   MEMBER: ['打开我的课程，查看我的预约', '导出本周我可预约的课程，生成课表文件并打开']
 } as Record<string, string[]>)[auth.userInfo?.role || ''] || [])
-const connectionText = computed(() => !online.value ? '网络已断开' : connecting.value ? '正在连接网页任务服务' : available.value ? '当前标签页执行 · 页面操作可见' : '等待连接网页任务服务')
+const connectionText = computed(() => !online.value ? '网络已断开' : connecting.value ? '正在连接网页任务服务' : available.value ? service.value?.platform === 'current-page-v2' ? 'Agent V2 · 持续计划与真实结果核验' : '当前标签页执行 · 页面操作可见' : '等待连接网页任务服务')
 const canWrite = computed(() => props.active && online.value && available.value && !busy.value && !connecting.value && !!auth.token)
 const screenshotSource = computed(() => typeof task.value?.screenshot === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=\s]+$/.test(task.value.screenshot) ? task.value.screenshot : undefined)
-const statusLabel = (status: ComputerTaskStatus) => ({ RUNNING: '执行中', PAUSED: '已暂停', WAITING_CONFIRMATION: '待你确认', WAITING_INPUT: '待补充信息', SUCCEEDED: '已完成', FAILED: '执行失败', CANCELLED: '已停止' })[status] || '状态未知'
+const statusLabel = (status: ComputerTaskStatus) => ({ RUNNING: '执行中', PAUSED: '已暂停', WAITING_CONFIRMATION: '待你确认', WAITING_INPUT: '待补充信息', SUCCEEDED: '已完成', PARTIAL:'部分完成', FAILED: '执行失败', CANCELLED: '已停止' })[status] || '状态未知'
 const pauseExplanation = (reason?: ComputerTask['pauseReason']) => ({ USER: '你已手动暂停任务。', PAGE_HIDDEN: '当前网页曾被隐藏（如切换标签页或最小化），任务已自动暂停。', ASSISTANT_CLOSED: '助手面板已关闭或重新加载，任务已自动暂停。', OFFLINE: '网络已断开，任务已自动暂停。' } as Record<string,string>)[reason || ''] || '任务已暂停。'
 const stepStatusLabel = (status: string) => ({ RUNNING: '执行中', SUCCEEDED: '完成', FAILED: '失败', CANCELLED: '已停止', PAUSED: '暂停', WAITING_CONFIRMATION: '等待确认', WAITING_INPUT: '等待补充', PENDING: '等待执行' } as Record<string, string>)[status] || status
 const isActiveTask = (value: ComputerTask) => ['RUNNING', 'PAUSED', 'WAITING_CONFIRMATION', 'WAITING_INPUT'].includes(value.status)
 const formatTime = (value: string) => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—'
 const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
-const fieldLabel = (label: string) => ({ name: '姓名 / 名称', phone: '联系电话', source: '咨询来源', intent: '意向程度', ownerId: '负责顾问编号', venueId: '门店编号', memberId: '会员编号', recipientUserId: '收件人账号编号', coachId: '教练编号', scheduleId: '排课编号', note: '备注', content: '内容', title: '标题', nextFollowAt: '下次联系时间', startsAt: '开始时间', endsAt: '结束时间', idempotencyKey: '重复提交保护标识', expectedVersion: '资料版本', productId: '商品编号', paidAmount: '实收金额', paymentMethod: '收款方式' } as Record<string,string>)[label] || label
+const fieldLabel = (label: string) => ({ fee: '价格（元）', maxCapacity: '容量', durationMinutes: '时长（分钟）', intensity: '强度', type: '类型', description: '简介', name: '姓名 / 名称', phone: '联系电话', source: '咨询来源', intent: '意向程度', ownerId: '负责顾问编号', venueId: '门店编号', memberId: '会员编号', recipientUserId: '收件人账号编号', coachId: '教练编号', scheduleId: '排课编号', note: '备注', content: '内容', title: '标题', nextFollowAt: '下次联系时间', startsAt: '开始时间', endsAt: '结束时间', idempotencyKey: '重复提交保护标识', expectedVersion: '资料版本', productId: '商品编号', paidAmount: '实收金额', paymentMethod: '收款方式' } as Record<string,string>)[label] || label
 const fieldValue = (value: string) => ({ WALK_IN: '自然到店', REFERRAL: '转介绍', DOUYIN: '抖音', WECHAT: '微信', OTHER: '其他', HIGH: '高意向', MEDIUM: '中意向', LOW: '低意向' } as Record<string,string>)[value] || value
+const businessFacts = computed(() => (task.value?.facts || []) as {label:string;tool:string;data:unknown;asOf:string;truncated:boolean}[])
+const confirmationChanges = computed(() => {
+  const p=pendingPreview.value;if(!p)return []
+  const before=p.before as Record<string,unknown>|undefined
+  const aliases:Record<string,string>={maxCapacity:'max_capacity',durationMinutes:'duration_minutes',venueId:'venue_id'}
+  return p.fields.map(f=>({...f,before:before?.[aliases[f.label]||f.label] === undefined ? undefined : String(before?.[aliases[f.label]||f.label]??'')})).filter(f=>f.before===undefined||f.before!==f.value)
+})
 const errorText = (failure: unknown) => failure instanceof Error ? failure.message : '网页任务连接失败，请检查后端服务后刷新'
 const identityKey = () => { const user = auth.userInfo as (typeof auth.userInfo & { venueId?: number }); return JSON.stringify([auth.sessionGeneration, auth.token, user?.id, user?.role, user?.organizationId, user?.venueId]) }
 let disposed = false, mounted = false, epoch = 0, revision = 0, readEpoch = 0, pollTimer: ReturnType<typeof setTimeout> | undefined
@@ -114,7 +129,7 @@ const scope = () => {
 const acceptTask = (value: ComputerTask, announce = false) => {
   // Copy the transport result so the displayed frozen request never aliases a later response.
   const copy: ComputerTask = JSON.parse(JSON.stringify(value))
-  if (!copy?.id || !Array.isArray(copy.steps) || !Array.isArray(copy.artifacts) || !statusLabel(copy.status) || !['RUNNING', 'PAUSED', 'WAITING_CONFIRMATION', 'WAITING_INPUT', 'SUCCEEDED', 'FAILED', 'CANCELLED'].includes(copy.status)) throw new Error('执行器返回了无效任务状态，请刷新查看')
+  if (!copy?.id || !Array.isArray(copy.steps) || !Array.isArray(copy.artifacts) || !statusLabel(copy.status) || !['RUNNING', 'PAUSED', 'WAITING_CONFIRMATION', 'WAITING_INPUT', 'SUCCEEDED', 'PARTIAL', 'FAILED', 'CANCELLED'].includes(copy.status)) throw new Error('执行器返回了无效任务状态，请刷新查看')
   task.value = copy
   pendingPreview.value = copy.status === 'WAITING_CONFIRMATION' && copy.pendingConfirmation ? JSON.parse(JSON.stringify(copy.pendingConfirmation)) : null
   tasks.value = [copy, ...tasks.value.filter(item => item.id !== copy.id)].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30)
@@ -177,11 +192,12 @@ const submitGoal = async (text: string): Promise<void> => {
   const goal = text.trim()
   if (!goal || goal.length > 2000) { error.value = '请输入 1–2000 字的任务目标'; return }
   if (task.value?.status === 'WAITING_INPUT') { supplement.value = goal; await sendInput(); if (epoch === submissionEpoch && !error.value && goalInput.value.trim() === goal) goalInput.value = ''; return }
+  if(task.value?.durable&&!task.value.restorable&&isActiveTask(task.value)){await mutate(config=>inputComputerTask(task.value!.id,goal,config));if(!error.value)goalInput.value='';return}
   if ((task.value && isActiveTask(task.value)) || tasks.value.some(isActiveTask)) { error.value = '已有进行中的网页任务，请先补充、确认或停止当前任务，再开始新任务'; emit('reply', error.value); return }
   await mutate(config => createComputerTask(goal, config)); if (epoch === submissionEpoch && !error.value && goalInput.value.trim() === goal) goalInput.value = ''
 }
 const pauseTask = async () => { const current = task.value; if (current?.status === 'RUNNING') await mutate(config => pauseComputerTask(current.id, config)); else if (!online.value) requireWritable() }
-const resumeTask = async () => { const current = task.value; if (current?.status === 'PAUSED') await mutate(config => resumeComputerTask(current.id, config)); else if (!online.value) requireWritable() }
+const resumeTask = async () => { const current = task.value; if (current?.status === 'PAUSED') await mutate(config => current.restorable ? recoverComputerTask(current.id,config) : resumeComputerTask(current.id, config)); else if (!online.value) requireWritable() }
 const stopTask = async () => { const current = task.value; if (current && isActiveTask(current)) await mutate(config => stopComputerTask(current.id, config)); else if (!online.value) requireWritable() }
 const confirmTask = async () => {
   const current = task.value, preview = pendingPreview.value

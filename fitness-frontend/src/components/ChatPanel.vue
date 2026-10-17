@@ -9,8 +9,8 @@
         </div>
       </div>
       <ul class="conv-list">
-        <li v-for="c in conversations" :key="c.userId" :class="{ active: c.userId === activeUserId }">
-          <button type="button" class="conv-contact" :aria-label="`打开会话：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" :aria-pressed="c.userId === activeUserId" @click="openThread(c.userId)">
+        <li v-for="c in conversations" :key="c.userId" :class="{ active: c.userId === activeUserId }" data-agent-type="contact" :data-agent-id="c.userId" :data-agent-label="c.name">
+          <button type="button" class="conv-contact" data-agent-action="open" :aria-label="`打开会话：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" :aria-pressed="c.userId === activeUserId" @click="openThread(c.userId)">
           <span class="conv-top"><strong>{{ c.name }}</strong><small>{{ timeText(c.lastAt) }}</small></span>
           <span class="conv-bottom">
             <span class="conv-last">{{ c.lastContent }}</span>
@@ -23,7 +23,7 @@
       </ul>
     </aside>
 
-    <section class="chat-main">
+    <section class="chat-main" data-agent-type="contact" :data-agent-id="activeUserId || 'none'" :data-agent-label="thread?.name || ''">
       <template v-if="thread">
         <header class="main-head">
           <div><strong>{{ thread.name }}</strong><small>{{ thread.roleName || '—' }} · 账号编号 {{ thread.userId }}</small></div>
@@ -52,8 +52,8 @@
       <el-tabs v-model="pickerTab">
         <el-tab-pane :label="`员工（${filtered.staff.length}）`" name="staff">
           <ul class="picker-list">
-            <li v-for="c in filtered.staff" :key="c.userId">
-              <button type="button" class="picker-contact" :aria-label="`选择联系人：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" @click="startWith(c)">
+            <li v-for="c in filtered.staff" :key="c.userId" data-agent-type="contact" :data-agent-id="c.userId" :data-agent-label="c.name">
+              <button type="button" class="picker-contact" data-agent-action="select" :aria-label="`选择联系人：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" @click="startWith(c)">
               <strong>{{ c.name }}</strong><small>{{ c.roleName }}<template v-if="c.venueName"> · {{ c.venueName }}</template></small>
               <span v-if="c.unread" class="unread">{{ c.unread }}</span>
               </button>
@@ -62,8 +62,8 @@
         </el-tab-pane>
         <el-tab-pane v-if="contacts.members.length" :label="`会员（${filtered.members.length}）`" name="members">
           <ul class="picker-list">
-            <li v-for="c in filtered.members" :key="c.userId">
-              <button type="button" class="picker-contact" :aria-label="`选择联系人：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" @click="startWith(c)">
+            <li v-for="c in filtered.members" :key="c.userId" data-agent-type="contact" :data-agent-id="c.userId" :data-agent-label="c.name">
+              <button type="button" class="picker-contact" data-agent-action="select" :aria-label="`选择联系人：${c.name}（${c.roleName || '账号'}，编号${c.userId}）`" @click="startWith(c)">
               <strong>{{ c.name }}</strong><small>{{ c.roleName }}<template v-if="c.venueName"> · {{ c.venueName }}</template></small>
               <span v-if="c.unread" class="unread">{{ c.unread }}</span>
               </button>

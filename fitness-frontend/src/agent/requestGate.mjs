@@ -50,29 +50,56 @@ export function createRequestGate() {
         const promise = new Promise((resolve,reject) => {pending={owner,config,preview,body,params,resolve,reject,url:globalThis.location?.href}})
         // Install rejection handling before any await, including session verification.
         promise.catch(()=>{})
-        try { await owner.verify(); if(binding!==owner || owner.controller.signal.aborted) throw Error('任务已停止'); owner.onPending(copy(preview)) }
+        try {
+          await owner.verify();if(binding!==owner||owner.controller.signal.aborted)throw Error('任务已停止')
+          if(owner.prepare){
+            const permit=await owner.prepare({method,path:url.pathname+url.search,body:data??null,params})
+            if(binding!==owner||owner.controller.signal.aborted||pending?.config!==config)throw Error('任务已停止或许可已失效')
+            preview.serverPermitId=permit.id;preview.before=permit.before;preview.expected=permit.request
+          }
+          owner.onPending(copy(preview))
+        }
         catch(error) {if(pending?.config===config){pending.reject(error);pending=null}throw error}
         await promise
         if (binding !== owner || owner.controller.signal.aborted) throw Error('任务已停止')
         config.data = body; config.params = params; config.skipAuthRefresh = true
+        if(preview.serverPermitId){config.headers??={};config.headers['X-FitChain-Agent-Permit']=preview.serverPermitId;config._pageAgentPermitId=preview.serverPermitId}
         return config
       } catch(error) { requests.delete(config); throw error }
     },
     async confirm(id) {
       const p=pending
-      if (!p || p.preview.id!==id || p.confirming) throw Error('确认已失效，请核对当前请求')
+      if (!p || p.preview.id!==id || p.confirming || p.refreshing) throw Error('确认已失效，请核对当前请求')
       p.confirming=true
+      const epoch=p.epoch||0
       try {
         await p.owner.verify()
         if(p.url!==globalThis.location?.href)throw Error('页面已变化，请停止任务并重新核对提交')
         if(pending!==p || binding!==p.owner || p.owner.controller.signal.aborted) throw Error('确认已失效')
+        if(p.preview.serverPermitId&&p.owner.approve){
+          await p.owner.approve(p.preview.serverPermitId)
+          await p.owner.verify()
+          if(epoch!==(p.epoch||0))throw Object.assign(Error('任务确认已暂停，请恢复后重新核对'),{code:'PAUSED_TASK'})
+          if(pending!==p||binding!==p.owner||p.owner.controller.signal.aborted)throw Error('任务已停止或确认失效')
+        }
         pending=null; p.resolve()
       } catch(error) {if(error.code==='PAUSED_TASK'){p.confirming=false;throw error}if(pending===p){pending=null;p.reject(error)}throw error}
     },
-    settle(config,ok,detail) {
+    suspend(){if(pending)pending.epoch=(pending.epoch||0)+1},
+    cancelPending(message='本次提交已取消'){if(pending){pending.epoch=(pending.epoch||0)+1;pending.reject(Error(message));requests.delete(pending.config);pending=null}},
+    async refreshPending(){
+      const p=pending;if(!p?.owner.prepare)return false
+      p.epoch=(p.epoch||0)+1;p.refreshing=true
+      try{
+        const permit=await p.owner.prepare({method:p.preview.method,path:p.preview.path,body:p.body?JSON.parse(p.body):null,params:p.params})
+        if(pending!==p||binding!==p.owner||p.owner.controller.signal.aborted)throw Error('任务已停止')
+        Object.assign(p.preview,{id:uid(),serverPermitId:permit.id,before:permit.before,expected:permit.request});p.confirming=false;p.owner.onPending(copy(p.preview));return true
+      }finally{p.refreshing=false}
+    },
+    settle(config,ok,detail,transport) {
       if(!config?._pageAgent)return
       requests.delete(config)
-      if(config.skipAuthRefresh)config._pageAgent.onReceipt(ok,detail)
+      if(config.skipAuthRefresh)config._pageAgent.onReceipt(ok,detail,transport)
     },
     async idle(current) {
       const start=Date.now()

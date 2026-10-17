@@ -37,13 +37,13 @@
             <span v-else class="muted">未开通</span>
           </template>
         </el-table-column>
-        <el-table-column label="体测" width="110"><template #default="{row}"><el-button link type="primary" @click="openBody(row)">体测档案</el-button></template></el-table-column>
+        <el-table-column label="体测" width="110"><template #default="{row}"><el-button link type="primary" @click="openBody(row)" data-agent-type="member" :data-agent-id="row.id" :data-agent-label="row.name || row.realName || row.title || row.memberName || ''">体测档案</el-button></template></el-table-column>
         <el-table-column v-if="canWrite" label="操作" width="330" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="primary" @click="openEdit(row)" data-agent-type="member" :data-agent-id="row.id" :data-agent-label="row.name || row.realName || row.title || row.memberName || ''" data-agent-action="edit">编辑</el-button>
             <el-button v-if="!row.accountOpened" link type="primary" @click="openAccountDialog(row, 'open')">开通账号</el-button>
             <el-button v-else link type="primary" @click="openAccountDialog(row, 'reset')">重置密码</el-button>
-            <el-button v-if="row.accountOpened" link :type="row.accountStatus === 'ACTIVE' ? 'danger' : 'success'" @click="toggleAccount(row)">{{ row.accountStatus === 'ACTIVE' ? '停用账号' : '启用账号' }}</el-button>
+            <el-button v-if="row.accountOpened" link :type="row.accountStatus === 'ACTIVE' ? 'danger' : 'success'" @click="toggleAccount(row)" data-agent-type="member" :data-agent-id="row.id" :data-agent-label="row.name || row.realName || row.title || row.memberName || ''">{{ row.accountStatus === 'ACTIVE' ? '停用账号' : '启用账号' }}</el-button>
             <el-button v-if="row.status === 'ACTIVE'" link type="warning" @click="changeStatus(row, 'pause')">暂停</el-button>
             <el-button v-else link type="success" @click="changeStatus(row, 'renew')">恢复</el-button>
           </template>
@@ -65,38 +65,38 @@
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑会员' : '新增会员'" width="560px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="会员编号" prop="memberNo">
+        <el-form-item label="会员编号" prop="memberNo" data-agent-field="memberNo">
           <el-input v-model="form.memberNo" placeholder="例如：M20260001" />
         </el-form-item>
-        <el-form-item label="姓名" prop="realName">
+        <el-form-item label="姓名" prop="realName" data-agent-field="realName">
           <el-input v-model="form.realName" />
         </el-form-item>
-        <el-form-item label="手机号" prop="phone">
+        <el-form-item label="手机号" prop="phone" data-agent-field="phone">
           <el-input v-model="form.phone" />
         </el-form-item>
-        <el-form-item label="性别">
+        <el-form-item label="性别" data-agent-field="gender">
           <el-radio-group v-model="form.gender">
             <el-radio label="男">男</el-radio>
             <el-radio label="女">女</el-radio>
             <el-radio label="其他">其他</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="生日">
+        <el-form-item label="生日" data-agent-field="birthday">
           <el-date-picker v-model="form.birthday" type="date" value-format="YYYY-MM-DD" placeholder="选择生日" />
         </el-form-item>
-        <el-form-item label="邮箱" prop="email">
+        <el-form-item label="邮箱" prop="email" data-agent-field="email">
           <el-input v-model="form.email" />
         </el-form-item>
-        <el-form-item label="地址">
+        <el-form-item label="地址" data-agent-field="address">
           <el-input v-model="form.address" type="textarea" :rows="2" />
         </el-form-item>
-        <el-form-item label="黑名单">
+        <el-form-item label="黑名单" data-agent-field="blacklistFlag">
           <el-switch v-model="form.blacklistFlag" active-text="是" inactive-text="否" />
         </el-form-item>
-        <el-form-item label="专属教练">
+        <el-form-item label="专属教练" data-agent-field="coachId">
           <el-select v-model="form.coachId" clearable filterable placeholder="不指定" style="width:100%"><el-option v-for="c in coaches" :key="c.userId" :label="c.realName" :value="c.userId" /></el-select>
         </el-form-item>
-        <el-form-item label="会籍顾问">
+        <el-form-item label="会籍顾问" data-agent-field="salesUserId">
           <el-select v-model="form.salesUserId" clearable filterable placeholder="不指定" style="width:100%"><el-option v-for="a in advisors" :key="a.userId" :label="a.realName" :value="a.userId" /></el-select>
           <div class="form-hint">指派后，该会员会出现在对应顾问/教练的工作台里，用于跟进与业绩归属</div>
         </el-form-item>
@@ -110,8 +110,8 @@
     <el-dialog v-model="accountVisible" :title="accountMode === 'open' ? '开通会员账号' : '重置会员密码'" width="470px">
       <el-alert title="会员首次使用临时密码登录后，必须设置自己的新密码" type="info" :closable="false" />
       <el-form ref="accountFormRef" :model="accountForm" :rules="accountRules" label-position="top" class="account-form">
-        <el-form-item v-if="accountMode === 'open'" label="登录账号" prop="username"><el-input v-model="accountForm.username" placeholder="以字母开头，至少4位" /></el-form-item>
-        <el-form-item label="临时密码" prop="password"><el-input v-model="accountForm.password" type="password" show-password placeholder="大小写字母、数字、特殊字符" /></el-form-item>
+        <el-form-item v-if="accountMode === 'open'" label="登录账号" prop="username" data-agent-field="username"><el-input v-model="accountForm.username" placeholder="以字母开头，至少4位" /></el-form-item>
+        <el-form-item label="临时密码" prop="password" data-agent-field="password"><el-input v-model="accountForm.password" type="password" show-password placeholder="大小写字母、数字、特殊字符" /></el-form-item>
       </el-form>
       <template #footer><el-button @click="accountVisible=false">取消</el-button><el-button type="primary" :loading="saving" @click="submitAccount">确认</el-button></template>
     </el-dialog>

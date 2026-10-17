@@ -40,6 +40,12 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final PasswordChangeRequiredFilter passwordChangeRequiredFilter;
     private final ObjectMapper objectMapper;
+    private final com.gym.fitness.module.agent.task.AgentMutationFilter agentMutationFilter;
+
+    @Bean
+    public org.springframework.boot.web.servlet.FilterRegistrationBean<com.gym.fitness.module.agent.task.AgentMutationFilter> agentMutationRegistration(){
+        var registration=new org.springframework.boot.web.servlet.FilterRegistrationBean<>(agentMutationFilter);registration.setEnabled(false);return registration;
+    }
     
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -68,7 +74,8 @@ public class SecurityConfig {
                     writeSecurityError(response, HttpServletResponse.SC_FORBIDDEN, ErrorCode.FORBIDDEN))
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(passwordChangeRequiredFilter, JwtAuthenticationFilter.class);
+            .addFilterAfter(passwordChangeRequiredFilter, JwtAuthenticationFilter.class)
+            .addFilterAfter(agentMutationFilter, PasswordChangeRequiredFilter.class);
         
         return http.build();
     }

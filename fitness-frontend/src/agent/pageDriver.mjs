@@ -3,8 +3,8 @@ const exclude='[data-page-agent-exclude],.assistant,.header,.mobile-navigation,.
 const controls='button,a[href],input,textarea,select,[role="button"],[role="menuitem"],[role="tab"],[role="checkbox"],[role="radio"],[role="combobox"],[role="option"],.el-date-table td.available:not(.disabled):not(.prev-month):not(.next-month),.el-month-table td:not(.disabled),.el-year-table td:not(.disabled)'
 const compact=value=>String(value??'').replace(/\s+/g,' ').trim()
 
-export function createPageDriver({document,window,router,allowed}) {
-  let refs=new Map(),sequence=0,observedUrl='',observedScope,highlighted=null,lastGoal=''
+export function createPageDriver({document,window,router,allowed,contextAdapter}) {
+  let refs=new Map(),sequence=0,observedUrl='',observedScope,highlighted=null,lastGoal='',lastContext
   const trail=[]
   const stale=()=>Object.assign(Error('页面或操作对象已变化，重新观察后再操作'),{code:'STALE_PAGE'})
   const visible=e=>{const s=window.getComputedStyle(e),r=e.getBoundingClientRect();return e.isConnected&&!e.closest(exclude)&&s.visibility!=='hidden'&&s.display!=='none'&&r.width>0&&r.height>0}
@@ -108,7 +108,8 @@ export function createPageDriver({document,window,router,allowed}) {
     const roots=root?[root,...related]:[...document.querySelectorAll('main')].filter(visible)
     const body=(roots.length?roots:[document.body]).map(textOf).join('\n')
     const text=`当前作用域：${root?'弹窗':'页面'} ${title(root)}\n当前控件状态（实际值）：\n${states}\n${root?'弹窗正文':'目标附近对象及行'}：\n${root?body.slice(0,2400):index}\n${root?'':'页面正文：\n'+body.slice(0,Math.max(0,5600-states.length-index.length))}\n可操作控件：${selected.length}/${list.length}；仅使用本轮引用，不以同名按钮顺序猜测对象。`
-    return {url:window.location.href,title:redactPage(document.title,200),text:redactPage(text),revision:`page_${sequence}`,nodes}
+    lastContext=contextAdapter?.build({document,window,root,nodes,resolve:ref=>refs.get(ref)?.e,title:title(root)})
+    return {url:window.location.href,title:redactPage(document.title,200),text:redactPage(text),revision:`page_${sequence}`,nodes,...(context.v2?{context:lastContext}:{})}
   }
   const feedback=()=>{
     const {root,list}=entries(),all=fields(list)
@@ -125,6 +126,23 @@ export function createPageDriver({document,window,router,allowed}) {
     if(!canAct())throw interrupted()
     checkUrl(window.location.href)
     if(observedUrl!==window.location.href||observedScope!==scope())throw stale()
+    if(action==='use_skill'){
+      if(args.kind==='fill_fields'){
+        if(!Array.isArray(args.fields)||!args.fields.length||args.fields.length>8||new Set(args.fields.map(f=>f.field)).size!==args.fields.length)throw Error('表单技能须包含1至8个不同字段')
+        const originalScope=scope(),results=[]
+        for(const field of args.fields){
+          if(!canAct())throw interrupted()
+          if(scope()!==originalScope)throw stale()
+          observe({v2:true})
+          results.push(await act('use_skill',{kind:'fill_field',field:field.field,value:field.value,...(args.id?{id:args.id}:{})},canAct))
+          await Promise.resolve();await Promise.resolve()
+        }
+        return results.join('；')
+      }
+      const semantic=contextAdapter?.choose(lastContext,args)
+      if(!semantic)throw Object.assign(Error('业务对象或字段不唯一，请重新观察并指定编号和门店'),{code:'STALE_PAGE'})
+      return act(semantic.action,semantic.arguments,canAct)
+    }
     if(['navigate','back'].includes(action)&&scope())throw Object.assign(Error('当前有业务弹窗，请先核对或关闭它，再切换页面'),{code:'STALE_PAGE'})
     if(action==='navigate')return navigate(args.path)
     if(action==='back'){const path=trail.pop();if(!path)throw Error('没有本任务可返回的项目页面');checkUrl(path);await router.push(path);return `当前页已返回 ${path}`}
@@ -160,5 +178,15 @@ export function createPageDriver({document,window,router,allowed}) {
     }
     return `${action==='click'?'已点击':action==='fill'?'已填写':'已选择'}当前页控件：${redactPage(item.name,120)}`
   }
-  return {observe,act,clear,feedback,fingerprint,describe}
+  const ready=async(canContinue=()=>true)=>{
+    const deadline=Date.now()+10000
+    while(Date.now()<deadline){
+      if(!canContinue())throw Object.assign(Error('任务状态已变化'),{code:'ACTION_INTERRUPTED'})
+      const area=scope()||document.querySelector('main')||document.body
+      if(![...area.querySelectorAll('.el-loading-mask,.el-button.is-loading,[aria-busy="true"]')].some(visible))return
+      await new Promise(resolve=>setTimeout(resolve,80))
+    }
+    throw Object.assign(Error('当前业务区域仍在加载，重新观察后再操作'),{code:'STALE_PAGE'})
+  }
+  return {observe,act,clear,feedback,fingerprint,describe,ready,context:()=>lastContext}
 }

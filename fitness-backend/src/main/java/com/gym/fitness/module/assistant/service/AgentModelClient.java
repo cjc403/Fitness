@@ -93,8 +93,11 @@ public class AgentModelClient {
 
     /** V2 only: callers own the entire provider episode, including opaque assistant context. */
     public Outcome completePlanning(List<Map<String, Object>> messages, List<Map<String, Object>> tools, boolean thinking) {
-        return exchange(messages, tools, true, true, thinking && properties.isPlannerThinkingEnabled());
+        if(!planningSlots.tryAcquire())return Outcome.failed("MODEL_BUSY",true,java.util.UUID.randomUUID().toString());
+        try{return exchange(messages, tools, true, true, thinking && properties.isPlannerThinkingEnabled());}
+        finally{planningSlots.release();}
     }
+    private final java.util.concurrent.Semaphore planningSlots=new java.util.concurrent.Semaphore(2);
 
     private Outcome exchange(List<Map<String,Object>> messages,List<Map<String,Object>> tools,
                              boolean requireAction,boolean planning,boolean thinking) {
@@ -158,6 +161,10 @@ public class AgentModelClient {
             registerFailure();return Outcome.failed("MODEL_TIMEOUT",true,trace);
         } catch (Truncated truncated) {
             registerFailure();return Outcome.failed("MODEL_TRUNCATED",false,trace);
+        } catch (java.util.concurrent.ExecutionException failed) {
+            registerFailure();
+            Throwable cause=failed.getCause();
+            return Outcome.failed(cause instanceof java.net.http.HttpTimeoutException?"MODEL_TIMEOUT":"PROVIDER_UNAVAILABLE",true,trace);
         } catch (Exception ignored) {
             // Provider bodies, exception messages and request credentials must never reach logs.
             registerFailure();
@@ -220,7 +227,7 @@ public class AgentModelClient {
             Object content = message.get("content");
             require(content == null || content instanceof String, "Invalid message content");
             if (content instanceof String value) {
-                require(value.length() <= MAX_CONTENT_CHARS, "Message exceeded limit");
+                require(value.length() <= (planning?65536:MAX_CONTENT_CHARS), "Message exceeded limit");
                 item.put("content", sanitizeContent(value));
             } else {
                 require("assistant".equals(role) && message.containsKey("tool_calls"), "Missing message content");
@@ -270,7 +277,7 @@ public class AgentModelClient {
         int totalTokens = tokens.isIntegralNumber() && tokens.canConvertToInt() ? Math.max(0, tokens.asInt()) : 0;
         Map<String,Object> turn=new LinkedHashMap<>();turn.put("role","assistant");turn.put("content",content);
         if(!calls.isEmpty())turn.put("tool_calls",calls.stream().map(c->Map.of("id",c.id(),"type","function","function",Map.of("name",c.name(),"arguments",c.arguments()))).toList());
-        if(planning&&message.has("reasoning_content"))turn.put("reasoning_content",text(message.get("reasoning_content"),131072));
+        if(planning&&message.hasNonNull("reasoning_content"))turn.put("reasoning_content",text(message.get("reasoning_content"),131072));
         return new Completion(content, List.copyOf(calls), modelName(), totalTokens,Collections.unmodifiableMap(turn));
     }
 

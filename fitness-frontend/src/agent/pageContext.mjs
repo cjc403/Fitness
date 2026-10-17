@@ -1,0 +1,48 @@
+const compact=s=>String(s??'').replace(/\s+/g,' ').trim()
+const privateText=s=>String(s??'').replace(/(?<!\d)\d{17}[\dXx](?!\d)|(?<!\d)1[3-9]\d{9}(?!\d)|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g,'[资料已隐藏]').replace(/Bearer\s+\S+|sk-[A-Za-z0-9]{15,}/gi,'[凭据已隐藏]')
+export function buildPageContext({document,window,root,nodes,resolve,title}){
+  const visible=e=>{if(!e||e.closest('[data-page-agent-exclude],[aria-hidden="true"],[hidden]'))return false;const r=e.getBoundingClientRect(),s=window.getComputedStyle(e);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'}
+  const area=root||document.querySelector('main')||document.body,entities=new Map(),fields=[]
+  const scopeHost=root?.querySelector('[data-agent-type][data-agent-id]')||root?.closest('[data-agent-type][data-agent-id]')
+  for(const node of nodes){
+    const e=resolve(node.ref);if(!e)continue
+    const host=e.closest('[data-agent-type][data-agent-id]'),field=e.closest('[data-agent-field]')
+    if(host){
+      const type=host.getAttribute('data-agent-type'),id=host.getAttribute('data-agent-id'),venueId=host.getAttribute('data-agent-venue')||'',key=JSON.stringify([type,id,venueId])
+      if(!entities.has(key))entities.set(key,{type,id,venueId,label:privateText(compact(host.getAttribute('data-agent-label')||host.querySelector('h1,h2,h3,h4,strong')?.textContent)),actions:[]})
+      const action=e.getAttribute('data-agent-action')
+      if(action)entities.get(key).actions.push({action,ref:node.ref,label:node.name})
+    }
+    if(['INPUT','TEXTAREA','SELECT'].includes(e.tagName))fields.push({ref:node.ref,key:field?.getAttribute('data-agent-field')||'',name:node.name,value:privateText(e.value),controlType:e.type||e.tagName.toLowerCase(),checked:e.checked===true,writable:!e.disabled&&!e.readOnly,entityType:host?.getAttribute('data-agent-type')||scopeHost?.getAttribute('data-agent-type')||'',entityId:host?.getAttribute('data-agent-id')||scopeHost?.getAttribute('data-agent-id')||''})
+  }
+  const errors=[...area.querySelectorAll('.el-form-item__error,[role="alert"],.el-alert--error')].filter(visible).map(e=>privateText(compact(e.textContent))).filter(Boolean).slice(0,8)
+  const selectedTabs=[...document.querySelectorAll('[role="tab"][aria-selected="true"],.el-tabs__item.is-active')].filter(visible).map(e=>privateText(compact(e.textContent))).slice(0,10)
+  const loading=[...area.querySelectorAll('.el-loading-mask,.el-button.is-loading,[aria-busy="true"]')].some(visible)
+  const result={path:window.location.pathname,scope:{type:root?'dialog':'page',title:privateText(title),...(scopeHost?{entityType:scopeHost.getAttribute('data-agent-type'),entityId:scopeHost.getAttribute('data-agent-id'),venueId:scopeHost.getAttribute('data-agent-venue')||''}:{})},entities:[...entities.values()].slice(0,60),fields,errors,selectedTabs,loading,truncated:entities.size>60}
+  return result
+}
+export function summarizePageContext(context={}){
+  return privateText(JSON.stringify({scope:context.scope,fields:context.fields?.map(({name,key,value})=>({name,key,value})),errors:context.errors,range:context.truncated?'已截断，须缩小范围':'当前范围'})).slice(0,2200)
+}
+export function chooseSemanticAction(context={},args={}){
+  if(args.kind==='entity_action'){
+    const matches=(context.entities||[]).filter(e=>e.type===args.entityType&&(!args.id||String(e.id)===String(args.id))&&(!args.venueId||String(e.venueId)===String(args.venueId))&&(!args.label||e.label===args.label))
+    if(matches.length!==1)return null
+    const actions=matches[0].actions.filter(a=>a.action===args.action)
+    return actions.length===1?{action:'click',arguments:{ref:actions[0].ref}}:null
+  }
+  if(args.kind==='fill_field'){
+    const aliases={'价格':'fee','容量':'maxCapacity','课程名称':'name','备注':'note','训练目标':'goal'}
+    const key=aliases[args.field]||args.field
+    let fields=(context.fields||[]).filter(f=>(f.key===key||f.name===args.field)&&f.writable&&(!args.id||String(f.entityId)===String(args.id)))
+    if(fields.some(f=>f.controlType==='radio')){
+      fields=fields.filter(f=>f.controlType==='radio'&&(f.value===String(args.value)||f.name===String(args.value)))
+      if(fields.length!==1)return null
+      return fields[0].checked?{action:'observe',arguments:{},alreadySatisfied:true}:{action:'click',arguments:{ref:fields[0].ref}}
+    }
+    if(fields.length!==1)return null
+    if(String(fields[0].value)===String(args.value))return {action:'observe',arguments:{},alreadySatisfied:true}
+    return {action:'fill',arguments:{ref:fields[0].ref,value:String(args.value)}}
+  }
+  return null
+}

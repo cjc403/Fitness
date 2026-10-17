@@ -84,13 +84,13 @@ class AgentPostgresConcurrencyTest {
                            String sessionId, String bearer) { }
 
     @Test
-    void freshPostgresRunsV1ThroughV23AndHibernateValidatesTheMigratedSchema() {
+    void freshPostgresRunsV1ThroughV25AndHibernateValidatesTheMigratedSchema() {
         flyway.validate();
         assertThat(jdbc.queryForObject("select current_database()", String.class)).isEqualTo("agent_junit");
         assertThat(jdbc.queryForObject("select inet_server_port()", Integer.class)).isEqualTo(55451);
         assertThat(jdbc.queryForObject("select current_setting('server_version_num')::int", Integer.class)).isGreaterThanOrEqualTo(180000);
         assertThat(jdbc.queryForList("select version from flyway_schema_history where success order by installed_rank", String.class))
-                .containsExactlyElementsOf(IntStream.rangeClosed(1, 23).mapToObj(Integer::toString).toList());
+                .containsExactlyElementsOf(IntStream.rangeClosed(1, 25).mapToObj(Integer::toString).toList());
         assertThat(jdbc.queryForObject("select data_type from information_schema.columns where table_schema='public' and table_name='agent_action' and column_name='arguments_json'", String.class)).isEqualTo("text");
         assertThat(jdbc.queryForObject("select data_type from information_schema.columns where table_schema='public' and table_name='agent_action' and column_name='result_json'", String.class)).isEqualTo("text");
     }

@@ -141,7 +141,7 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   (response: AxiosResponse<Result>): any => {
     const config = response.config as RetryableRequestConfig
-    pageRequestGate.settle(config, response.status >= 200 && response.status < 300 && response.data?.code === 0, response.data?.code === 0 ? '当前页业务接口返回成功回执' : '业务接口拒绝提交，请人工核对当前页面')
+    pageRequestGate.settle(config, response.status >= 200 && response.status < 300 && response.data?.code === 0, response.data?.code === 0 ? '当前页业务接口返回成功回执' : '业务接口拒绝提交，请人工核对当前页面', {receiptId:response.headers['x-fitchain-agent-receipt']})
     if (!isRequestCurrent(config)) return Promise.reject(new axios.CanceledError('请求范围已变更', config))
     if (!config.skipAuthRefresh && !isAuthenticationRequest(config.url) && !isCurrentSession(config._sessionGeneration)) {
       return Promise.reject(new Error('登录会话已变更'))

@@ -144,6 +144,16 @@ public class ComputerAgentService {
         return new Scope(actor.getId(), role, venueId, sessionKey, permissions, actor);
     }
 
+    /** Reuse the same route/ref authority for V2; history comes from its server-owned episode. */
+    public record PlanningFrame(String system,List<Map<String,Object>> tools){}
+    public PlanningFrame planningFrame(JsonNode request){
+        Scope current=scope();validateRequest(request,current);
+        return new PlanningFrame(messages(request,current).get(0).get("content").toString(),definitions(request,current));
+    }
+    public Decision validatePlannedAction(String action,JsonNode arguments,JsonNode request){
+        Scope current=scope();validateRequest(request,current);return validateAction(action,arguments,request,current);
+    }
+
     private void validateRequest(JsonNode request, Scope scope) {
         allow(request, Set.of("goal", "observation", "history", "artifacts", "input"));
         if (request.toString().length() > MAX_REQUEST_CHARS) throw invalid("电脑任务请求过长");

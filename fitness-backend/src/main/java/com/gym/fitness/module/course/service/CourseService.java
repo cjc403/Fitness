@@ -217,6 +217,9 @@ public class CourseService {
                 requireCurrentVenueId(), safeFrom.atStartOfDay(), safeTo.plusDays(1).atStartOfDay());
     }
 
+    @Transactional(readOnly = true)
+    public CourseScheduleEntity getScheduleForAgent(Long id) { return findAccessibleSchedule(id); }
+
     @Transactional
     public CourseScheduleEntity createSchedule(ScheduleRequest request) {
         if (!request.getScheduledEndTime().isAfter(request.getScheduledStartTime())) {

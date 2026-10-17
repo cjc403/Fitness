@@ -1,4 +1,5 @@
-const terminal = status => ['SUCCEEDED','FAILED','CANCELLED'].includes(status)
+const terminal = status => ['SUCCEEDED','PARTIAL','FAILED','CANCELLED'].includes(status)
+import { classifyFailure } from './taskContract.mjs'
 const copy = value => JSON.parse(JSON.stringify(value))
 const sleep = ms => new Promise(resolve=>setTimeout(resolve,ms))
 const stamp = () => new Date().toISOString()
@@ -11,10 +12,10 @@ const needsReceipt = goal => String(goal).split(/[，,。；;、]/).some(clause=
   return /新建|新增|创建|修改|改为|改成|改到|设为|设成|调整为|调整到|更新|删除|提交|保存|发送|发布|退款|开卡|帮我预约|取消预约|办理签到/.test(clause)
 })
 export class PageTaskEngine {
-  constructor(options) {this.options={interval:7000,timeout:600000,waitTimeout:300000,...options};this.tasks=[];this.lifecycle=0}
+  constructor(options) {this.options={interval:7000,timeout:900000,waitTimeout:600000,...options};this.tasks=[];this.lifecycle=0}
   owned(t) {return t && t.identity===this.options.identity()}
   current(t) {return this.owned(t) && !terminal(t.status) && !t.controller.signal.aborted}
-  public(t) {const {identity,session,controller,operationController,version,input,history,pausedStatus,...value}=t;return copy(value)}
+  public(t) {const {identity,session,controller,operationController,version,input,history,pausedStatus,remoteTransition,...value}=t;return copy(value)}
   list() {return this.tasks.filter(t=>this.owned(t)).map(t=>this.public(t))}
   raw(id) {const t=this.tasks.find(t=>t.id===id);if(!this.owned(t))throw Error('网页任务不属于当前登录身份');return t}
   get(id) {return this.public(this.raw(id))}
@@ -38,29 +39,48 @@ export class PageTaskEngine {
     const identity=this.options.identity(),lifecycle=this.lifecycle,session=await this.options.session(config.signal)
     if(identity!==this.options.identity()||lifecycle!==this.lifecycle||config.signal?.aborted||config.isRequestCurrent?.()===false)throw Error('创建请求已取消或当前页面状态已变更')
     if(this.tasks.some(t=>this.current(t)))throw Error('已有进行中的网页任务')
-    const t={id:uid(),goal:goal.trim(),status:'RUNNING',createdAt:stamp(),updatedAt:stamp(),steps:[],artifacts:[],identity,session,controller:new AbortController(),version:0,history:[],input:''}
-    this.options.gate.bind({verify:async()=>{await this.verify(t);if(t.status==='PAUSED')throw Object.assign(Error('任务已暂停，请继续后重新确认'),{code:'PAUSED_TASK'})},onPending:preview=>{if(this.current(t)){t.pendingConfirmation=preview;t.status='WAITING_CONFIRMATION';this.touch(t)}},onReceipt:(ok,detail)=>{
+    const remote=this.options.persistence&&!/导出|CSV|文件/i.test(goal)?await this.options.persistence.create(goal.trim(),config):null
+    if(identity!==this.options.identity()||lifecycle!==this.lifecycle||config.signal?.aborted||config.isRequestCurrent?.()===false){if(remote)this.options.persistence.close({...remote,remoteVersion:remote.version},'CANCELLED').catch(()=>{});throw Error('创建请求已取消')}
+    const t={id:remote?.id||uid(),goal:goal.trim(),status:remote?.status==='PAUSED'?'PAUSED':'RUNNING',...(remote?.status==='PAUSED'?{pausedStatus:'RUNNING',pauseReason:'USER'}:{}),createdAt:stamp(),updatedAt:stamp(),steps:[],artifacts:[],identity,session,controller:new AbortController(),version:0,history:[],input:'',...(remote?{durable:true,remoteVersion:remote.version,plan:remote.plan,verification:undefined,facts:[],receipts:[]}:{} )}
+    this.options.gate.bind({verify:async()=>{await this.verify(t);if(t.status==='PAUSED')throw Object.assign(Error('任务已暂停，请继续后重新确认'),{code:'PAUSED_TASK'})},...(remote?{prepare:r=>this.options.persistence.prepare(t,r),approve:id=>this.options.persistence.approve(t,id)}:{}),onPending:preview=>{if(this.current(t)){t.pendingConfirmation=preview;if(t.status==='PAUSED')t.pausedStatus='WAITING_CONFIRMATION';else t.status='WAITING_CONFIRMATION';this.touch(t)}},onReceipt:(ok,detail,transport)=>{
       t.steps.push({index:t.steps.length+1,action:'submit',label:'业务提交回执',status:ok?'SUCCEEDED':'FAILED',detail})
       // The planner must receive the confirmed transport result, not infer it from page text.
       // `observe` is an existing feedback action accepted by the planning protocol.
       t.history.push({action:'observe',summary:`真实请求回执：人工确认已完成；${ok?'业务提交成功':'业务提交失败'}。${detail}`.slice(0,500),ok})
-      if(!ok)t.error=detail;this.touch(t)
+      if(t.durable){if(transport?.receiptId)t.receipts.push(transport.receiptId);if(!ok)t.lastFailure={code:'WRITE_UNKNOWN',detail}}
+      else if(!ok)t.error=detail;this.touch(t)
     }})
     this.tasks=[t,...this.tasks.filter(item=>this.owned(item))].slice(0,30)
     this.runningTask=t
     void this.run(t)
     return this.public(t)
   }
-  pause(id,reason='USER') {const t=this.raw(id);if(!['RUNNING','WAITING_CONFIRMATION','WAITING_INPUT'].includes(t.status))throw Error('当前任务不可暂停');t.pausedStatus=t.status;t.pauseReason=reason;t.status='PAUSED';t.version++;t.operationController?.abort();this.touch(t);this.options.driver.clear();return this.public(t)}
-  resume(id) {const t=this.raw(id);if(t.status!=='PAUSED')throw Error('当前任务不可继续');t.status=t.pausedStatus||'RUNNING';t.pausedStatus=undefined;t.pauseReason=undefined;this.touch(t);return this.public(t)}
+  pause(id,reason='USER') {const t=this.raw(id);if(!['RUNNING','WAITING_CONFIRMATION','WAITING_INPUT'].includes(t.status))throw Error('当前任务不可暂停');t.pausedStatus=t.status;t.pauseReason=reason;t.status='PAUSED';t.version++;t.operationController?.abort();this.options.gate.suspend?.();if(t.durable&&this.options.persistence.pause)t.remoteTransition=this.options.persistence.pause(t).then(remote=>{t.remoteVersion=Math.max(t.remoteVersion,remote.version)}).catch(()=>{t.syncError='暂停记录尚未同步；本页已阻止继续操作，联网后可核对恢复'});this.touch(t);this.options.driver.clear();return this.public(t)}
+  resume(id) {const t=this.raw(id);if(t.status!=='PAUSED')throw Error('当前任务不可继续');if(t.durable&&this.options.persistence.resume)return this.resumeRemote(t);t.status=t.pausedStatus||'RUNNING';t.pausedStatus=undefined;t.pauseReason=undefined;this.touch(t);return this.public(t)}
+  async resumeRemote(t){
+    await t.remoteTransition;if(!this.current(t)||t.status!=='PAUSED')throw Error('任务状态已变化')
+    const remote=await this.options.persistence.resume(t)
+    if(!this.current(t)||t.status!=='PAUSED')throw Error('任务状态已变化')
+    t.remoteVersion=Math.max(t.remoteVersion,remote.version);if(remote.status==='SUCCEEDED'){t.status='SUCCEEDED';this.touch(t);return this.public(t)}const status=t.pausedStatus||'RUNNING';t.status='RUNNING';t.syncError=undefined
+    if(status==='WAITING_CONFIRMATION'&&this.options.gate.pending)await this.options.gate.refreshPending();else t.status=status
+    t.pausedStatus=undefined;t.pauseReason=undefined;this.touch(t);return this.public(t)
+  }
   stop(id) {const t=this.tasks.find(t=>t.id===id);if(!t)return;if(!terminal(t.status)){t.status='CANCELLED';t.version++;t.controller.abort();t.pendingConfirmation=undefined;this.options.gate.cancel();this.options.driver.clear();this.touch(t)}return this.public(t)}
   async confirm(id,confirmationId) {
     const t=this.raw(id);if(t.status!=='WAITING_CONFIRMATION' || t.pendingConfirmation?.id!==confirmationId)throw Error('确认已失效')
-    try {await this.options.gate.confirm(confirmationId)} catch(error) {if(error.code==='PAUSED_TASK')throw error;t.error=error.message;t.status='FAILED';t.controller.abort();this.options.gate.cancel();this.touch(t);throw error}
+    try {await this.options.gate.confirm(confirmationId)} catch(error) {if(error.code==='PAUSED_TASK')throw error;if(t.durable&&/过期|许可已消费|冻结内容|业务对象已经变化/.test(error.message)){t.pendingConfirmation=undefined;t.history.push({action:'observe',summary:'确认未放行：'+error.message+'。重新核对当前业务结果后再准备。',ok:false});t.status='RUNNING';this.touch(t);return this.public(t)}t.error=error.message;t.status='FAILED';t.controller.abort();this.options.gate.cancel();this.touch(t);throw error}
     if(!this.current(t))throw Error('任务已停止')
     t.pendingConfirmation=undefined;t.status='RUNNING';this.touch(t);return this.public(t)
   }
-  input(id,message) {const t=this.raw(id);if(t.status!=='WAITING_INPUT'||!message?.trim()||message.length>2000)throw Error('当前任务不接受此补充');t.input=(t.input+'\n'+message.trim()).slice(-2000);t.question=undefined;t.status='RUNNING';this.touch(t);return this.public(t)}
+  input(id,message) {const t=this.raw(id);if(t.durable&&this.options.persistence.revise)return this.reviseRemote(t,message);if(t.status!=='WAITING_INPUT'||!message?.trim()||message.length>2000)throw Error('当前任务不接受此补充');t.input=(t.input+'\n'+message.trim()).slice(-2000);t.question=undefined;t.status='RUNNING';this.touch(t);return this.public(t)}
+  async reviseRemote(t,message){
+    if(!this.current(t)||!message?.trim()||message.length>2000)throw Error('当前任务不接受此修订')
+    t.version++;t.status='PAUSED';t.operationController?.abort();this.options.gate.cancelPending?.('任务目标已修订，旧提交已取消')
+    await t.remoteTransition
+    const remote=await this.options.persistence.revise(t,message.trim())
+    if(!this.current(t))throw Error('任务已停止')
+    t.remoteVersion=remote.version;t.goal=remote.goal||t.goal+'\n'+message.trim();t.input='';t.plan=remote.plan;t.finishAttempts=0;t.question=undefined;t.pendingConfirmation=undefined;t.status='RUNNING';t.history.push({action:'observe',summary:'用户修订目标：'+message.trim().slice(0,250)+'。旧确认失效，先核对已提交结果再继续。',ok:true});this.touch(t);return this.public(t)
+  }
   suspend(reason='ASSISTANT_CLOSED') {this.lifecycle++;for(const t of this.tasks)if(this.current(t)&&t.status!=='PAUSED')this.pause(t.id,reason)}
   invalidate() {this.lifecycle++;for(const t of this.tasks)if(!terminal(t.status))this.stop(t.id);this.tasks=[]}
   async run(t) {
@@ -68,7 +88,7 @@ export class PageTaskEngine {
     const attempts=new Map()
     const started=Date.now()
     const fail=message=>{if(!terminal(t.status)){t.error=message;t.status='FAILED';t.controller.abort();this.options.gate.cancel();this.touch(t)}}
-    const deadline=setTimeout(()=>fail('任务超过10分钟，已停止；已提交的请求请人工核对'),this.options.timeout)
+    const deadline=setTimeout(()=>fail('任务达到执行时限，已停止；已提交的请求请人工核对'),this.options.timeout)
     let checking=false
     const watch=setInterval(async()=>{
       if(!this.current(t)||checking)return
@@ -77,22 +97,41 @@ export class PageTaskEngine {
       try {if(globalThis.navigator?.onLine!==false)await this.verify(t)}catch{fail('登录身份已失效，已停止后续操作')}finally{checking=false}
     },2000)
     try {
-      for(let count=0;count<30;) {
+      for(let count=0;count<(t.durable?60:30);) {
         await this.runnable(t);if(Date.now()-started>this.options.timeout)throw Error('任务执行超时，已停止')
         await this.verify(t);await this.options.settle();await this.options.gate.idle(()=>this.current(t))
-        const version=t.version,observation=await this.options.driver.observe({goal:t.goal+(t.input?'\n'+t.input:'')})
+        await this.options.driver.ready?.(()=>this.current(t)&&t.status==='RUNNING')
+        const version=t.version,observation=await this.options.driver.observe({goal:t.goal+(t.input?'\n'+t.input:''),v2:t.durable===true})
         const beforeState=await this.options.driver.fingerprint?.()
         const delay=Math.max(0,this.options.interval-(Date.now()-lastDecision));if(delay)await sleep(delay)
         await this.runnable(t);if(t.version!==version)continue
         let decision
-        try {lastDecision=Date.now();decision=await this.options.next({goal:t.goal,observation,history:t.history.slice(-12),artifacts:t.artifacts.map(({id,name})=>({id,name})),...(t.input?{input:t.input}:{})},t.controller.signal)}
-        catch(error){if(error.code===1001&&retries++<2)continue;throw error}
+        try {
+          lastDecision=Date.now();const body={goal:t.goal,observation,history:t.history.slice(-12),artifacts:t.artifacts.map(({id,name})=>({id,name})),...(t.input?{input:t.input}:{})}
+          if(t.durable){const turn=await this.options.persistence.next(t,body,t.controller.signal);t.remoteVersion=Math.max(t.remoteVersion,turn.task.version);t.plan=turn.task.plan||t.plan;t.facts=[...(t.facts||[]),...(turn.facts||[])].slice(-12);if(turn.failure)throw Object.assign(Error(turn.failure.message||turn.failure.code),{failureCode:turn.failure.code,traceId:turn.failure.traceId});decision=turn.decision}
+          else decision=await this.options.next(body,t.controller.signal)
+        }
+        catch(error){const recovery=classifyFailure(error);if(t.durable&&recovery.retryable&&retries++<2){t.steps.push({index:t.steps.length+1,action:'observe',label:'恢复规划',status:'RUNNING',detail:recovery.label+(error.traceId?' · '+error.traceId:'')});if(recovery.strategy==='WAIT')await sleep(this.options.recoveryDelay??10000);continue}if(error.code===1001&&retries++<2)continue;throw error}
         if(!this.current(t))throw Error('任务已停止或身份已变更')
         if(t.version!==version){await this.runnable(t);continue}
         await this.verify(t);await this.runnable(t)
         if(t.version!==version)continue
         const {action,arguments:args}=decision
+        if(action==='set_plan'){
+          t.plan=args;t.steps.push({index:t.steps.length+1,action,label:'规划任务步骤',status:'SUCCEEDED',detail:args.steps.map(s=>s.label).join(' → ')});t.history.push({action,summary:'已记录计划；仍须真实执行和逐项目标核验',ok:true});count++;this.touch(t);continue
+        }
         if(action==='finish') {
+          if(t.durable){
+            t.verification=await this.options.persistence.finish(t,observation.context||{},t.controller.signal)
+            await this.runnable(t)
+            if(!t.verification.complete){
+              const missing=t.verification.outcomes?.filter(o=>o.status!=='SATISFIED').map(o=>o.label||o.id).join('；')||'尚缺可验证的目标结果'
+              t.history.push({action:'observe',summary:`目标核验未通过：${missing}。保留已完成部分，继续处理未完成目标；不能重复提交已成功请求。`.slice(0,500),ok:false})
+              if((t.finishAttempts=(t.finishAttempts||0)+1)>=3){t.question='已保留实际完成部分；尚未完成：'+missing;t.status='WAITING_INPUT';this.touch(t)}
+              continue
+            }
+            t.status='SUCCEEDED';this.touch(t);break
+          }
           if(t.error)throw Error(t.error)
           if(!effects)throw Error('尚未在当前页面执行操作，不能报告完成')
           if(needsReceipt(t.goal)&&!t.steps.some(s=>s.action==='submit'&&s.status==='SUCCEEDED'))throw Error('尚未取得实际业务提交成功回执，不能报告完成')
@@ -101,7 +140,7 @@ export class PageTaskEngine {
           t.status='SUCCEEDED';this.touch(t);break
         }
         if(action==='ask_user'){t.question=String(args.question).slice(0,500);t.status='WAITING_INPUT';this.touch(t);continue}
-        if(beforeState!==undefined&&['click','fill','select','observe','navigate','back','scroll'].includes(action)){
+        if(beforeState!==undefined&&['click','fill','select','observe','navigate','back','scroll','use_skill'].includes(action)){
           const target=this.options.driver.describe?.(action,args)||JSON.stringify({action,args})
           const receipts=t.steps.filter(s=>s.action==='submit'&&s.status==='SUCCEEDED').length
           const key=JSON.stringify([beforeState,target,receipts]),seen=attempts.get(key)||0
@@ -114,7 +153,7 @@ export class PageTaskEngine {
           }
           attempts.set(key,seen+1)
         }
-        const step={index:t.steps.length+1,action,label:({navigate:'切换当前网页',click:'点击页面控件',fill:'填写页面表单',select:'选择页面选项',scroll:'滚动当前页面',back:'返回上一页面',observe:'读取当前页面',export_schedule:'生成课表文件',open_artifact:'请求打开成果文件'})[action]||action,status:'RUNNING'}
+        const step={index:t.steps.length+1,action,label:({navigate:'切换当前网页',click:'点击页面控件',fill:'填写页面表单',select:'选择页面选项',scroll:'滚动当前页面',back:'返回上一页面',observe:'读取当前页面',use_skill:'按业务对象操作',export_schedule:'生成课表文件',open_artifact:'请求打开成果文件'})[action]||action,status:'RUNNING'}
         t.steps.push(step);this.touch(t);count++
         try {
           if(['export_schedule','open_artifact'].includes(action))t.operationController=new AbortController()
@@ -148,12 +187,12 @@ export class PageTaskEngine {
           }
           step.status='FAILED';step.detail=error.message
           t.history.push({action,summary:String(error.message).slice(0,500),ok:false})
-          if(error.code!=='STALE_PAGE' || retries++>=2)throw error
+          if((error.code!=='STALE_PAGE'&&!(t.durable&&classifyFailure(error).retryable)) || retries++>=2)throw error
         }
         this.touch(t)
       }
       if(this.current(t))throw Error('已达到30步上限，请查看实际结果后继续')
     } catch(error) {if(!terminal(t.status)){t.status=this.owned(t)?'FAILED':'CANCELLED';t.error=error.message;this.touch(t)}}
-    finally {clearTimeout(deadline);clearInterval(watch);t.controller.abort();t.pendingConfirmation=undefined;this.options.gate.unbind({completed:t.status==='SUCCEEDED'});this.options.driver.clear();this.options.cleanup?.();t.input='';if(this.runningTask===t)this.runningTask=null}
+    finally {clearTimeout(deadline);clearInterval(watch);t.controller.abort();t.pendingConfirmation=undefined;this.options.gate.unbind({completed:t.status==='SUCCEEDED'});this.options.driver.clear();this.options.cleanup?.();t.input='';if(t.durable)try{await this.options.persistence.close(t,t.status)}catch(error){t.syncError='任务停止记录尚未同步，请刷新核对；不会自动重放业务请求'}if(this.runningTask===t)this.runningTask=null}
   }
 }

@@ -32,6 +32,15 @@ public class AgentTaskStore {
         });
     }
     public View get(Session me,String id){return owned(me,id,false).view;}
+    public boolean schemaAvailable(){try{jdbc.queryForObject("SELECT count(*) FROM agent_task WHERE 1=0",Integer.class);jdbc.queryForObject("SELECT count(*) FROM agent_task_receipt WHERE 1=0",Integer.class);return true;}catch(org.springframework.dao.DataAccessException unavailable){return false;}}
+    public int reserveModelCall(Session me,String id,long expected,String document){
+        return tx.execute(ignored->{var row=owned(me,id,true);checkVersion(row,expected,document);if(!"RUNNING".equals(row.view.status()))throw invalid("任务当前不可规划");
+            int last=row.view.checkpoint().path("modelCalls").asInt();
+            for(var detail:jdbc.queryForList("SELECT detail_json FROM agent_task_step WHERE task_id=? AND kind='MODEL_CALL'",String.class,id))last=Math.max(last,decode(detail).path("call").asInt());
+            if(last>=100)throw invalid("任务规划预算已用尽，请核对已有结果");
+            int next=last+1;jdbc.update("INSERT INTO agent_task_step(id,task_id,task_version,kind,detail_json,created_at) VALUES(?,?,?,'MODEL_CALL',?,?)",UUID.randomUUID().toString(),id,expected,encode(Map.of("call",next)),LocalDateTime.now());return next;
+        });
+    }
     public List<View> list(Session me){return jdbc.query("SELECT * FROM agent_task WHERE user_id=? AND session_hash=? AND role=? AND venue_id=? ORDER BY updated_at DESC LIMIT 30",(r,i)->view(r),me.userId(),me.sessionKey(),me.role(),me.venueId());}
     public View check(Session me,String id,long expected,String document){var row=owned(me,id,false);checkVersion(row,expected,document);return row.view;}
     public View update(Session me,String id,long expected,String document,String status,Object plan,Object checkpoint){
@@ -47,7 +56,7 @@ public class AgentTaskStore {
     public View revise(Session me,String id,long expected,String document,String amendment){
         validGoal(amendment);
         return tx.execute(ignored->{var row=owned(me,id,true);checkVersion(row,expected,document);if(TERMINAL.contains(row.view.status()))throw invalid("任务已经结束");
-            String goal=(row.view.goal()+"\n用户最新修订（优先，已提交结果不能撤回）："+amendment).trim();validGoal(goal);
+            String goal=AgentGoalRevision.apply(row.view.goal(),amendment);validGoal(goal);
             jdbc.update("UPDATE agent_task SET version=version+1,goal=?,plan_json='{}',status='RUNNING',updated_at=? WHERE id=? AND version=?",goal,LocalDateTime.now(),id,expected);return get(me,id);
         });
     }
@@ -58,6 +67,7 @@ public class AgentTaskStore {
             jdbc.update("UPDATE agent_task SET version=version+1,document_nonce=?,status='PAUSED',updated_at=? WHERE id=? AND version=?",newDocument,LocalDateTime.now(),id,expected);return get(me,id);
         });
     }
+    public View pause(Session me,String id,String document){return tx.execute(ignored->{var row=owned(me,id,true);checkVersion(row,row.view.version(),document);if(TERMINAL.contains(row.view.status()))return row.view;if("PAUSED".equals(row.view.status()))return row.view;return update(me,id,row.view.version(),document,"PAUSED",row.view.plan(),row.view.checkpoint());});}
     private Row owned(Session me,String id,boolean lock){
         if(id==null||!id.matches("[a-f0-9-]{36}"))throw denied();
         var rows=jdbc.query("SELECT * FROM agent_task WHERE id=?"+(lock?" FOR UPDATE":""),(r,i)->new Row(view(r),r.getLong("user_id"),r.getLong("venue_id"),r.getString("role"),r.getString("session_hash"),r.getString("document_nonce")),id);
