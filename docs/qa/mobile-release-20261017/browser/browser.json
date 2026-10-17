@@ -1,0 +1,60 @@
+{
+  "roles": [
+    {
+      "user": "admin",
+      "path": "/dashboard",
+      "mobileWidth": 390,
+      "mobileNavigation": true,
+      "assistantVisible": true,
+      "modelPageTaskCompleted": true,
+      "sameDocument": true,
+      "taskPage": "/training-plans",
+      "directRouteReload": true,
+      "desktop": true
+    },
+    {
+      "user": "manager",
+      "path": "/dashboard",
+      "mobileWidth": 390,
+      "mobileNavigation": true,
+      "assistantVisible": true,
+      "directRouteReload": true
+    },
+    {
+      "user": "reception",
+      "path": "/members",
+      "mobileWidth": 390,
+      "mobileNavigation": true,
+      "assistantVisible": true,
+      "directRouteReload": true
+    },
+    {
+      "user": "coach",
+      "path": "/coach-workbench",
+      "mobileWidth": 390,
+      "mobileNavigation": true,
+      "assistantVisible": true,
+      "directRouteReload": true
+    },
+    {
+      "user": "member",
+      "path": "/change-password",
+      "mobileWidth": 390,
+      "passwordChangeGuard": true
+    },
+    {
+      "user": "cjc2",
+      "path": "/member-home",
+      "mobileWidth": 390,
+      "mobileNavigation": true,
+      "assistantVisible": true,
+      "modelPageTaskCompleted": true,
+      "sameDocument": true,
+      "taskPage": "/member-home",
+      "directRouteReload": true
+    }
+  ],
+  "pageErrors": [],
+  "blocked": [],
+  "businessWrites": 0
+}

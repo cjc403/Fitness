@@ -1,0 +1,192 @@
+{
+  "at": "2026-10-17T05:16:49.552277+00:00",
+  "publicUrl": "http://101.37.18.88/login",
+  "release": "20261017-mobile-agent-v23",
+  "published": true,
+  "sourceCommit": "1a9b61c55b5ef823f389dce0a2b10185370ae3f4",
+  "schemaVersion": 23,
+  "backendTests": {
+    "tests": 377,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 13
+  },
+  "frontendTests": {
+    "total": 274,
+    "passed": 274,
+    "failed": 0
+  },
+  "frontendBuild": true,
+  "deploymentTests": {
+    "total": 24,
+    "passed": 24,
+    "linuxInterruptedSymlinkRedGreen": true
+  },
+  "independentReview": {
+    "importantFindings": 4,
+    "fixedBeforePublication": 4,
+    "details": [
+      "Actually stop/restart candidate during rollback",
+      "Fail old-app verification when health fails",
+      "Accumulate nginx restore errors",
+      "Use fresh atomic link directory and explicit failure handling"
+    ]
+  },
+  "dataPreservation": {
+    "legacyTablesUnchangedBeforeAcceptance": 70,
+    "passwordHashesUnchanged": true,
+    "counts": {
+      "users": 11,
+      "members": 23,
+      "bookings": 106,
+      "orders": 18
+    },
+    "note": "Authenticated acceptance updates normal login metadata; no business writes"
+  },
+  "artifacts": {
+    "fitness-backend.jar": "fa58a400ddd44ef198777540ffe1e2ecf2d92319e5d1a1a81233673974bb4367",
+    "frontend-dist.tar.gz": "d883562ab69e383429e59eab99a88d240132c372f49e4cd6cb188330a1e40230"
+  },
+  "frontendFilesVerified": 78,
+  "productionApi": {
+    "stage": false,
+    "roles": [
+      {
+        "user": "admin",
+        "role": "SUPER_ADMIN",
+        "login": true,
+        "profile": true,
+        "modelDecision": "finish",
+        "executedDecision": false
+      },
+      {
+        "user": "manager",
+        "role": "MANAGER",
+        "login": true,
+        "profile": true,
+        "modelDecision": "finish",
+        "executedDecision": false
+      },
+      {
+        "user": "reception",
+        "role": "RECEPTION",
+        "login": true,
+        "profile": true,
+        "modelDecision": "finish",
+        "executedDecision": false
+      },
+      {
+        "user": "coach",
+        "role": "COACH",
+        "login": true,
+        "profile": true,
+        "modelDecision": "finish",
+        "executedDecision": false
+      },
+      {
+        "user": "member",
+        "role": "MEMBER",
+        "login": true,
+        "passwordChangeRequired": true,
+        "guardPreserved": true
+      },
+      {
+        "user": "cjc2",
+        "role": "MEMBER",
+        "login": true,
+        "profile": true,
+        "modelDecision": "finish",
+        "executedDecision": false
+      }
+    ],
+    "businessWrites": 0
+  },
+  "browser": {
+    "roles": [
+      {
+        "user": "admin",
+        "path": "/dashboard",
+        "mobileWidth": 390,
+        "mobileNavigation": true,
+        "assistantVisible": true,
+        "modelPageTaskCompleted": true,
+        "sameDocument": true,
+        "taskPage": "/training-plans",
+        "directRouteReload": true,
+        "desktop": true
+      },
+      {
+        "user": "manager",
+        "path": "/dashboard",
+        "mobileWidth": 390,
+        "mobileNavigation": true,
+        "assistantVisible": true,
+        "directRouteReload": true
+      },
+      {
+        "user": "reception",
+        "path": "/members",
+        "mobileWidth": 390,
+        "mobileNavigation": true,
+        "assistantVisible": true,
+        "directRouteReload": true
+      },
+      {
+        "user": "coach",
+        "path": "/coach-workbench",
+        "mobileWidth": 390,
+        "mobileNavigation": true,
+        "assistantVisible": true,
+        "directRouteReload": true
+      },
+      {
+        "user": "member",
+        "path": "/change-password",
+        "mobileWidth": 390,
+        "passwordChangeGuard": true
+      },
+      {
+        "user": "cjc2",
+        "path": "/member-home",
+        "mobileWidth": 390,
+        "mobileNavigation": true,
+        "assistantVisible": true,
+        "modelPageTaskCompleted": true,
+        "sameDocument": true,
+        "taskPage": "/member-home",
+        "directRouteReload": true
+      }
+    ],
+    "pageErrors": [],
+    "blocked": [],
+    "businessWrites": 0
+  },
+  "staging": {
+    "productionBackupRestored": true,
+    "migratedTo": 23,
+    "allSixRolesReadonlyModelVerified": true,
+    "salesUsedCloneOnlyFixture": true,
+    "newProductionAccounts": 0,
+    "stagingProcessStopped": true
+  },
+  "backupPath": "/var/lib/fitchain/releases/20261017-mobile-agent-v23",
+  "oldFrontend": "/var/www/fitchain-releases/20261011-v22",
+  "knownLimits": [
+    "HTTP online H5; no production HTTPS configured",
+    "Browser phone-size emulation; physical phone keyboard and PWA installation not claimed",
+    "Existing member account still requires password change; cjc2 member account verified",
+    "No SALES account exists in production; SALES validated using clone-only fixture",
+    "Optional local file-opening companion is not installed on the server"
+  ],
+  "localMigrationsUnchanged": 23,
+  "keyNotBundledInFrontend": true,
+  "serverEnvironmentMode": "0600",
+  "gitPushed": false,
+  "handoffCredentialSectionPreserved": true,
+  "deliveryChecks": {
+    "stagedTextFilesScanned": 16,
+    "credentialLiterals": 0,
+    "productionScreenshotsCommitted": false,
+    "localIsolatedPostgresStopped": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "release": "20261017-mobile-agent-v23",
+  "schemaVersion": 23,
+  "sourceCommit": "1a9b61c55b5ef823f389dce0a2b10185370ae3f4",
+  "jarSha256": "fa58a400ddd44ef198777540ffe1e2ecf2d92319e5d1a1a81233673974bb4367",
+  "frontendFilesVerified": 78,
+  "frontendPath": "/var/www/fitchain-releases/20261017-mobile-agent-v23",
+  "oldFrontend": "/var/www/fitchain-releases/20261011-v22",
+  "backupPath": "/var/lib/fitchain/releases/20261017-mobile-agent-v23",
+  "backupReadable": true,
+  "legacyTablesUnchangedBeforeAcceptance": 70,
+  "passwordHashesUnchanged": true,
+  "counts": {
+    "users": 11,
+    "members": 23,
+    "bookings": 106,
+    "orders": 18
+  },
+  "servicesHealthy": true,
+  "maintenanceRemoved": true,
+  "serverEnvironmentMode": "0o600"
+}

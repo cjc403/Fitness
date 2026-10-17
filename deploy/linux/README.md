@@ -12,6 +12,17 @@ These files are the reproducible server-side configuration used for the Alibaba 
 
 Secrets are intentionally excluded. The server keeps them in `/etc/fitchain/fitchain.env` with mode `0600`.
 
+## 2026-10-17 mobile H5 and current-page Agent release
+
+The public entry remains `http://101.37.18.88/login`, shared by phones and desktops.
+Production was verified at V22 and upgraded to V23 using the tested local application baseline `1a9b61c`.
+Current frontend: `/var/www/fitchain-releases/20261017-mobile-agent-v23`.
+Backup, old application/configuration, database dump and receipt: `/var/lib/fitchain/releases/20261017-mobile-agent-v23`.
+The fixed `release-mobile-v23.sh` is single-use; do not rerun it against an existing release directory.
+The clone rehearsal preserved 70 legacy tables, and public browser/readonly Agent acceptance passed.
+The existing `member` password-change requirement is retained; no production SALES account was created for testing.
+See `docs/阿里云手机H5发布验收_20261017.md` and its verification record for exact scope and limitations.
+
 ## Current Alibaba Cloud deployment
 
 - Public entry: `http://101.37.18.88/login`
