@@ -16,4 +16,9 @@ class AgentQueryPagingTest {
   var source=json.valueToTree(Map.of("plans",Map.of("records",records,"total",45,"page",2,"size",20)));
   var result=AgentQueryPaging.slice("training_plans",source,2);assertEquals(20,result.data().path("plans").path("records").size());assertEquals(2,result.pagination().page());assertEquals(45,result.pagination().total());
  }
+ @Test void fallbackRowKeysCannotExposePrivateBusinessFields(){
+  var source=json.valueToTree(List.of(Map.of("phone","13912345678","note","私有备注")));
+  var result=AgentQueryPaging.slice("bookings",source,1);String key=result.pagination().keys().get(0);
+  assertFalse(key.contains("13912345678"));assertFalse(key.contains("私有备注"));assertTrue(key.startsWith("sha256:"));
+ }
 }

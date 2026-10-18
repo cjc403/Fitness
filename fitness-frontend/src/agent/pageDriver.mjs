@@ -1,6 +1,6 @@
 export const redactPage = (value, max=6000) => String(value??'').replace(/Bearer\s+[^\s"']+/gi,'Bearer [已隐藏]').replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,'[令牌已隐藏]').replace(/((?:password|refresh_token|access_token|api[_-]?key|密码|口令)\s*[:=：]\s*)[^\s,;，；]+/gi,'$1[已隐藏]').slice(0,max)
 const exclude='[data-page-agent-exclude],.assistant,.header,.mobile-navigation,.mobile-more-backdrop,[hidden],[aria-hidden="true"]'
-const controls='button,a[href],input,textarea,select,[role="button"],[role="menuitem"],[role="tab"],[role="checkbox"],[role="radio"],[role="combobox"],[role="option"],.el-date-table td.available:not(.disabled):not(.prev-month):not(.next-month),.el-month-table td:not(.disabled),.el-year-table td:not(.disabled)'
+const controls='button,a[href],input,textarea,select,[role="button"],[role="menuitem"],[role="tab"],[role="checkbox"],[role="radio"],[role="combobox"],[role="option"],[role="slider"],.el-date-table td.available:not(.disabled):not(.prev-month):not(.next-month),.el-month-table td:not(.disabled),.el-year-table td:not(.disabled)'
 const compact=value=>String(value??'').replace(/\s+/g,' ').trim()
 
 export function createPageDriver({document,window,router,allowed,contextAdapter}) {
@@ -66,14 +66,17 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     let value
     if(['INPUT','TEXTAREA','SELECT'].includes(e.tagName))value=e.value
     if(role(e)==='combobox')value=e.closest('.el-select__wrapper')?.innerText||e.value||e.getAttribute('aria-valuetext')||'未选择'
+    if(role(e)==='slider')value=e.getAttribute('aria-valuenow')
     return {value:value===undefined?undefined:compact(value),flags}
   }
   const title=root=>root?rawName(root)||compact(root.querySelector('h1,h2,h3,.el-dialog__title')?.innerText)||'业务弹窗':compact(document.querySelector('main h1')?.innerText)||document.title
   const score=(e,root,related)=>{
     const owner=entity(e),base=rawName(e),r=e.getBoundingClientRect()
+    const typed=e.closest('[data-agent-type][data-agent-id]'),typedLabel=compact(typed?.getAttribute('data-agent-label'))
+    const typedMatch=typedLabel.length>1&&lastGoal.includes(typedLabel)?850:0
     const matches=owner?owner.text.split(/[\s，,；;：:（）()｜|]+/).filter(word=>word.length>1&&lastGoal.includes(word)).length:0
     const date=calendarCell(e)?base.match(/\d{4}-\d{2}-\d{2}/)?.[0]:null
-    return (related.some(p=>p.contains(e))?1000:0)+(date&&lastGoal.includes(date)?900:0)+(owner&&owner.title.length>1&&lastGoal.includes(owner.title)?800:0)+matches*20+(root?.contains(e)?200:0)+(base.length>1&&lastGoal.includes(base)?80:0)+(r.bottom>0&&r.top<window.innerHeight?10:0)
+    return typedMatch+(related.some(p=>p.contains(e))?1000:0)+(date&&lastGoal.includes(date)?900:0)+(owner&&owner.title.length>1&&lastGoal.includes(owner.title)?800:0)+matches*20+(root?.contains(e)?200:0)+(base.length>1&&lastGoal.includes(base)?80:0)+(r.bottom>0&&r.top<window.innerHeight?10:0)
   }
   const entries=()=>{
     const root=scope(),related=popups(root)
@@ -97,7 +100,7 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     checkUrl(window.location.href);clear();refs=new Map();observedUrl=window.location.href;sequence++
     const {root,related,list}=entries();observedScope=root
     // Long teleported calendars/options must leave room for parent fields and recovery.
-    const protectedNodes=related.length?list.filter(e=>!related.some(p=>p.contains(e))&&(['INPUT','TEXTAREA','SELECT'].includes(e.tagName)||e.matches('button,[role="button"]')&&(root||/取消|关闭|保存|确定|确认/.test(rawName(e))))).slice(0,16):root?list.filter(e=>e.closest('[data-agent-field]')&&e.matches('input,textarea,select,[role="combobox"]')||e.matches('button,[role="button"]')&&/^(?:取消|关闭|保存|确定|确认)/.test(rawName(e))).slice(0,32):[]
+    const protectedNodes=related.length?list.filter(e=>!related.some(p=>p.contains(e))&&(['INPUT','TEXTAREA','SELECT'].includes(e.tagName)||e.matches('button,[role="button"]')&&(root||/取消|关闭|保存|确定|确认/.test(rawName(e))))).slice(0,16):root?list.filter(e=>e.closest('[data-agent-field]')&&e.matches('input,textarea,select,[role="combobox"],[role="slider"]')||e.matches('button,[role="button"]')&&/^(?:取消|关闭|保存|确定|确认)/.test(rawName(e))).slice(0,32):[]
     const reserved=new Set(protectedNodes)
     const chosen=new Set([...protectedNodes,...list.filter(e=>!reserved.has(e)).slice(0,60-protectedNodes.length)])
     const selected=list.filter(e=>chosen.has(e)),nodes=[]
@@ -170,7 +173,7 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     }
     if(!['click','fill','select'].includes(action))throw Error('不支持的网页动作')
     const item=refs.get(args.ref),e=item?.e,root=scope()
-    if(!e||!safe(e)||!inScope(e,root,popups(root))||name(e)!==item.name||type(e)!==item.type||JSON.stringify(state(e))!==item.state||e.disabled||e.getAttribute('aria-disabled')==='true')throw stale()
+    if(!e||!safe(e)||!inScope(e,root,popups(root))||name(e)!==item.name||type(e)!==item.type||JSON.stringify(state(e))!==item.state||e.disabled||e.getAttribute('aria-disabled')==='true'||e.getAttribute('aria-readonly')==='true')throw stale()
     if(action==='click'){
       const link=e.closest('a[href]')
       if(link){checkUrl(link.href);if(link.hasAttribute('download')||(link.target&&link.target!=='_self'))throw Error('请在当前页打开页面，不能新建窗口或下载链接')}
@@ -180,8 +183,21 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
       else e.click()
     }else{
       if(typeof args.value!=='string'||args.value.length>2000)throw Error('填写内容超出范围')
-      if(action==='select'&&e.tagName!=='SELECT')throw Error('请先点击自定义下拉框，再点击最新观察中的选项')
-      if(!['INPUT','TEXTAREA','SELECT'].includes(e.tagName)||e.readOnly)throw Error('此控件不可填写')
+      if(action==='fill'&&role(e)==='slider'){
+        const target=Number(args.value),min=Number(e.getAttribute('aria-valuemin')),max=Number(e.getAttribute('aria-valuemax'))
+        if(!args.value.trim()||!Number.isInteger(target)||!e.hasAttribute('aria-valuenow')||!e.hasAttribute('aria-valuemin')||!e.hasAttribute('aria-valuemax')||!Number.isFinite(min)||!Number.isFinite(max)||target<min||target>max)throw Error('评分必须在控件实际范围内，且为整数')
+        mark(e);e.focus({preventScroll:true})
+        for(let i=0;i<=20;i++){
+          if(!canAct())throw interrupted()
+          if(!safe(e)||scope()!==observedScope||window.location.href!==observedUrl||e.getAttribute('aria-disabled')==='true')throw stale()
+          const current=Number(e.getAttribute('aria-valuenow'));if(current===target)return `已通过控件键盘操作设置${redactPage(item.name,80)}为${target}`
+          if(i===20)break
+          const key=target>current?'ArrowRight':'ArrowLeft';e.dispatchEvent(new window.KeyboardEvent('keydown',{key,code:key,bubbles:true,cancelable:true}));await Promise.resolve();await Promise.resolve()
+          if(Number(e.getAttribute('aria-valuenow'))===current)throw Object.assign(Error('此评分控件未响应键盘操作，请重新观察'),{code:'CONTROL_NOT_WRITABLE'})
+        }throw Object.assign(Error('评分控件在有限步内未达到目标，请重新观察'),{code:'CONTROL_NOT_WRITABLE'})
+      }
+      if(action==='select'&&e.tagName!=='SELECT')throw Object.assign(Error('请先点击自定义下拉框，再点击最新观察中的选项'),{code:'CONTROL_NOT_WRITABLE'})
+      if(!['INPUT','TEXTAREA','SELECT'].includes(e.tagName)||e.readOnly)throw Object.assign(Error('此控件不可直接填写；自定义下拉请先点击展开，再按可见选项选择；其他只读控件不能修改'),{code:'CONTROL_NOT_WRITABLE'})
       mark(e)
       // Lazy Vue picker panels install their parsers when the field receives focus.
       // Yield for that render, then recheck task ownership and the observed field.

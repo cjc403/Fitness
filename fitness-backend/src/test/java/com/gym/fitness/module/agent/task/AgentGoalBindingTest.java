@@ -2,6 +2,7 @@ package com.gym.fitness.module.agent.task;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 class AgentGoalBindingTest {
+ @Test void aTrialNumberCannotStandInForTheLeadIdentity(){assertFalse(AgentGoalBinding.labelMatches("把潜客小李的体验编号#3记录为已到店","小王",3,"lead"));assertTrue(AgentGoalBinding.labelMatches("把潜客小李的体验编号#3记录为已到店","小李",9,"lead"));}
  @Test void bindsExactContactAndRequestedContent(){assertTrue(AgentGoalBinding.messageMatches("给cjc2发送 你好啊", "cjc2", 2,"你好啊"));assertFalse(AgentGoalBinding.messageMatches("给cjc2发送 你好啊","cjc",3,"你好啊"));assertFalse(AgentGoalBinding.messageMatches("给cjc2发送 你好啊","cjc2",2,"别的内容"));}
  @Test void supportsQuotedContentAndExplicitAccountId(){assertTrue(AgentGoalBinding.messageMatches("给账号#2发送：‘周五见’","同名用户",2,"周五见"));}
  @Test void absentOrAmbiguousContentCannotPass(){assertFalse(AgentGoalBinding.messageMatches("给cjc2发消息","cjc2",2,"编造的内容"));}

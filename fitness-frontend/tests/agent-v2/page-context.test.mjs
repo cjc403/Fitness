@@ -26,3 +26,8 @@ test('project training goal aliases select the visible business option',()=>{
  const context={fields:[{key:'goal',name:'训练目标',value:'综合训练',ref:'goal',writable:true,controlType:'combobox'}]}
  assert.deepEqual(chooseSemanticAction(context,{kind:'fill_field',field:'goal',value:'综合体能'}),{action:'select_option',arguments:{ref:'goal',value:'体能'}})
 })
+test('a prospect willing to try maps to the actual interested follow-up option',()=>{
+ const context={fields:[{key:'outcome',name:'跟进结果',value:'已联系',ref:'result',controlType:'combobox',writable:true}]}
+ assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'outcome',value:'愿意体验'}).arguments.value,'有意向')
+ context.fields[0].value='有意向';assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'outcome',value:'愿意体验'}).alreadySatisfied,true)
+})

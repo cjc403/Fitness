@@ -41,7 +41,7 @@ class AgentIntegrationTest {
   for(String role:List.of("SUPER_ADMIN","MANAGER","RECEPTION","COACH","SALES","MEMBER")){
    var u=account(role,0);var d=get(u,"/profile",0);assertThat(d.path("role").asText()).isEqualTo(role);
    var names=new ArrayList<String>();d.path("tools").forEach(t->names.add(t.path("name").asText()));
-   assertThat(names).contains("courses");assertThat(names).doesNotContain("refund","payment","execute_sql");
+   assertThat(names.contains("courses")).isEqualTo(!role.equals("SALES"));assertThat(names).doesNotContain("refund","payment","execute_sql");
    assertThat(names.contains("training_draft")).isEqualTo(role.equals("COACH"));
    assertThat(names.contains("book_trial")).isEqualTo(Set.of("SALES","MANAGER","SUPER_ADMIN").contains(role));
    assertThat(names.contains("analytics")).isEqualTo(Set.of("MANAGER","SUPER_ADMIN").contains(role));
@@ -91,6 +91,9 @@ class AgentIntegrationTest {
   post(u,"/actions/preview",tool("book_course",Map.of("scheduleId",s.getId(),"memberId",m.getId())),1003);
   var d=post(u,"/chat",Map.of("message","今天有哪些课程？"),0);assertThat(d.path("mode").asText()).isEqualTo("LOCAL");
   assertThat(d.path("results").isArray()).isTrue();assertThat(d.path("actions").size()).isZero();
+ }
+ @Test void advisorCannotUseAgentToReadEmployeeSchedules()throws Exception{
+  var u=account("SALES",0);post(u,"/query",tool("courses",Map.of()),1003);
  }
  @Test void coachCreatesOnlyDraftWithConfirmedContent() throws Exception {
   var u=account("COACH",0);var m=member(u);

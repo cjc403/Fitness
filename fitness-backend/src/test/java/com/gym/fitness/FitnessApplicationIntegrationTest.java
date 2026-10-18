@@ -672,7 +672,7 @@ class FitnessApplicationIntegrationTest {
         String coachDisplayName = matchedCoach.path("name").asText();
         long coachVenueId = matchedCoach.path("venueId").asLong();
 
-        java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(4).withNano(0);
+        java.time.LocalDateTime start = availableCoachTime(coachUserId, java.time.LocalDateTime.now().plusDays(4).withNano(0), java.time.Duration.ofHours(3), java.time.Duration.ofDays(2));
         long courseId = mapper.readTree(mvc.perform(post("/api/v1/admin/courses")
                         .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"教练绑定测试课\",\"type\":\"GROUP\",\"venueId\":" + coachVenueId
@@ -2503,8 +2503,8 @@ class FitnessApplicationIntegrationTest {
         long coachUserId = coachUserId();
 
         // A) 开课时间充裕的预约：应可一键取消
-        java.time.LocalDateTime far = java.time.LocalDateTime.now().plusDays(6)
-                .withHour(10).withMinute(0).withSecond(0).withNano(0);
+        java.time.LocalDateTime far = availableCoachTime(coachUserId, java.time.LocalDateTime.now().plusDays(6)
+                .withHour(10).withMinute(0).withSecond(0).withNano(0), java.time.Duration.ofHours(1), java.time.Duration.ofDays(2));
         long farSchedule = mapper.readTree(mvc.perform(post("/api/v1/admin/schedules")
                         .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
                         .content(scheduleBody(courseId, coachUserId, "首席教练", far, far.plusHours(1))))
@@ -2519,8 +2519,8 @@ class FitnessApplicationIntegrationTest {
                 .path("data").path("id").asLong();
 
         // B) 开课前 2 小时内的预约：会员无权自助取消，必须如实报告"需人工处理"
-        java.time.LocalDateTime soon = java.time.LocalDateTime.now().plusMinutes(45)
-                .withSecond(0).withNano(0);
+        java.time.LocalDateTime soon = availableCoachTime(coachUserId, java.time.LocalDateTime.now().plusMinutes(45)
+                .withSecond(0).withNano(0), java.time.Duration.ofHours(1), java.time.Duration.ofMinutes(70));
         long soonSchedule = mapper.readTree(mvc.perform(post("/api/v1/admin/schedules")
                         .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
                         .content(scheduleBody(courseId, coachUserId, "首席教练", soon, soon.plusHours(1))))
@@ -2604,5 +2604,18 @@ class FitnessApplicationIntegrationTest {
 
     private String bearer(String token) {
         return "Bearer " + token;
+    }
+    // Success-path fixtures must not collide with the real sample timetable.
+    // The short search window keeps the refund test strictly inside its two-hour boundary.
+    private java.time.LocalDateTime availableCoachTime(long coachId, java.time.LocalDateTime earliest, java.time.Duration length, java.time.Duration search) {
+        var schedules = scheduleRepo.findAll();
+        for (var candidate = earliest; !candidate.isAfter(earliest.plus(search)); candidate = candidate.plusMinutes(5)) {
+            var start = candidate;
+            boolean occupied = schedules.stream().anyMatch(s -> Long.valueOf(coachId).equals(s.getCoachId())
+                    && !"CANCELLED".equals(s.getStatus()) && s.getScheduledStartTime() != null && s.getScheduledEndTime() != null
+                    && s.getScheduledStartTime().isBefore(start.plus(length)) && s.getScheduledEndTime().isAfter(start));
+            if (!occupied) return start;
+        }
+        throw new AssertionError("No free coach slot inside the fixture's required time window");
     }
 }

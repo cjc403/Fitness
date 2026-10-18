@@ -43,7 +43,7 @@ public class AgentDomainVerifier {
   }
   if(path.contains("/training-plans")){
    if(!self&&!me.permissions().contains(path.endsWith("/archive")?"TRAINING_PLAN_ARCHIVE":"TRAINING_PLAN_WRITE"))throw com.gym.fitness.module.agent.AgentIdentity.denied();long id=pathId(path,"training-plans");out.put("kind","training");
-   if(id>0){var plan=training.detail(id,1,20,self).plan();out.put("id",id).put("name",plan.title()).put("memberName",plan.memberName()).put("venueId",plan.venueId()).put("version",plan.version());}
+   if(id>0){var plan=training.detail(id,1,20,self).plan();out.put("id",id).put("name",plan.title()).put("memberName",plan.memberName()).put("venueId",plan.venueId()).put("version",plan.version());if(path.endsWith("/sessions"))out.put("sessionHighWatermark",training.sessionHighWatermark(id,self));}
    else{long memberId=body.path("memberId").asLong();if(!"COACH".equals(me.role())||!access.related(access.actor(),memberId))throw com.gym.fitness.module.agent.AgentIdentity.denied();var m=members.get(memberId);out.put("memberId",memberId).put("memberName",m.getRealName());}return out;
   }
   if(path.startsWith("/api/v1/admin/members")){
@@ -64,8 +64,9 @@ public class AgentDomainVerifier {
  @Transactional(readOnly=true)
  public boolean verify(String type,AgentMutationReceiptService.Receipt r,String goal,boolean member){
   try{
+   if(!AgentGoalBinding.nestedMatches(goal,r.path()))return false;
    JsonNode data=r.result().path("data"),actual;long id=data.path("id").asLong();
-   if(r.before().path("id").asLong()>0&&!r.before().path("name").asText().isBlank()&&!AgentGoalBinding.labelMatches(goal,r.before().path("name").asText(),r.before().path("id").asLong(),type))return false;
+   if(r.before().path("id").asLong()>0&&!r.before().path("name").asText().isBlank()&&!AgentGoalBinding.labelMatches(goal,r.before().path("name").asText(),r.before().path("id").asLong(),r.before().path("kind").asText(type)))return false;
    for(String key:new String[]{"name","title"})if(r.request().hasNonNull(key)&&!goal.contains(r.request().get(key).asText()))return false;
    switch(type){
     case "course":
@@ -87,6 +88,18 @@ public class AgentDomainVerifier {
      var detail=training.detail(id,1,20,member);actual=json.valueToTree(detail);
      if(r.path().endsWith("/feedback")){long sessionId=pathId(r.path(),"sessions");return detail.sessions().records().stream().anyMatch(s->s.id()==sessionId&&s.feedbackRating()!=null&&s.feedbackRating()==r.request().path("rating").asInt()&&hashMatches(r.request(),"contentHash",json.valueToTree(s.feedbackContent())));}
      if(r.path().endsWith("/void")){long sessionId=pathId(r.path(),"sessions");return detail.sessions().records().stream().anyMatch(s->s.id()==sessionId&&"VOIDED".equals(s.status()));}
+     if(r.path().endsWith("/sessions")){
+      if(!r.before().has("sessionHighWatermark")||!r.request().path("exercises").isArray())return false;
+      for(var s:detail.sessions().records()){
+       if(s.id()<=r.before().path("sessionHighWatermark").asLong()||!"COMPLETED".equals(s.status())||find(data.path("sessions"),s.id()).isMissingNode())continue;
+       var saved=json.valueToTree(s);if(!matches(r.request(),saved,"performedOn","durationMinutes","effort","bookingId")||!hashMatches(r.request(),"noteHash",saved.path("note")))continue;
+       var requested=r.request().path("exercises");if(requested.size()!=s.exercises().size())continue;
+       var ids=new java.util.HashSet<Long>();boolean equal=true;
+       for(var e:requested){long exerciseId=e.path("exerciseId").asLong();JsonNode found=null;for(var a:saved.path("exercises"))if(a.path("exerciseId").asLong()==exerciseId)found=a;
+        if(exerciseId<=0||!ids.add(exerciseId)||found==null||!matches(e,found,"exerciseId","status","sets","reps","weightKg","minutes")||!hashMatches(e,"noteHash",found.path("note"))){equal=false;break;}}
+       if(equal)return true;
+      }return false;
+     }
      if(r.request().has("exercises")&&!r.path().endsWith("/sessions")){
       if(!matches(r.request(),actual.path("plan"),"title","memberId","goal","startDate","endDate"))return false;
       var expectedExercises=r.request().path("exercises");var savedExercises=actual.path("exercises");if(!savedExercises.isArray()||savedExercises.size()!=expectedExercises.size())return false;

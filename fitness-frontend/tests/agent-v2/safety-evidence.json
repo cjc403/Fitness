@@ -1,0 +1,482 @@
+{
+  "schemaVersion": 1,
+  "description": "Explicit protocol/component/PG evidence per frozen safety condition. Shared tests cover separate assertions; a missing or skipped proof never passes.",
+  "cases": [
+    {
+      "id": "safety-01",
+      "name": "wrong-course-id",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "wrongCourseWrongAmountAndUnrequestedCapacityNeverReachApproval"
+        }
+      ]
+    },
+    {
+      "id": "safety-02",
+      "name": "wrong-price",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "wrongCourseWrongAmountAndUnrequestedCapacityNeverReachApproval"
+        }
+      ]
+    },
+    {
+      "id": "safety-03",
+      "name": "unrequested-capacity",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "capacityOnlyChangeCannotSmuggleInAnUnrequestedPrice"
+        }
+      ]
+    },
+    {
+      "id": "safety-04",
+      "name": "wrong-recipient",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "wrongRecipientOrMessageCannotEvenProduceAnApprovablePermit"
+        }
+      ]
+    },
+    {
+      "id": "safety-05",
+      "name": "wrong-message",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "wrongRecipientOrMessageCannotEvenProduceAnApprovablePermit"
+        }
+      ]
+    },
+    {
+      "id": "safety-06",
+      "name": "no-approval",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.AgentTaskIntegrationTest",
+          "name": "actualCourseControllerWriteAndReceiptAreAtomicAndSingleUse"
+        }
+      ]
+    },
+    {
+      "id": "safety-07",
+      "name": "double-approval",
+      "evidence": [
+        {
+          "suite": "frontend",
+          "name": "write gate freezes exact data before sending; confirmation is single use and disables refresh replay"
+        }
+      ]
+    },
+    {
+      "id": "safety-08",
+      "name": "consumed-permit",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.AgentTaskIntegrationTest",
+          "name": "actualCourseControllerWriteAndReceiptAreAtomicAndSingleUse"
+        }
+      ]
+    },
+    {
+      "id": "safety-09",
+      "name": "expired-permit",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "anExpiredApprovalCannotReachBusiness"
+        }
+      ]
+    },
+    {
+      "id": "safety-10",
+      "name": "changed-body",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "changedPayloadOrCancelledTaskCannotConsumeApproval"
+        }
+      ]
+    },
+    {
+      "id": "safety-11",
+      "name": "changed-method",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "changingTheFrozenHttpMethodCannotReachBusiness"
+        }
+      ]
+    },
+    {
+      "id": "safety-12",
+      "name": "changed-path",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "changingTheFrozenHttpPathCannotReachBusiness"
+        }
+      ]
+    },
+    {
+      "id": "safety-13",
+      "name": "foreign-permit",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "aForeignUserCannotConsumeThePermit"
+        }
+      ]
+    },
+    {
+      "id": "safety-14",
+      "name": "old-session",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "aDifferentLoginSessionCannotConsumeThePermit"
+        }
+      ]
+    },
+    {
+      "id": "safety-15",
+      "name": "other-user",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskStoreTest",
+          "name": "taskIsScopedToActorRoleVenueAndLoginSession"
+        }
+      ]
+    },
+    {
+      "id": "safety-16",
+      "name": "cross-venue",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "aForeignVenueCannotConsumeThePermit"
+        }
+      ]
+    },
+    {
+      "id": "safety-17",
+      "name": "role-revoked",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.AgentTaskIntegrationTest",
+          "name": "roleRevocationAfterPreviewRejectsTheOldAgentApprovalToken"
+        }
+      ]
+    },
+    {
+      "id": "safety-18",
+      "name": "password-change-required",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.AgentTaskIntegrationTest",
+          "name": "passwordChangeRequiredCannotEnterTheAgentTaskOrApprovalApi"
+        }
+      ]
+    },
+    {
+      "id": "safety-19",
+      "name": "cancel-before-model",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskPlannerTest",
+          "name": "staleLeaseIsRejectedBeforeCallingModel"
+        },
+        {
+          "suite": "frontend",
+          "name": "late model decisions after pause, stop or identity replacement never act"
+        }
+      ]
+    },
+    {
+      "id": "safety-20",
+      "name": "cancel-before-confirm",
+      "evidence": [
+        {
+          "suite": "frontend",
+          "name": "stopping during delayed server approval cannot release the business request"
+        }
+      ]
+    },
+    {
+      "id": "safety-21",
+      "name": "pause-during-approve",
+      "evidence": [
+        {
+          "suite": "frontend",
+          "name": "pause during approval and refreshed preview require a new human confirmation"
+        }
+      ]
+    },
+    {
+      "id": "safety-22",
+      "name": "revise-during-prepare",
+      "evidence": [
+        {
+          "suite": "frontend",
+          "name": "cancelling a pending old goal during reservation cannot create a preview"
+        },
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskPostgresTest",
+          "name": "oldApprovalCannotWriteAfterGoalRevision"
+        }
+      ]
+    },
+    {
+      "id": "safety-23",
+      "name": "recover-old-document",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskStoreTest",
+          "name": "revisionsAndRecoveryRejectOldVersionAndOldDocumentLease"
+        }
+      ]
+    },
+    {
+      "id": "safety-24",
+      "name": "late-old-document-write",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "recoveringInANewDocumentInvalidatesTheOldApprovedRequest"
+        }
+      ]
+    },
+    {
+      "id": "safety-25",
+      "name": "two-tabs-prepare",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskPostgresTest",
+          "name": "concurrentPrepareHasExactlyOneWinner"
+        },
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskStoreTest",
+          "name": "revisionsAndRecoveryRejectOldVersionAndOldDocumentLease"
+        }
+      ]
+    },
+    {
+      "id": "safety-26",
+      "name": "concurrent-consume",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskPostgresTest",
+          "name": "concurrentConsumptionCommitsBusinessAndReceiptExactlyOnce"
+        }
+      ]
+    },
+    {
+      "id": "safety-27",
+      "name": "rollback-receipt",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskPostgresTest",
+          "name": "businessRollbackCannotLeaveSuccessfulReceipt"
+        }
+      ]
+    },
+    {
+      "id": "safety-28",
+      "name": "response-lost-after-commit",
+      "evidence": [
+        {
+          "suite": "frontend",
+          "name": "a lost submit response is resolved from its exact server receipt without another write"
+        },
+        {
+          "suite": "live-lost-response"
+        }
+      ]
+    },
+    {
+      "id": "safety-29",
+      "name": "already-submitted-replay",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "aLostResponseCannotBeReplayedByRegeneratingAnIdempotencyKey"
+        }
+      ]
+    },
+    {
+      "id": "safety-30",
+      "name": "prompt-injection-page",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.computer.ComputerAgentServiceTest",
+          "name": "promptSeparatesUntrustedPageInstructionsFromTaskAndReportsAllSixRoleContext"
+        },
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "aReadOnlyGoalCannotAuthorizeUnrelatedMessageOrMemberCreation"
+        }
+      ]
+    },
+    {
+      "id": "safety-31",
+      "name": "prompt-injection-business",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentOperationIntentTest",
+          "name": "negativeInstructionsAndMessageContentsCannotAuthorizeOtherBusinessWrites"
+        },
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "aReadOnlyGoalCannotAuthorizeUnrelatedMessageOrMemberCreation"
+        }
+      ]
+    },
+    {
+      "id": "safety-32",
+      "name": "secret-in-diagnostics",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskStoreTest",
+          "name": "credentialBearingGoalsAreRejectedBeforeTheyCanEnterTaskDiagnostics"
+        }
+      ]
+    },
+    {
+      "id": "safety-33",
+      "name": "provider-reasoning-hidden",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskPlannerTest",
+          "name": "genuineProviderHistoryIsRetainedAndNeverReturnedToBrowser"
+        }
+      ]
+    },
+    {
+      "id": "safety-34",
+      "name": "malformed-tool",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.assistant.service.AgentModelClientTest",
+          "name": "invalidCallsNeverReachTheOrchestrator"
+        }
+      ]
+    },
+    {
+      "id": "safety-35",
+      "name": "parallel-tools",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskPlannerTest",
+          "name": "parallelToolActionsAreNeverDispatched"
+        }
+      ]
+    },
+    {
+      "id": "safety-36",
+      "name": "truncated-response",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.assistant.service.AgentModelPolicyTest",
+          "name": "truncatedResponseNeverBecomesAnAction"
+        }
+      ]
+    },
+    {
+      "id": "safety-37",
+      "name": "rate-limit-budget",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.assistant.service.AgentModelPolicyTest",
+          "name": "rateLimitIsTypedAndDoesNotExposeProviderBody"
+        },
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentTaskStoreTest",
+          "name": "modelReservationsSurviveLostResponsesAndDoNotChangeTheDocumentVersion"
+        }
+      ]
+    },
+    {
+      "id": "safety-38",
+      "name": "unknown-goal-partial",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentOutcomeVerifierTest",
+          "name": "unknownAdditionalRequirementCannotBeSilentlyDropped"
+        },
+        {
+          "suite": "frontend",
+          "name": "a later failure retains verified partial work instead of hiding the committed result"
+        }
+      ]
+    },
+    {
+      "id": "safety-39",
+      "name": "read-only-write",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentOperationIntentTest",
+          "name": "readingAnOperationNameDoesNotRequestTheOperation"
+        },
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentMutationReceiptTest",
+          "name": "aReadOnlyGoalCannotAuthorizeUnrelatedMessageOrMemberCreation"
+        }
+      ]
+    },
+    {
+      "id": "safety-40",
+      "name": "do-not-publish",
+      "evidence": [
+        {
+          "suite": "backend",
+          "className": "com.gym.fitness.module.agent.task.AgentOperationIntentTest",
+          "name": "negativeInstructionsAndMessageContentsCannotAuthorizeOtherBusinessWrites"
+        }
+      ]
+    }
+  ]
+}

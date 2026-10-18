@@ -55,6 +55,7 @@ function ensure() {
     },
     prepare:async(task:any,request:any)=>api<any>(`/tasks/${task.id}/prepare`,{...command(task),method:request.method,path:frozenRequestTarget(request.path,request.params),body:request.body}),
     approve:(task:any,receipt:string)=>api(`/tasks/${task.id}/approve/${receipt}`,command(task)),
+    receipts:(task:any)=>api<any[]>(`/tasks/${task.id}/receipts`),
     finish:async(task:any,context:any,signal:AbortSignal)=>{const report=await api<any>(`/tasks/${task.id}/verify`,{...command(task),context},signal);task.remoteVersion=report.task.version;return report},
     pause:(task:any)=>api<RemoteTask>(`/tasks/${task.id}/pause`,{document:documentNonce}),
     resume:async(task:any)=>{const latest=await api<RemoteTask>(`/tasks/${task.id}`);return latest.status==='PAUSED'?api<RemoteTask>(`/tasks/${task.id}/resume`,{version:latest.version,document:documentNonce}):latest},

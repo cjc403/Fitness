@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.ai")
 public class AiProperties {
     private boolean enabled = true;
+    private boolean taskV2Enabled = true;
     private String baseUrl = "https://api.deepseek.com";
     private String apiKey = "";
     private String model = "deepseek-flash";

@@ -10,6 +10,18 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 class AgentDomainVerifierTest {
+ @Test void aTrainingRecordNeedsANewSessionWithTheFrozenExerciseValues(){
+  var mapper=new ObjectMapper().findAndRegisterModules().disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);var training=mock(TrainingPlanService.class);
+  var plan=Map.of("id",2,"title","基础训练","memberId",7,"status","ACTIVE");
+  var request=mapper.valueToTree(Map.of("performedOn","2026-10-18","durationMinutes",30,"exercises",List.of(Map.of("exerciseId",8,"status","DONE","sets",3,"reps",10))));
+  for(int sets:List.of(2,3)){
+   var row=Map.of("id",9,"performedOn","2026-10-18","durationMinutes",30,"status","COMPLETED","exercises",List.of(Map.of("exerciseId",8,"status","DONE","sets",sets,"reps",10)));
+   var detail=mapper.convertValue(Map.of("plan",plan,"exercises",List.of(),"sessions",Map.of("records",List.of(row),"total",1,"page",1,"size",20),"events",List.of()),com.gym.fitness.module.workout.dto.TrainingPlanDtos.Detail.class);when(training.detail(2L,1,20,false)).thenReturn(detail);
+   var v=new AgentDomainVerifier(mock(AgentBusiness.class),training,mock(LeadService.class),mock(MemberService.class),mapper,mock(com.gym.fitness.module.workout.service.TrainingPlanAccess.class),mock(com.gym.fitness.module.member.service.AdvisorService.class),mock(com.gym.fitness.module.course.service.CourseService.class),mock(com.gym.fitness.module.member.service.MemberPortalService.class));
+   var r=new AgentMutationReceiptService.Receipt("r","t",1,"POST","/api/v1/training-plans/2/sessions","SUCCEEDED",request,mapper.valueToTree(Map.of("sessionHighWatermark",0)),mapper.valueToTree(Map.of("code",0,"data",Map.of("plan",plan,"sessions",Map.of("records",List.of(row))))),LocalDateTime.now());
+   assertEquals(sets==3,v.verify("training",r,"为训练计划#2登记今天训练",false));
+  }
+ }
  final ObjectMapper json=new ObjectMapper().findAndRegisterModules();
  @Test void aDraftIsNotCompleteWhenTheSavedExercisesDifferFromTheFrozenRequest(){
   var training=mock(TrainingPlanService.class);

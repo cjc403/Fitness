@@ -24,8 +24,10 @@ public final class AgentQueryPaging {
     if(size<1||size>20||records.size()>size||total<records.size())throw invalid("业务查询分页信息不完整");
    }else return new Slice(data,null);
   }
-  var keys=new ArrayList<String>();for(var row:records){String id=null;for(var key:List.of("id","scheduleId","memberId","userId"))if(row.hasNonNull(key)){id=key+":"+row.get(key).asText();break;}keys.add(id==null?row.toString():id);}
+  var keys=new ArrayList<String>();for(var row:records){String id=null;for(var key:List.of("id","scheduleId","memberId","userId"))if(row.hasNonNull(key)){id=key+":"+row.get(key).asText();break;}keys.add(id==null?privateKey(row):id);}
   return new Slice(data,new AgentDtos.Pagination(page,size,total,records.size(),List.copyOf(keys),(long)page*size<total?page+1:null,false));
  }
  private static ArrayNode part(JsonNode source,int page,int size){var out=JsonNodeFactory.instance.arrayNode();int from=Math.min(source.size(),(page-1)*size),to=Math.min(source.size(),from+size);for(int i=from;i<to;i++)out.add(source.get(i));return out;}
+ private static String privateKey(JsonNode row){try{return "sha256:"+HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(canonical(row).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));}catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}}
+ private static JsonNode canonical(JsonNode n){if(n.isObject()){var out=JsonNodeFactory.instance.objectNode();var keys=new TreeSet<String>();n.fieldNames().forEachRemaining(keys::add);keys.forEach(k->out.set(k,canonical(n.get(k))));return out;}if(n.isArray()){var out=JsonNodeFactory.instance.arrayNode();n.forEach(v->out.add(canonical(v)));return out;}return n;}
 }

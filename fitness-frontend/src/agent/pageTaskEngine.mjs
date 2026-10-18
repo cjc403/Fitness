@@ -15,11 +15,12 @@ export class PageTaskEngine {
   constructor(options) {this.options={interval:7000,timeout:900000,waitTimeout:600000,...options};this.tasks=[];this.lifecycle=0}
   owned(t) {return t && t.identity===this.options.identity()}
   current(t) {return this.owned(t) && !terminal(t.status) && !t.controller.signal.aborted}
-  public(t) {const {identity,session,controller,operationController,version,input,history,pausedStatus,remoteTransition,factFingerprints,...value}=t;return copy(value)}
+  public(t) {const {identity,session,controller,operationController,version,input,history,pausedStatus,remoteTransition,factFingerprints,execution,verifyRecovery,...value}=t;return copy(value)}
   list() {return this.tasks.filter(t=>this.owned(t)).map(t=>this.public(t))}
   raw(id) {const t=this.tasks.find(t=>t.id===id);if(!this.owned(t))throw Error('网页任务不属于当前登录身份');return t}
   get(id) {return this.public(this.raw(id))}
-  touch(t) {t.updatedAt=stamp()}
+  executionTime(t) {return (t.execution?.elapsed||0)+(t.execution?.running?Date.now()-t.execution.at:0)}
+  touch(t) {const now=Date.now(),elapsed=this.executionTime(t);t.execution={elapsed,at:now,running:t.status==='RUNNING'};t.updatedAt=stamp()}
   async verify(t) {
     if(!this.current(t))throw Error('网页任务已停止或身份已变更')
     const session=await this.options.session(t.controller.signal)
@@ -42,12 +43,13 @@ export class PageTaskEngine {
     const remote=this.options.persistence&&!/导出|CSV|文件/i.test(goal)?await this.options.persistence.create(goal.trim(),config):null
     if(identity!==this.options.identity()||lifecycle!==this.lifecycle||config.signal?.aborted||config.isRequestCurrent?.()===false){if(remote)this.options.persistence.close({...remote,remoteVersion:remote.version},'CANCELLED').catch(()=>{});throw Error('创建请求已取消')}
     const t={id:remote?.id||uid(),goal:goal.trim(),status:remote?.status==='PAUSED'?'PAUSED':'RUNNING',...(remote?.status==='PAUSED'?{pausedStatus:'RUNNING',pauseReason:'USER'}:{}),createdAt:stamp(),updatedAt:stamp(),steps:[],artifacts:[],identity,session,controller:new AbortController(),version:0,history:[],input:'',...(remote?{durable:true,remoteVersion:remote.version,plan:remote.plan,verification:undefined,facts:[],receipts:[]}:{} )}
+    t.verifyRecovery=!!config.recover&&t.durable===true
     this.options.gate.bind({verify:async()=>{await this.verify(t);if(t.status==='PAUSED')throw Object.assign(Error('任务已暂停，请继续后重新确认'),{code:'PAUSED_TASK'})},...(remote?{prepare:r=>this.options.persistence.prepare(t,r),approve:id=>this.options.persistence.approve(t,id)}:{}),onPending:preview=>{if(this.current(t)){t.pendingConfirmation=preview;if(t.status==='PAUSED')t.pausedStatus='WAITING_CONFIRMATION';else t.status='WAITING_CONFIRMATION';this.touch(t)}},onReceipt:(ok,detail,transport)=>{
       t.steps.push({index:t.steps.length+1,action:'submit',label:'业务提交回执',status:ok?'SUCCEEDED':'FAILED',detail})
       // The planner must receive the confirmed transport result, not infer it from page text.
       // `observe` is an existing feedback action accepted by the planning protocol.
       t.history.push({action:'observe',summary:`真实请求回执：人工确认已完成；${ok?'业务提交成功':'业务提交失败'}。${detail}`.slice(0,500),ok})
-      if(t.durable){if(transport?.receiptId)t.receipts.push(transport.receiptId);if(!ok)t.lastFailure={code:'WRITE_UNKNOWN',detail}}
+      if(t.durable){if(transport?.receiptId)t.receipts.push(transport.receiptId);if(!ok)t.lastFailure={code:'WRITE_UNKNOWN',detail,permitId:transport?.permitId}}
       else if(!ok)t.error=detail;this.touch(t)
     }})
     this.tasks=[t,...this.tasks.filter(item=>this.owned(item))].slice(0,30)
@@ -62,7 +64,7 @@ export class PageTaskEngine {
     const remote=await this.options.persistence.resume(t)
     if(!this.current(t)||t.status!=='PAUSED')throw Error('任务状态已变化')
     t.remoteVersion=Math.max(t.remoteVersion,remote.version);if(remote.status==='SUCCEEDED'){t.status='SUCCEEDED';this.touch(t);return this.public(t)}const status=t.pausedStatus||'RUNNING';t.status='RUNNING';t.syncError=undefined
-    if(status==='WAITING_CONFIRMATION'&&this.options.gate.pending)await this.options.gate.refreshPending();else t.status=status
+    if(status==='WAITING_CONFIRMATION'&&this.options.gate.pending&&!t.lastFailure)await this.options.gate.refreshPending();else t.status=status==='WAITING_CONFIRMATION'?'RUNNING':status
     t.pausedStatus=undefined;t.pauseReason=undefined;this.touch(t);return this.public(t)
   }
   stop(id) {const t=this.tasks.find(t=>t.id===id);if(!t)return;if(!terminal(t.status)){t.status='CANCELLED';t.version++;t.controller.abort();t.pendingConfirmation=undefined;this.options.gate.cancel();this.options.driver.clear();this.touch(t)}return this.public(t)}
@@ -83,32 +85,61 @@ export class PageTaskEngine {
   }
   suspend(reason='ASSISTANT_CLOSED') {this.lifecycle++;for(const t of this.tasks)if(this.current(t)&&t.status!=='PAUSED')this.pause(t.id,reason)}
   invalidate() {this.lifecycle++;for(const t of this.tasks)if(!terminal(t.status))this.stop(t.id);this.tasks=[]}
+  async reconcileUnknownWrite(t){
+    const version=t.version,permit=t.lastFailure?.permitId
+    for(let attempt=0;attempt<2;attempt++){
+      let receipts=[]
+      try{receipts=await this.options.persistence.receipts?.(t)||[]}catch{}
+      if(!this.current(t)||t.version!==version)return false
+      const receipt=permit&&receipts.find(r=>r.id===permit)
+      if(receipt?.status==='SUCCEEDED'){
+        if(!t.receipts.includes(permit))t.receipts.push(permit)
+        t.steps.push({index:t.steps.length+1,action:'submit',label:'服务端回执回查',status:'SUCCEEDED',detail:'响应丢失，服务端已确认本次业务保存成功；没有重复提交。页面若显示旧提示，请刷新查看最新记录。'})
+        t.history.push({action:'observe',summary:'只读回查已确认本次提交成功，不得再次办理。',ok:true});t.lastFailure=undefined;this.touch(t);return true
+      }
+      if(receipt&&['FAILED','EXPIRED'].includes(receipt.status)){
+        const reason=receipt.result?.message?String(receipt.result.message).replace(/[\r\n\t]+/g,' ').slice(0,300):''
+        t.history.push({action:'observe',summary:'服务端确认原提交没有成功或已撤销；'+(reason?'原业务原因：'+reason+'；':'')+'请依据实际校验信息修正，不改变原目标；变更预约时间或接待人须询问用户。',ok:false});t.lastFailure=undefined
+        if((t.writeRecoveries=(t.writeRecoveries||0)+1)<=2)return true
+        break
+      }
+      if(attempt===0)await sleep(this.options.receiptRecoveryDelay??1000)
+    }
+    if(this.current(t)&&t.version===version){t.question='暂时无法确认这次提交的最终结果，已暂停且不会重试业务。恢复后会先回查同一回执；请勿重复办理。';this.pause(t.id,'WRITE_UNKNOWN')}
+    return false
+  }
   async run(t) {
     let effects=0,lastDecision=0,retries=0,blockedDecisions=0
     const attempts=new Map()
-    const started=Date.now()
+    this.touch(t)
     const completedWork=()=>t.verification?.partial||t.steps.some(s=>s.action==='submit'&&s.status==='SUCCEEDED')
     const fail=message=>{if(!terminal(t.status)){t.error=message;t.status=completedWork()?'PARTIAL':'FAILED';t.controller.abort();this.options.gate.cancel();this.touch(t)}}
-    const deadline=setTimeout(()=>fail('任务达到执行时限，已停止；已提交的请求请人工核对'),this.options.timeout)
+    const deadline=setInterval(()=>{if(this.executionTime(t)>=this.options.timeout)fail('任务达到执行时限，已停止；已提交的请求请人工核对')},Math.min(250,Math.max(10,this.options.timeout/4)))
     let checking=false
     const watch=setInterval(async()=>{
       if(!this.current(t)||checking)return
       if(t.status!=='RUNNING'&&Date.now()-Date.parse(t.updatedAt)>this.options.waitTimeout){fail('等待超时，已阻止挂起操作');return}
       checking=true
-      try {if(globalThis.navigator?.onLine!==false)await this.verify(t)}catch{fail('登录身份已失效，已停止后续操作')}finally{checking=false}
+      try {if(globalThis.navigator?.onLine!==false)await this.verify(t)}catch(error){
+        if(!this.current(t))return
+        const revoked=[401,403].includes(Number(error.httpStatus))||[1003,1100,1101,1102,1103,1105,2602].includes(Number(error.code))||/请先登录|登录身份已变更|登录或门店身份已变更/.test(error.message)
+        if(revoked)fail('登录身份已失效，已停止后续操作')
+        else if(t.status!=='PAUSED'){this.pause(t.id,'OFFLINE');t.syncError='暂时无法连接身份校验服务，已暂停操作；连接恢复后可继续核对原任务'}
+      }finally{checking=false}
     },2000)
     try {
       for(let count=0;count<(t.durable?60:30);) {
-        await this.runnable(t);if(Date.now()-started>this.options.timeout)throw Error('任务执行超时，已停止')
+        await this.runnable(t);if(this.executionTime(t)>this.options.timeout)throw Error('任务执行超时，已停止')
         await this.verify(t);await this.options.settle();await this.options.gate.idle(()=>this.current(t))
         await this.options.driver.ready?.(()=>this.current(t)&&t.status==='RUNNING')
+        if(t.durable&&t.lastFailure?.code==='WRITE_UNKNOWN'&&!await this.reconcileUnknownWrite(t))continue
         const version=t.version,observation=await this.options.driver.observe({goal:t.goal+(t.input?'\n'+t.input:''),v2:t.durable===true})
-        const submits=t.steps.filter(s=>s.action==='submit'&&s.status==='SUCCEEDED').length,evidenceKey=`${submits}:${t.factVersion||0}`
-        if(t.durable&&(submits>0||t.factVersion>0)&&evidenceKey!==t.verifiedEvidence){
+        const submits=t.steps.filter(s=>s.action==='submit'&&s.status==='SUCCEEDED').length,evidenceKey=`${submits}:${t.factVersion||0}:${t.pageVersion||0}`
+        if(t.durable&&(t.verifyRecovery||submits>0||t.factVersion>0||t.pageVersion>0)&&evidenceKey!==t.verifiedEvidence){
           const report=await this.options.persistence.finish(t,observation.context||{},t.controller.signal)
           if(!this.current(t))throw Error('任务已停止或身份已变更')
           if(t.version!==version){await this.runnable(t);continue}
-          t.verification=report;t.verifiedEvidence=evidenceKey
+          t.verification=report;t.verifiedEvidence=evidenceKey;t.verifyRecovery=false
           if(report.complete){t.status='SUCCEEDED';this.touch(t);break}
           const missing=report.outcomes?.filter(o=>o.status!=='SATISFIED').map(o=>o.label||o.id).join('；')
           if(missing)t.history.push({action:'observe',summary:('服务端核验：仍需完成'+missing+'；成功回执不可重放。').slice(0,500),ok:false})
@@ -183,6 +214,7 @@ export class PageTaskEngine {
           // starts its refresh reads. Wait for those handlers, reads and rendering.
           await this.options.settle();await this.options.gate.idle(()=>this.current(t));await this.options.settle();await this.runnable(t)
           if(t.error)throw Error(t.error)
+          if(t.durable&&action!=='observe'&&beforeState!==undefined&&beforeState!==await this.options.driver.fingerprint?.())t.pageVersion=(t.pageVersion||0)+1
           const feedback=await this.options.driver.feedback?.()
           await this.runnable(t)
           if(feedback)step.detail=String(step.detail)+'；操作后核对：'+feedback
@@ -204,6 +236,6 @@ export class PageTaskEngine {
       }
       if(this.current(t))throw Error('已达到30步上限，请查看实际结果后继续')
     } catch(error) {if(!terminal(t.status)){t.status=this.owned(t)?completedWork()?'PARTIAL':'FAILED':'CANCELLED';t.error=error.message;this.touch(t)}}
-    finally {clearTimeout(deadline);clearInterval(watch);t.controller.abort();t.pendingConfirmation=undefined;this.options.gate.unbind({completed:t.status==='SUCCEEDED'});this.options.driver.clear();this.options.cleanup?.();t.input='';if(t.durable)try{await this.options.persistence.close(t,t.status)}catch(error){t.syncError='任务停止记录尚未同步，请刷新核对；不会自动重放业务请求'}if(this.runningTask===t)this.runningTask=null}
+    finally {clearInterval(deadline);clearInterval(watch);t.controller.abort();t.pendingConfirmation=undefined;this.options.gate.unbind({completed:t.status==='SUCCEEDED'});this.options.driver.clear();this.options.cleanup?.();t.input='';if(t.durable)try{await this.options.persistence.close(t,t.status)}catch(error){t.syncError='任务停止记录尚未同步，请刷新核对；不会自动重放业务请求'}if(this.runningTask===t)this.runningTask=null}
   }
 }

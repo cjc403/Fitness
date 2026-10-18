@@ -55,7 +55,7 @@
             <el-table-column label="课程" min-width="170"><template #default="{row}"><strong>{{ row.courseName }}</strong><small>{{ row.coachName }}</small></template></el-table-column>
             <el-table-column label="上课时间" min-width="190"><template #default="{row}">{{ formatDateTime(row.startTime) }}</template></el-table-column>
             <el-table-column label="状态" width="110"><template #default="{row}"><el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag></template></el-table-column>
-            <el-table-column label="操作" width="170"><template #default="{row}"><template v-if="row.cancellationAllowed"><el-button link type="warning" @click="leave(row)" data-agent-type="member-item" :data-agent-id="row.id" :data-agent-label="row.name || row.realName || row.title || row.memberName || ''">请假</el-button><el-button link type="danger" @click="cancel(row)" data-agent-type="member-item" :data-agent-id="row.id" :data-agent-label="row.name || row.realName || row.title || row.memberName || ''" data-agent-action="cancel">取消</el-button></template><span v-else class="muted">—</span></template></el-table-column>
+            <el-table-column label="操作" width="170"><template #default="{row}"><template v-if="row.cancellationAllowed"><el-button link type="warning" @click="leave(row)" data-agent-type="member-item" :data-agent-id="row.id" :data-agent-label="row.name || row.realName || row.title || row.memberName || ''">请假</el-button><el-button link type="danger" @click="cancel(row)" data-agent-type="booking" :data-agent-id="row.id" :data-agent-label="row.courseName" data-agent-action="cancel">取消</el-button></template><span v-else class="muted">—</span></template></el-table-column>
           </el-table>
           <el-empty v-if="!bookings.length" description="你还没有预约记录" />
         </el-card>
@@ -426,7 +426,7 @@ const bookRecommended = async (item: CourseRecommendation) => {
 }
 
 const cancel = async (booking: MemberBooking) => {
-  await ElMessageBox.confirm('确认取消该预约？开课前 2 小时内不可自助取消。', '取消预约', { type: 'warning' })
+  await ElMessageBox.confirm(`确认取消预约 #${booking.id}「${booking.courseName}」（${formatDateTime(booking.startTime)}）？开课前 2 小时内不可自助取消。`, '取消预约', { type: 'warning', confirmButtonText: '继续取消预约', cancelButtonText: '保留预约' })
   await cancelSelfBooking(booking.id)
   ElMessage.success('预约已取消')
   await load()

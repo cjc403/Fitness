@@ -61,7 +61,7 @@ export function classifyFailure(error={}){
   const code=String(error.failureCode||error.code||'')
   if(code==='WRITE_UNKNOWN')return {strategy:'VERIFY_ONLY',retryable:false,label:'提交结果待核对，禁止自动重发'}
   if(['1002','1003','2602','FORBIDDEN','PASSWORD_CHANGE_REQUIRED'].includes(code))return {strategy:'EXPLAIN',retryable:false,label:'当前身份或权限不允许此操作'}
-  if(['STALE_PAGE','ACTION_INTERRUPTED','MODEL_PROTOCOL','1001'].includes(code))return {strategy:'REOBSERVE',retryable:true,label:'重新观察当前对象和字段'}
+  if(['STALE_PAGE','CONTROL_NOT_WRITABLE','ACTION_INTERRUPTED','MODEL_PROTOCOL','1001'].includes(code))return {strategy:'REOBSERVE',retryable:true,label:'重新观察当前对象和字段'}
   if(['RATE_LIMITED','CIRCUIT_OPEN','MODEL_TIMEOUT','MODEL_BUSY','PROVIDER_UNAVAILABLE'].includes(code))return {strategy:'WAIT',retryable:true,label:'等待模型服务恢复后重新规划'}
   return {strategy:'EXPLAIN',retryable:false,label:error.message||'当前步骤未完成，请核对实际结果'}
 }

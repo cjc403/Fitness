@@ -40,6 +40,11 @@ class AgentMutationReceiptTest {
         assertThrows(RuntimeException.class,()->receipts.execute(me,p.id(),"PUT",p.path(),body,()->{jdbc.update("INSERT INTO fixture_write VALUES(1,99)");throw new IllegalStateException("failure");}));
         assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM fixture_write",Integer.class));assertNotEquals("SUCCEEDED",receipts.get(me,p.id()).status());
     }
+    @Test void aRejectedBusinessResponsePreservesItsReasonWithoutCommittingAnything(){
+        var body=json.valueToTree(Map.of("fee",99));var p=receipts.prepare(me,task.id(),0,"document-a","PUT","/api/v1/admin/courses/1",body);receipts.approve(me,p.id(),0,"document-a");
+        assertThrows(RuntimeException.class,()->receipts.execute(me,p.id(),"PUT",p.path(),body,()->{jdbc.update("INSERT INTO fixture_write VALUES(1,99)");return json.valueToTree(Map.of("code",2600,"message","接待顾问在此时间已有体验预约，请调整时间或接待人"));}));
+        assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM fixture_write",Integer.class));var failed=receipts.get(me,p.id());assertEquals("FAILED",failed.status());assertEquals(2600,failed.result().path("code").asInt());assertTrue(failed.result().path("message").asText().contains("已有体验预约"));
+    }
     @Test void authenticationFinanceAndUnregisteredEndpointsAreRejected(){
         for(String path:List.of("/api/v1/auth/login","/api/v1/commercial/refunds","/api/v1/unknown"))assertThrows(RuntimeException.class,()->receipts.prepare(me,task.id(),0,"document-a","POST",path,json.createObjectNode()));
     }
@@ -84,5 +89,48 @@ class AgentMutationReceiptTest {
         assertThrows(RuntimeException.class,()->receipts.prepare(me,task.id(),0,"document-a","PUT","/api/v1/admin/courses/1",json.valueToTree(Map.of("fee",99))));
         task=tasks.revise(me,task.id(),0,"document-a","改为任务：把课程编号#1价格改成99");
         assertNotNull(receipts.prepare(me,task.id(),task.version(),"document-a","PUT","/api/v1/admin/courses/1",json.valueToTree(Map.of("fee",99))));
+    }
+    @Test void aLostResponseCannotBeReplayedByRegeneratingAnIdempotencyKey(){
+        task=tasks.revise(me,task.id(),0,"document-a","改为任务：新建潜客，姓名小李");
+        var first=json.valueToTree(Map.of("name","小李","idempotencyKey","first-key-0001","expectedVersion",0));
+        var p=receipts.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/leads",first);receipts.approve(me,p.id(),task.version(),"document-a");
+        receipts.execute(me,p.id(),"POST",p.path(),first,()->json.valueToTree(Map.of("code",0,"data",Map.of("lead",Map.of("id",9,"name","小李")))));
+        var replay=json.valueToTree(Map.of("name","小李","idempotencyKey","regenerated-key-0002","expectedVersion",1));
+        assertThrows(RuntimeException.class,()->receipts.prepare(me,task.id(),task.version(),"document-a","POST",p.path(),replay));
+    }
+    @Test void aNegatedBookingInstructionCannotCreateAPermit(){
+        task=tasks.revise(me,task.id(),0,"document-a","改为任务：不要预约流瑜伽，只查询本周课程");
+        assertThrows(RuntimeException.class,()->receipts.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/member/bookings",json.valueToTree(Map.of("scheduleId",7))));
+    }
+    private void boundary(String fault){
+        var body=json.valueToTree(Map.of("fee",99));var p=receipts.prepare(me,task.id(),0,"document-a","PUT","/api/v1/admin/courses/1",body);receipts.approve(me,p.id(),0,"document-a");
+        if(fault.equals("expired"))jdbc.update("UPDATE agent_task_receipt SET expires_at=? WHERE id=?",java.time.LocalDateTime.now().minusMinutes(1),p.id());
+        if(fault.equals("document"))tasks.recover(me,task.id(),0,"document-b");
+        var actor=switch(fault){case "user"->new Session(2L,me.role(),1L,"session",me.home(),List.of(),null);case "venue"->new Session(1L,me.role(),2L,"session",me.home(),List.of(),null);case "session"->new Session(1L,me.role(),1L,"other-session",me.home(),List.of(),null);default->me;};
+        var count=new java.util.concurrent.atomic.AtomicInteger();assertThrows(RuntimeException.class,()->receipts.execute(actor,p.id(),fault.equals("method")?"POST":"PUT",fault.equals("path")?"/api/v1/admin/courses/2":p.path(),body,()->{count.incrementAndGet();return json.valueToTree(Map.of("code",0));}));assertEquals(0,count.get());
+    }
+    @Test void changingTheFrozenHttpMethodCannotReachBusiness(){boundary("method");}
+    @Test void changingTheFrozenHttpPathCannotReachBusiness(){boundary("path");}
+    @Test void anExpiredApprovalCannotReachBusiness(){boundary("expired");}
+    @Test void aForeignUserCannotConsumeThePermit(){boundary("user");}
+    @Test void aForeignVenueCannotConsumeThePermit(){boundary("venue");}
+    @Test void aDifferentLoginSessionCannotConsumeThePermit(){boundary("session");}
+    @Test void recoveringInANewDocumentInvalidatesTheOldApprovedRequest(){boundary("document");}
+    @Test void wrongRecipientOrMessageCannotEvenProduceAnApprovablePermit(){
+        var chat=org.mockito.Mockito.mock(com.gym.fitness.module.chat.service.ChatService.class);var domains=org.mockito.Mockito.mock(AgentDomainVerifier.class);
+        org.mockito.Mockito.when(chat.contacts()).thenReturn(new com.gym.fitness.module.chat.dto.ChatDtos.ContactGroups(List.of(new com.gym.fitness.module.chat.dto.ChatDtos.Contact(2L,"李四","MANAGER","店长","总部",false,0),new com.gym.fitness.module.chat.dto.ChatDtos.Contact(3L,"王五","COACH","教练","总部",false,0)),List.of()));
+        org.mockito.Mockito.when(domains.before(org.mockito.Mockito.any(),org.mockito.Mockito.anyString(),org.mockito.Mockito.anyString(),org.mockito.Mockito.any())).thenAnswer(i->json.createObjectNode());
+        var service=new AgentMutationReceiptService(jdbc,new DataSourceTransactionManager(jdbc.getDataSource()),json,tasks,chat,domains);task=tasks.revise(me,task.id(),0,"document-a","改为任务：给李四发送：你好");
+        assertThrows(RuntimeException.class,()->service.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/messages/send",json.valueToTree(Map.of("recipientUserId",3,"content","你好"))));
+        assertThrows(RuntimeException.class,()->service.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/messages/send",json.valueToTree(Map.of("recipientUserId",2,"content","别的内容"))));
+        assertNotNull(service.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/messages/send",json.valueToTree(Map.of("recipientUserId",2,"content","你好"))));
+    }
+    @Test void aCorrectParentCannotAuthorizeAnotherTrainingSessionOrTrial(){
+        task=tasks.revise(me,task.id(),0,"document-a","改为任务：为训练计划#2中训练记录#9提交反馈，评分5，内容很好");var feedback=json.valueToTree(Map.of("rating",5,"content","很好"));
+        assertThrows(RuntimeException.class,()->receipts.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/member/training-plans/2/sessions/8/feedback",feedback));
+        assertNotNull(receipts.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/member/training-plans/2/sessions/9/feedback",feedback));
+        tasks.cancel(me,task.id(),task.version(),"document-a");task=tasks.create(me,"document-a","把潜客小李的体验编号#3记录为已到店");var result=json.valueToTree(Map.of("status","ATTENDED","note","已到店"));
+        assertThrows(RuntimeException.class,()->receipts.prepare(me,task.id(),0,"document-a","POST","/api/v1/leads/2/trials/4/result",result));
+        assertNotNull(receipts.prepare(me,task.id(),0,"document-a","POST","/api/v1/leads/2/trials/3/result",result));
     }
 }

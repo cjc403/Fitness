@@ -21,7 +21,7 @@ public class AgentTools {
   if(!ALL.contains(identity.role()))throw denied();
   var list=new ArrayList<Tool>();
   list.add(tool("profile","我的身份","查看当前登录身份与服务门店",false,obj()));
-  list.add(tool("courses","课程查询","查询有权查看的课程；会员可看可预约课程，教练只看自己课程",false,obj("from",date("起始日期"),"to",date("结束日期"),"keyword",text("课程关键词",100),"page",integer("页码，每页20条，按pagination.nextPage继续",1,10000))));
+  if(role("MEMBER")||authority("COURSE_READ"))list.add(tool("courses","课程查询","查询有权查看的课程；会员可看可预约课程，教练只看自己课程",false,obj("from",date("起始日期"),"to",date("结束日期"),"keyword",text("课程关键词",100),"page",integer("页码，每页20条，按pagination.nextPage继续",1,10000))));
   if(role("MEMBER","RECEPTION","MANAGER","SUPER_ADMIN","COACH"))list.add(tool("bookings","预约查询","查看本人或权限范围内的预约，不含完整会员隐私档案",false,obj("keyword",text("课程或会员关键词",100),"page",integer("页码，每页20条",1,10000))));
   if(role("MEMBER","COACH","MANAGER","SUPER_ADMIN"))list.add(tool("training_plans","训练计划","查看权限范围内的训练计划，会员不显示草稿",false,obj("keyword",text("计划关键词",100),"page",integer("页码",1,10000))));
   if(role("COACH"))list.add(tool("students","我的学员","查询与本人存在服务关系的学员",false,obj("keyword",text("学员关键词",100),"page",integer("页码",1,10000))));

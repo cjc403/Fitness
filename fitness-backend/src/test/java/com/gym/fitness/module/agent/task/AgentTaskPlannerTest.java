@@ -53,9 +53,21 @@ class AgentTaskPlannerTest {
         when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenAnswer(i->{String messages=i.getArgument(0).toString();assertTrue(messages.contains("genuine student reasoning"));assertTrue(messages.contains("宁安"));assertTrue(messages.contains("17"));return action("navigate","{\"path\":\"/training-plans\"}","next");});
         var r=(com.fasterxml.jackson.databind.node.ObjectNode)request();r.put("version",2);assertEquals("navigate",planner.next(task.id(),r).decision().action());
     }
+    @Test void nativeConfirmationMustLeadToTheFrozenRequestPreviewInsteadOfAnExtraHumanQuestion()throws Exception{
+        task=new AgentTaskStore.View(task.id(),0,"帮我预约流瑜伽","RUNNING",task.plan(),task.checkpoint(),task.createdAt(),task.updatedAt());when(store.check(eq(me),anyString(),anyLong(),anyString())).thenReturn(task);
+        var r=(com.fasterxml.jackson.databind.node.ObjectNode)request();((com.fasterxml.jackson.databind.node.ObjectNode)r.get("observation")).set("context",json.valueToTree(Map.of("scope",Map.of("nativeConfirmation",true))));
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("ask_user","{\"question\":\"需要您本人确认预约，请回复确认预约\"}","first"),action("click","{\"ref\":\"confirm-native\"}","repaired"));
+        assertEquals("click",planner.next(task.id(),r).decision().action());verify(model,times(2)).completePlanning(anyList(),anyList(),anyBoolean(),any());
+    }
     @Test void staleLeaseIsRejectedBeforeCallingModel(){
         when(store.check(eq(me),anyString(),anyLong(),anyString())).thenThrow(new IllegalArgumentException("stale lease"));
         assertThrows(RuntimeException.class,()->planner.next(task.id(),request()));verifyNoInteractions(model);
+    }
+    @Test void aShortBusinessWriteStillUsesPlanningThinking()throws Exception{
+        task=new AgentTaskStore.View(task.id(),0,"取消我的预约编号#29","RUNNING",task.plan(),task.checkpoint(),task.createdAt(),task.updatedAt());
+        when(store.check(eq(me),anyString(),anyLong(),anyString())).thenReturn(task);
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenAnswer(i->{assertTrue((Boolean)i.getArgument(2));return action("observe","{}","opaque");});
+        planner.next(task.id(),request());
     }
     @Test void earlierPageSnapshotsDoNotAccumulateBesideTheCurrentObservation()throws Exception{
         when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("observe","{}","opaque"));

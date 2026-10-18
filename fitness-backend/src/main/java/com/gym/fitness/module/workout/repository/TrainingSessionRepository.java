@@ -7,6 +7,7 @@ import java.time.*;
 import java.util.*;
 public interface TrainingSessionRepository extends JpaRepository<TrainingSessionEntity,Long> {
  Page<TrainingSessionEntity> findByPlanIdOrderByPerformedOnDescIdDesc(Long id,Pageable page);
+ Optional<TrainingSessionEntity> findFirstByPlanIdOrderByIdDesc(Long id);
  long countByPlanIdAndStatus(Long id,String status);
  Optional<TrainingSessionEntity> findFirstByPlanIdAndStatusOrderByPerformedOnDescIdDesc(Long id,String status);
  boolean existsByActiveBookingKey(Long id);

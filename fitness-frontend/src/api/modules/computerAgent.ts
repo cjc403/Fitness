@@ -12,7 +12,7 @@ export interface ComputerTask {
   plan?:{steps?:{id:string;label:string;kind:string}[]}
   verification?:{complete:boolean;partial?:boolean;outcomes:{id:string;label:string;status:string;evidence?:string}[]}
   facts?:unknown[]
-  pauseReason?: 'USER' | 'PAGE_HIDDEN' | 'ASSISTANT_CLOSED' | 'OFFLINE'
+  pauseReason?: 'USER' | 'PAGE_HIDDEN' | 'ASSISTANT_CLOSED' | 'OFFLINE' | 'WRITE_UNKNOWN'
 }
 export interface ComputerAgentStatus { available: boolean; platform: string; scope: string; outputDirectory: string }
 export interface ComputerRequestConfig { isRequestCurrent?: () => boolean; signal?: AbortSignal }

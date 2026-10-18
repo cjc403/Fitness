@@ -18,11 +18,13 @@ import java.nio.charset.StandardCharsets;
 @Component @RequiredArgsConstructor
 public class AgentMutationFilter extends OncePerRequestFilter {
     private final AgentMutationReceiptService receipts;private final ComputerAgentService computer;private final ObjectMapper json;
+    private final com.gym.fitness.config.AiProperties aiProperties;
     @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain)throws IOException,ServletException{
         String permit=request.getHeader("X-FitChain-Agent-Permit");
         if(permit==null){chain.doFilter(request,response);return;}
         var cached=new ContentCachingResponseWrapper(response);
         try{
+            if(!aiProperties.isTaskV2Enabled())throw com.gym.fitness.module.agent.AgentIdentity.invalid("持续网页Agent已停用，旧提交许可不会放行，请刷新核对");
             byte[] bytes=request.getInputStream().readNBytes(65537);if(bytes.length>65536)throw new IllegalArgumentException("请求过大");
             JsonNode body=bytes.length==0?json.nullNode():json.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS,DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY).readTree(bytes);
             String path=request.getRequestURI()+(request.getQueryString()==null?"":"?"+request.getQueryString());

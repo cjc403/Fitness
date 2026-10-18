@@ -99,7 +99,7 @@ const connectionText = computed(() => !online.value ? '网络已断开' : connec
 const canWrite = computed(() => props.active && online.value && available.value && !busy.value && !connecting.value && !!auth.token)
 const screenshotSource = computed(() => typeof task.value?.screenshot === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=\s]+$/.test(task.value.screenshot) ? task.value.screenshot : undefined)
 const statusLabel = (status: ComputerTaskStatus) => ({ RUNNING: '执行中', PAUSED: '已暂停', WAITING_CONFIRMATION: '待你确认', WAITING_INPUT: '待补充信息', SUCCEEDED: '已完成', PARTIAL:'部分完成', FAILED: '执行失败', CANCELLED: '已停止' })[status] || '状态未知'
-const pauseExplanation = (reason?: ComputerTask['pauseReason']) => ({ USER: '你已手动暂停任务。', PAGE_HIDDEN: '当前网页曾被隐藏（如切换标签页或最小化），任务已自动暂停。', ASSISTANT_CLOSED: '助手面板已关闭或重新加载，任务已自动暂停。', OFFLINE: '网络已断开，任务已自动暂停。' } as Record<string,string>)[reason || ''] || '任务已暂停。'
+const pauseExplanation = (reason?: ComputerTask['pauseReason']) => ({ USER: '你已手动暂停任务。', PAGE_HIDDEN: '当前网页曾被隐藏（如切换标签页或最小化），任务已自动暂停。', ASSISTANT_CLOSED: '助手面板已关闭或重新加载，任务已自动暂停。', OFFLINE: '网络已断开，任务已自动暂停。', WRITE_UNKNOWN: '提交结果尚未确认，已暂停且不会重试业务；恢复后先回查同一回执。' } as Record<string,string>)[reason || ''] || '任务已暂停。'
 const stepStatusLabel = (status: string) => ({ RUNNING: '执行中', SUCCEEDED: '完成', FAILED: '失败', CANCELLED: '已停止', PAUSED: '暂停', WAITING_CONFIRMATION: '等待确认', WAITING_INPUT: '等待补充', PENDING: '等待执行' } as Record<string, string>)[status] || status
 const isActiveTask = (value: ComputerTask) => ['RUNNING', 'PAUSED', 'WAITING_CONFIRMATION', 'WAITING_INPUT'].includes(value.status)
 const formatTime = (value: string) => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—'

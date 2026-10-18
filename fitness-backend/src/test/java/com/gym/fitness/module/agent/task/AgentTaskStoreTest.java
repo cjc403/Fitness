@@ -26,6 +26,8 @@ class AgentTaskStoreTest {
         assertEquals("RUNNING",task.status());assertEquals(0L,task.version());
         assertThrows(RuntimeException.class,()->store.get(new Session(1L,"COACH",1L,"session-b","/coach-workbench",List.of(),null),task.id()));
         assertThrows(RuntimeException.class,()->store.get(new Session(1L,"MANAGER",1L,"session-a","/dashboard",List.of(),null),task.id()));
+        assertThrows(RuntimeException.class,()->store.get(new Session(2L,"COACH",1L,"session-a","/coach-workbench",List.of(),null),task.id()));
+        assertThrows(RuntimeException.class,()->store.get(new Session(1L,"COACH",2L,"session-a","/coach-workbench",List.of(),null),task.id()));
         assertFalse(task.toString().contains("session-a"));assertFalse(task.toString().contains("document-a"));
     }
     @Test void revisionsAndRecoveryRejectOldVersionAndOldDocumentLease(){
@@ -48,6 +50,10 @@ class AgentTaskStoreTest {
         assertThrows(RuntimeException.class,()->store.create(me,"document-a","x".repeat(2001)));
         var task=store.create(me,"document-a","查看课程");
         assertThrows(RuntimeException.class,()->store.update(me,task.id(),0,"document-a","ANYTHING",Map.of(),Map.of()));
+    }
+    @Test void credentialBearingGoalsAreRejectedBeforeTheyCanEnterTaskDiagnostics(){
+        assertThrows(RuntimeException.class,()->store.create(me,"document-a","给管理员发送 sk-"+"a".repeat(32)));
+        assertThrows(RuntimeException.class,()->store.create(me,"document-a","保存令牌 eyJ"+"a".repeat(18)+"."+"b".repeat(18)+"."+"c".repeat(18)));
     }
     @Test void modelReservationsSurviveLostResponsesAndDoNotChangeTheDocumentVersion(){
         var task=store.create(me,"document-a","查看课程");

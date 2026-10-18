@@ -90,5 +90,5 @@ public class AgentTaskStore {
     private JsonNode decode(String s){try{return json.readTree(s);}catch(Exception e){throw new IllegalStateException("无法读取任务状态");}}
     private String encode(Object value){try{String s=json.writeValueAsString(value);if(s.length()>16000)throw invalid("任务状态过长");return s;}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw invalid("任务状态格式不正确");}}
     private void validDocument(String s){if(s==null||!s.matches("[A-Za-z0-9_-]{8,128}"))throw invalid("网页租约格式不正确");}
-    private void validGoal(String s){if(s==null||s.isBlank()||s.length()>2000)throw invalid("任务目标须为1至2000字");}
+    private void validGoal(String s){if(s==null||s.isBlank()||s.length()>2000)throw invalid("任务目标须为1至2000字");if(s.matches("(?s).*(?:sk-[A-Za-z0-9_-]{15,}|eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+).*"))throw invalid("任务中含密钥或登录令牌，请移除凭据后重新描述业务目标");}
 }

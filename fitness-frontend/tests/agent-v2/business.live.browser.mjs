@@ -8,11 +8,17 @@ async function run(name,user,home,goal,checkPreview,read,checkResult){
  const {context,page,panel}=await loginPage(browser,user,home,report),entry={name,user,goal};report.cases.push(entry)
  try{
   const original=await read(),witness=await page.evaluate(()=>performance.timeOrigin),writes=[]
+  let responseLost=false
+  if(process.env.AGENT_V2_DROP_RESPONSE==='lead'&&name==='sales-lead')await page.route('http://127.0.0.1:4177/api/v1/leads',async route=>{
+   if(route.request().method()!=='POST'||responseLost)return route.continue()
+   assert.ok(route.request().headers()['x-fitchain-agent-permit']);const response=await route.fetch();assert.equal((await response.json()).code,0)
+   responseLost=true;await route.abort('failed')
+  })
   page.on('request',r=>{const path=new URL(r.url()).pathname;if(!['GET','HEAD'].includes(r.method())&&path.startsWith('/api/v1/')&&!path.startsWith('/api/v1/agent/'))writes.push({path,method:r.method()})})
   const task=await startTask(page,panel,goal),pending=await waitTask(page,task.id);Object.assign(entry,{status:pending.status,steps:pending.steps,error:pending.error,question:pending.question})
   assert.equal(pending.status,'WAITING_CONFIRMATION',pending.error||pending.question);checkPreview(pending.pendingConfirmation);assert.equal(writes.length,0);assert.deepEqual(await read(),original);entry.beforeWrites=0
   await panel.getByRole('button',{name:'确认并提交这一次',exact:true}).waitFor({timeout:10000});await page.screenshot({path:out+name+'-preview.png'});await panel.getByRole('button',{name:'确认并提交这一次',exact:true}).click()
-  const done=await waitTask(page,task.id,pending.pendingConfirmation.id);Object.assign(entry,{status:done.status,steps:done.steps,error:done.error,question:done.question,verification:done.verification});assert.equal(done.status,'SUCCEEDED',done.error||done.question||JSON.stringify(done.verification));assert.equal(writes.length,1);checkResult(await read(),original);assert.ok(await call(page,'confirmComputerTask',task.id,pending.pendingConfirmation.id).then(()=>false,()=>true));assert.equal(writes.length,1);assert.equal(context.pages().length,1);assert.equal(await page.evaluate(()=>performance.timeOrigin),witness);Object.assign(entry,{afterWrites:1,sameDocument:true,duplicateRejected:true});await page.screenshot({path:out+name+'-complete.png'});console.log(name+' PASS')
+  const done=await waitTask(page,task.id,pending.pendingConfirmation.id);Object.assign(entry,{status:done.status,steps:done.steps,error:done.error,question:done.question,verification:done.verification,responseLost});assert.equal(done.status,'SUCCEEDED',done.error||done.question||JSON.stringify(done.verification));assert.equal(writes.length,1);checkResult(await read(),original);assert.ok(await call(page,'confirmComputerTask',task.id,pending.pendingConfirmation.id).then(()=>false,()=>true));assert.equal(writes.length,1);assert.equal(context.pages().length,1);assert.equal(await page.evaluate(()=>performance.timeOrigin),witness);if(process.env.AGENT_V2_DROP_RESPONSE==='lead'&&name==='sales-lead')assert.equal(responseLost,true);Object.assign(entry,{afterWrites:1,sameDocument:true,duplicateRejected:true});await page.screenshot({path:out+name+'-complete.png'});console.log(name+' PASS')
  }catch(err){entry.failure=err.message;process.exitCode=1;await page.screenshot({path:out+name+'-failure.png'});try{const t=(await call(page,'listComputerTasks'))[0];if(t)await call(page,'stopComputerTask',t.id)}catch{}}
  finally{await context.close();await writeFile(out+'real-business.json',JSON.stringify(report,null,2))}
 }

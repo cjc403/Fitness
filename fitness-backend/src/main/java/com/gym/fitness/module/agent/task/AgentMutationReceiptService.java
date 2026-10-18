@@ -21,7 +21,7 @@ public class AgentMutationReceiptService {
     public AgentMutationReceiptService(JdbcTemplate jdbc,PlatformTransactionManager manager,ObjectMapper json,AgentTaskStore tasks,com.gym.fitness.module.chat.service.ChatService chat,AgentDomainVerifier domains){this.jdbc=jdbc;this.tx=new TransactionTemplate(manager);this.tx.setTimeout(25);this.json=json;this.tasks=tasks;this.chat=chat;this.domains=domains;}
     public record Receipt(String id,String taskId,long taskVersion,String method,String path,String status,JsonNode request,JsonNode before,JsonNode result,LocalDateTime expiresAt){}
     private record Row(Receipt view,String document,String hash){}
-    private static final Set<String> SAFE=Set.of("id","memberId","scheduleId","courseId","recipientUserId","venueId","version","expectedVersion","status","fee","maxCapacity","durationMinutes","intensity","type","name","title","startDate","endDate","startsAt","endsAt","scheduledStartTime","scheduledEndTime","plan","lead","booking","trial","data","message","success","code","goal","exercises","mode","sets","reps","minutes","weightKg","actualSets","actualReps","actualMinutes","actualWeightKg","hostId","coachId","roomId","maxStudents","trials","sessions","records","rating");
+    private static final Set<String> SAFE=Set.of("id","memberId","scheduleId","courseId","recipientUserId","venueId","version","expectedVersion","status","fee","maxCapacity","durationMinutes","intensity","type","name","title","startDate","endDate","startsAt","endsAt","scheduledStartTime","scheduledEndTime","plan","lead","booking","trial","data","message","success","code","goal","exercises","mode","sets","reps","minutes","weightKg","actualSets","actualReps","actualMinutes","actualWeightKg","hostId","coachId","roomId","maxStudents","trials","sessions","records","rating","performedOn","exerciseId","effort","bookingId");
     public Receipt prepare(Session me,String task,long version,String document,String method,String path,JsonNode body){
         method=method.toUpperCase(Locale.ROOT);var target=AgentRequestTarget.parse(method,path);if(!supported(method,target.path()))throw invalid("此操作尚未注册为可核验网页技能，请使用原业务页面手动办理");
         if(body==null||!(body.isObject()||body.isNull())||body.toString().length()>65536)throw invalid("只支持有界JSON请求");
@@ -29,8 +29,13 @@ public class AgentMutationReceiptService {
         final String route=target.path();
         return tx.execute(ignored->{
             tasks.get(me,task);lockTask(task);var current=tasks.check(me,task,version,document);if(!"RUNNING".equals(current.status()))throw invalid("任务当前不可提交");
+            if(!AgentOperationIntent.permits(current.goal(),verb,route))throw invalid("用户没有要求这类业务写入，或明确要求不要执行；只能继续查询或填写");
+            if(!AgentGoalBinding.nestedMatches(current.goal(),route))throw invalid("训练记录或体验预约的编号与原目标不一致；请补充准确记录编号后再办理");
             Integer pending=jdbc.queryForObject("SELECT count(*) FROM agent_task_receipt WHERE task_id=? AND status IN ('PENDING','APPROVED') AND expires_at>?",Integer.class,task,LocalDateTime.now());if(pending!=null&&pending>0)throw invalid("已有待确认请求，请先核对");
             Integer duplicate=jdbc.queryForObject("SELECT count(*) FROM agent_task_receipt WHERE task_id=? AND method=? AND path=? AND request_hash=? AND status='SUCCEEDED'",Integer.class,task,verb,route,fingerprint(body,target));if(duplicate!=null&&duplicate>0)throw invalid("该请求已经成功提交，禁止重复办理；请核对任务回执");
+            JsonNode summary=project(body);if(!target.query().isEmpty()){if(!summary.isObject())summary=json.createObjectNode();((ObjectNode)summary).put("queryHash",digest(target.query()));}
+            String semantic=digest(semanticRequest(summary));
+            for(var previous:jdbc.queryForList("SELECT request_summary FROM agent_task_receipt WHERE task_id=? AND method=? AND path=? AND status='SUCCEEDED'",String.class,task,verb,route))if(semantic.equals(digest(semanticRequest(read(previous)))))throw invalid("已有相同业务的成功回执，不能通过更换重试编号再次办理；请先核对保存结果");
             JsonNode before=snapshot(me,verb,route,false,body);guardGoal(me,current.goal(),verb,route,body,before);
             if(!route.contains("/courses")&&!route.equals("/api/v1/messages/send"))domains.guard(current.goal(),before,body);
             if(route.equals("/api/v1/messages/send")){
@@ -39,7 +44,6 @@ public class AgentMutationReceiptService {
                 ((ObjectNode)before).put("recipientName",contact.name()).put("recipientUserId",contact.userId());
             }
             String id=UUID.randomUUID().toString();var now=LocalDateTime.now();
-            JsonNode summary=project(body);if(!target.query().isEmpty()){if(!summary.isObject())summary=json.createObjectNode();((ObjectNode)summary).put("queryHash",digest(target.query()));}
             jdbc.update("INSERT INTO agent_task_receipt(id,task_id,task_version,document_nonce,method,path,request_hash,request_summary,before_json,status,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?,'PENDING',?,?)",id,task,version,document,verb,route,fingerprint(body,target),write(summary),write(before),now,now.plusMinutes(2));return get(me,id);
         });
     }
@@ -49,16 +53,21 @@ public class AgentMutationReceiptService {
     public Receipt approve(Session me,String id,long version,String document){var initial=get(me,id);return tx.execute(ignored->{lockTask(initial.taskId());var row=row(id,true);tasks.check(me,row.view.taskId(),version,document);if(row.view.taskVersion()!=version||!row.document.equals(document))throw invalid("旧目标或网页的确认已失效");if("APPROVED".equals(row.view.status())){valid(row,"APPROVED");return row.view;}valid(row,"PENDING");jdbc.update("UPDATE agent_task_receipt SET status='APPROVED' WHERE id=? AND status='PENDING'",id);return get(me,id);});}
     public JsonNode execute(Session me,String id,String method,String path,JsonNode body,Supplier<JsonNode> work){
         var initial=get(me,id);var target=AgentRequestTarget.parse(method,path);
+        var rejected=new java.util.concurrent.atomic.AtomicReference<JsonNode>();
         try{return tx.execute(ignored->{
             lockTask(initial.taskId());var row=row(id,true);var receipt=row.view;var task=tasks.check(me,receipt.taskId(),receipt.taskVersion(),row.document);
             if(!"RUNNING".equals(task.status()))throw invalid("任务已暂停或结束");valid(row,"APPROVED");
             if(!receipt.method().equals(method)||!receipt.path().equals(target.path())||!row.hash.equals(fingerprint(body,target)))throw invalid("请求与已确认的冻结内容不一致");
             if(path.matches("/api/v1/admin/courses/\\d+")&&!digest(receipt.before()).equals(digest(snapshot(me,method,path,true,body))))throw invalid("业务对象已经变化，请重新观察和确认");
-            JsonNode result=work.get();if(result==null||!result.path("code").isIntegralNumber()||result.path("code").asInt()!=0)throw invalid("业务未成功，已回滚，禁止自动重发");
+            JsonNode result=work.get();if(result==null||!result.path("code").isIntegralNumber()||result.path("code").asInt()!=0){
+                if(result!=null&&result.path("code").isIntegralNumber())rejected.set(json.createObjectNode().put("code",result.path("code").asInt()).put("message",safeFailure(result.path("message").asText())));
+                throw invalid("业务未成功，已回滚，禁止自动重发"+(rejected.get()==null?"":"："+rejected.get().path("message").asText()));
+            }
             jdbc.update("UPDATE agent_task_receipt SET status='SUCCEEDED',result_json=? WHERE id=?",write(project(result)),id);
             return result;
-        });}catch(RuntimeException e){tx.execute(ignored->{var row=row(id,true);tasks.get(me,row.view.taskId());if("APPROVED".equals(row.view.status()))jdbc.update("UPDATE agent_task_receipt SET status='FAILED' WHERE id=?",id);return null;});throw e;}
+        });}catch(RuntimeException e){tx.execute(ignored->{var row=row(id,true);tasks.get(me,row.view.taskId());var failure=rejected.get();if(failure==null)failure=json.createObjectNode().put("code",e instanceof com.gym.fitness.common.exception.BusinessException b?b.getErrorCode().getCode():-1).put("message",e instanceof com.gym.fitness.common.exception.BusinessException?safeFailure(e.getMessage()):"本次业务已回滚，请核对原请求；没有保存内部异常详情");if("APPROVED".equals(row.view.status()))jdbc.update("UPDATE agent_task_receipt SET status='FAILED',result_json=? WHERE id=?",write(failure),id);return null;});throw e;}
     }
+    private String safeFailure(String text){if(text==null||text.isBlank())return "业务接口拒绝了本次提交";var value=text.replaceAll("(?i)Bearer\\s+\\S+|sk-[A-Za-z0-9_-]{15,}|eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+","[凭据已隐藏]").replaceAll("(?<!\\d)1[3-9]\\d{9}(?!\\d)|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}","[资料已隐藏]").replaceAll("[\\r\\n\\t]+"," ");return value.substring(0,Math.min(300,value.length()));}
     private void valid(Row row,String expected){if(!expected.equals(row.view.status())||!row.view.expiresAt().isAfter(LocalDateTime.now()))throw invalid("提交许可已消费或过期，请核对原业务结果");}
     private Row row(String id,boolean lock){if(id==null||!id.matches("[a-f0-9-]{36}"))throw denied();var rows=jdbc.query("SELECT * FROM agent_task_receipt WHERE id=?"+(lock?" FOR UPDATE":""),(r,i)->new Row(new Receipt(r.getString("id"),r.getString("task_id"),r.getLong("task_version"),r.getString("method"),r.getString("path"),r.getString("status"),read(r.getString("request_summary")),read(r.getString("before_json")),r.getString("result_json")==null?NullNode.instance:read(r.getString("result_json")),r.getTimestamp("expires_at").toLocalDateTime()),r.getString("document_nonce"),r.getString("request_hash")),id);if(rows.size()!=1)throw denied();return rows.get(0);}
     private JsonNode snapshot(Session me,String method,String path,boolean lock,JsonNode body){
@@ -80,15 +89,15 @@ public class AgentMutationReceiptService {
     private String fingerprint(JsonNode body,AgentRequestTarget.Target target){if(target.query().isEmpty())return digest(body);var value=json.createObjectNode();value.set("body",body);value.set("query",target.query());return digest(value);}
     private void lockTask(String id){jdbc.queryForList("SELECT id FROM agent_task WHERE id=? FOR UPDATE",id);}
     private void guardGoal(Session me,String goal,String method,String path,JsonNode body,JsonNode before){
-        if(!goal.matches("(?s).*(?:新建|新增|创建|修改|改为|改成|调整|设为|更新|删除|提交|保存|发送|发(?:个|一条)?消息|发给|发布|预约|签到|录入|登记|安排|跟进|归档|反馈).*"))throw invalid("当前任务没有业务写入目标");
+        if(!goal.matches("(?s).*(?:新建|新增|创建|修改|改为|改成|调整|设为|更新|删除|提交|保存|发送|发(?:个|一条)?消息|发给|发布|预约|签到|录入|记录为|标记|作废|登记|安排|跟进|归档|反馈).*"))throw invalid("当前任务没有业务写入目标");
         if(path.equals("/api/v1/messages/send")&&!goal.matches("(?s).*(?:发送|发(?:个|一条)?消息|发给).*"))throw invalid("当前任务没有发送消息目标");
         if(path.startsWith("/api/v1/admin/members")&&!goal.matches("(?s).*(?:会员|回访|续费).*"))throw invalid("当前任务没有会员操作目标");
         if(path.startsWith("/api/v1/leads")&&!goal.matches("(?s).*(?:潜客|体验).*"))throw invalid("当前任务没有潜客或体验目标");
         if(path.contains("training-plans")&&!goal.matches("(?s).*(?:训练|计划|反馈).*"))throw invalid("当前任务没有训练操作目标");
-        if(goal.matches(".*(?:不要提交|不要保存|不提交|不保存).*"))throw invalid("用户要求不提交，已阻止业务写入");
+
         if("DELETE".equals(method)&&!goal.matches(".*(?:删除|移除).*"))throw invalid("用户没有要求删除对象");
         if(path.endsWith("/publish")&&(!goal.contains("发布")||goal.matches(".*(?:不发布|不要发布).*")))throw invalid("用户未授权发布计划");
-        if(path.endsWith("/send")&&goal.matches(".*(?:不发送|不要发送).*"))throw invalid("用户要求不发送消息");
+
         if(path.matches("/api/v1/admin/courses/\\d+")&&"PUT".equals(method)){
             String name=before.path("name").asText();String id=before.path("id").asText();Integer matching="SUPER_ADMIN".equals(me.role())?jdbc.queryForObject("SELECT count(*) FROM course WHERE name=?",Integer.class,name):jdbc.queryForObject("SELECT count(*) FROM course WHERE name=? AND venue_id=?",Integer.class,name,me.venueId());if(matching!=null&&matching>1&&!AgentGoalBinding.labelMatches(goal,null,Long.parseLong(id),"course"))throw invalid("当前范围有同名课程，请补充目标课程编号；不会猜测要修改哪一条");
             if(!goal.contains(name)&&!goal.matches("(?s).*(?:编号|#)\\s*"+java.util.regex.Pattern.quote(id)+"(?:\\D|$).*"))throw invalid("课程编号与用户目标不匹配，请先定位唯一课程");
@@ -113,6 +122,7 @@ public class AgentMutationReceiptService {
         if(n.isArray()){var a=json.createArrayNode();for(int i=0;i<Math.min(n.size(),100);i++)a.add(project(n.get(i)));return a;}
         return n.deepCopy();
     }
+    private JsonNode semanticRequest(JsonNode summary){var copy=summary.deepCopy();if(copy.isObject())((ObjectNode)copy).remove(java.util.List.of("idempotencyKey","expectedVersion","version"));return copy;}
     private JsonNode canonical(JsonNode n){if(n.isObject()){var o=json.createObjectNode();var keys=new TreeSet<String>();n.fieldNames().forEachRemaining(keys::add);keys.forEach(k->o.set(k,canonical(n.get(k))));return o;}if(n.isArray()){var a=json.createArrayNode();n.forEach(v->a.add(canonical(v)));return a;}if(n.isNumber())return DecimalNode.valueOf(n.decimalValue().stripTrailingZeros());return n;}
     private String digest(JsonNode n){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(write(canonical(n)).getBytes(StandardCharsets.UTF_8)));}catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}}
     private JsonNode read(String s){try{return json.readTree(s);}catch(Exception e){throw new IllegalStateException("无法读取提交回执");}}

@@ -59,4 +59,18 @@ class AgentTaskIntegrationTest {
             postTask(u,"/"+id+"/cancel",Map.of("document","document-v2","version",0),0);
         }
     }
+    @Test void passwordChangeRequiredCannotEnterTheAgentTaskOrApprovalApi()throws Exception{
+        var u=account("MEMBER");u.setMustChangePassword(true);users.saveAndFlush(u);
+        mvc.perform(post("/api/v1/agent/tasks").header("Authorization",token(u,"v2-session")).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("document","document-v2","goal","查询我的预约"))))
+            .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(com.gym.fitness.common.constant.ErrorCode.PASSWORD_CHANGE_REQUIRED.getCode()));
+        mvc.perform(get("/api/v1/agent/tasks").header("Authorization",token(u,"v2-session"))).andExpect(status().isForbidden());
+    }
+    @Test void roleRevocationAfterPreviewRejectsTheOldAgentApprovalToken()throws Exception{
+        var u=account("SUPER_ADMIN");var c=course(u);String oldToken=token(u,"v2-session"),path="/api/v1/admin/courses/"+c.getId();
+        String task=postTask(u,"",Map.of("document","document-v2","goal","把课程编号#"+c.getId()+"价格改为99"),0).path("id").asText();
+        String receipt=postTask(u,"/"+task+"/prepare",Map.of("version",0,"document","document-v2","method","PUT","path",path,"body",courseBody(c)),0).path("id").asText();
+        var downgraded=roles.findByCode("COACH").orElseThrow();u.setRoleId(downgraded.getId());u.setRole(downgraded);users.saveAndFlush(u);
+        mvc.perform(post("/api/v1/agent/tasks/"+task+"/approve/"+receipt).header("Authorization",oldToken).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("version",0,"document","document-v2")))).andExpect(status().isUnauthorized());
+        assertThat(courses.findById(c.getId()).orElseThrow().getFee()).isEqualByComparingTo("88");
+    }
 }

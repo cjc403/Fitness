@@ -99,7 +99,7 @@ export function createRequestGate() {
     settle(config,ok,detail,transport) {
       if(!config?._pageAgent)return
       requests.delete(config)
-      if(config.skipAuthRefresh)config._pageAgent.onReceipt(ok,detail,transport)
+      if(config.skipAuthRefresh)config._pageAgent.onReceipt(ok,detail,{...transport,...(config._pageAgentPermitId?{permitId:config._pageAgentPermitId}:{})})
     },
     async idle(current) {
       const start=Date.now()

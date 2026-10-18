@@ -41,6 +41,8 @@ app:
   version: 1.4.0
   ai:
     enabled: ${AI_ENABLED:true}
+    task-v2-enabled: ${AI_TASK_V2_ENABLED:true}
+    planner-thinking-enabled: ${AI_PLANNER_THINKING_ENABLED:true}
     base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
     api-key: ${DEEPSEEK_API_KEY:}
     model: ${DEEPSEEK_MODEL:deepseek-flash}

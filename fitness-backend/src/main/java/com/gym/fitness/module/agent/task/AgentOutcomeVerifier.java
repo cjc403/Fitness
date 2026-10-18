@@ -32,18 +32,19 @@ public class AgentOutcomeVerifier {
             if(fee.find()){fieldChange=true;add(outcomes,clause,verifiedCourse(received,"fee",fee.group(1),targetContext),"课程成功回执及当前价格回查");}
             if(capacity.find()){fieldChange=true;add(outcomes,clause,verifiedCourse(received,"maxCapacity",capacity.group(1),targetContext),"课程成功回执及当前容量回查");}
             if(!fieldChange&&isMutation(clause)){
-                String type=clause.matches(".*(?:发送|发(?:个|一条)?消息|发给).*" )?"message":clause.contains("体验")?"trial":clause.contains("潜客")?"lead":clause.matches(".*(?:训练|计划|动作|反馈).*" )?"training":clause.matches(".*(?:预约|签到).*" )?"booking":clause.matches(".*(?:回访|续费).*" )?"retention":clause.contains("会员")?"member":clause.contains("排课")?"schedule":clause.contains("课程")?"course":"unknown";
+                String type=mutationType(header(clause));
                 add(outcomes,clause,verifiedMutation(received,type,clause,used,"MEMBER".equals(me.role())),"已授权业务服务提交回执及对象核对");
             }
-            if(!fieldChange&&clause.matches(".*(?:打开|进入|切换到|点击|点开).*")){
-                String path=destination(clause,me.role());boolean matched=path!=null&&path.equals(context.path("path").asText());
+            if(!fieldChange&&header(clause).matches(".*(?:打开|进入|切换到|点击|点开).*")){
+                String path=destination(clause,me.role());boolean matched=path!=null&&path.equals(context.path("path").asText())&&!"dialog".equals(context.path("scope").path("type").asText());
                 if(matched&&"MEMBER".equals(me.role())){String tab=clause.contains("训练")?"训练":clause.contains("消息")?"消息":clause.contains("预约")?"预约":clause.contains("课程")?"课程":"";if(!tab.isEmpty()){matched=false;for(var t:context.path("selectedTabs"))if(t.asText().contains(tab))matched=true;}}
                 add(outcomes,clause,matched,"当前网页入口及选中页签");
             }
-            if(!fieldChange&&!isMutation(clause)&&clause.matches(".*(?:查询|统计|告诉我|有哪些|多少|几节|几次|查看).*")){
+            if(!fieldChange&&!isMutation(clause)&&header(clause).matches(".*(?:查询|统计|告诉我|有哪些|多少|几节|几次|查看).*")){
                 String topic=clause.contains("身份")?"profile":clause.contains("接待顾问")?"lead_options":clause.matches(".*(?:课程|排课|几节).*" )?"courses":clause.contains("预约")?"bookings":clause.contains("训练")?"training_plans":clause.contains("学员")?"students":clause.matches(".*(?:潜客|体验).*" )?"leads":clause.matches(".*(?:续费|回访).*" )?"retention":clause.matches(".*(?:交班|日结).*" )?"cash_summary":clause.matches(".*(?:经营|收入|营业).*" )?"analytics":clause.contains("会员")?"members":"page";
                 boolean found=false;var groups=new HashMap<String,List<JsonNode>>();for(var proof:task.checkpoint().path("queryProofs"))if(topic.equals(proof.path("tool").asText())&&fresh(proof)){
                     boolean dates=true;if((clause.contains("本周")||clause.contains("下周"))&&Set.of("courses","analytics").contains(topic)){var monday=java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai")).with(java.time.DayOfWeek.MONDAY);if(clause.contains("下周"))monday=monday.plusDays(7);dates=monday.toString().equals(proof.path("arguments").path("from").asText())&&monday.plusDays(6).toString().equals(proof.path("arguments").path("to").asText());}
+                    if("leads".equals(topic)){var lead=Pattern.compile("潜客(?:编号|ID|id)?\\s*#?\\s*(\\d+)(?!\\d)").matcher(clause);if(lead.find()){if(proof.path("arguments").path("leadId").asLong()!=Long.parseLong(lead.group(1)))dates=false;}else if(proof.path("arguments").hasNonNull("leadId"))dates=false;}
                     var keyword=Pattern.compile("(?:姓名为|名称为|关键词[为是]?|叫做)[‘“\"「]?([^的，,。；;‘’“”\"「」]+)").matcher(clause);
                     if(keyword.find()&&!keyword.group(1).trim().equals(proof.path("arguments").path("keyword").asText()))dates=false;
                     String filter=proof.path("arguments").path("keyword").asText();if(!filter.isBlank()&&!clause.contains(filter))dates=false;
@@ -91,7 +92,17 @@ public class AgentOutcomeVerifier {
             if(path&&operation&&r.result().path("code").asInt(-1)==0&&domains.verify(type,r,clause,member)){used.add(r.id());return true;}
         }return false;
     }
-    private boolean isMutation(String text){return text.matches(".*(?:新建|新增|创建|修改|改为|改成|设为|更新|删除|提交|保存|发送|发(?:个|一条)?消息|发给|发布|预约|签到|录入|登记|添加跟进|安排.*体验|归档.*计划|提交.*反馈).*" )&&!text.matches("^(?:查看|查询|统计).*" )&&!text.matches("^(?:打开|进入|切换到|点击|点开)(?:我的)?(?:预约与签到|预约|课程预约|训练计划|我的训练)$");}
+    private String header(String text){return AgentOperationIntent.unquoted(text).split("[，,。；;]",2)[0].trim();}
+    private String mutationType(String text){
+        if(text.matches(".*(?:发送|发(?:个|一条)?消息|发给).*"))return "message";
+        if(text.contains("潜客"))return text.contains("体验")&&text.matches(".*(?:安排|预约|记录为|到店|标记).*" )?"trial":"lead";
+        if(text.matches(".*(?:训练|计划|动作|反馈).*"))return "training";
+        if(text.contains("体验")&&text.matches(".*(?:安排|预约|记录为|到店|标记).*"))return "trial";
+        if(text.matches(".*(?:预约|签到).*"))return "booking";
+        if(text.matches(".*(?:回访|续费).*"))return "retention";
+        return text.contains("会员")?"member":text.contains("排课")?"schedule":text.contains("课程")?"course":"unknown";
+    }
+    private boolean isMutation(String text){text=header(text);return text.matches(".*(?:新建|新增|创建|修改|改为|改成|设为|更新|删除|提交|保存|发送|发(?:个|一条)?消息|发给|发布|预约|签到|录入|记录为|标记|作废|归档|登记|添加跟进|安排.*体验|提交.*反馈).*" )&&!text.matches("^(?:查看|查询|统计).*" )&&!text.matches("^(?:打开|进入|切换到|点击|点开)(?:我的)?(?:预约与签到|预约|课程预约|训练计划|我的训练)$");}
     private String destination(String text,String role){
         if("MEMBER".equals(role))return "/member-home";
         if(text.contains("训练"))return "/training-plans";if(text.contains("站内消息"))return "/chat";if(text.contains("周课表"))return "/schedule-week";

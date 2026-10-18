@@ -10,6 +10,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AgentOutcomeVerifierTest {
+ @Test void anUnrelatedModalCannotCountAsOpeningTheUnderlyingPage(){
+  var task=new AgentTaskStore.View("id",0,"打开训练计划","RUNNING",json.createObjectNode(),json.createObjectNode(),LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);when(receipts.list(me,"id")).thenReturn(List.of());
+  assertFalse(new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,mock(AgentDomainVerifier.class)).verify(me,"id",0,"document",json.valueToTree(Map.of("path","/training-plans","scope",Map.of("type","dialog","title","上一项操作")))).complete());
+ }
  @Test void aPagedQueryNeedsEveryDistinctRowAndRejectsMissingOrDuplicatePages(){
   var first=Map.of("tool","bookings","arguments",Map.of("page",1),"asOf",LocalDateTime.now().toString(),"truncated",true,"pagination",Map.of("page",1,"size",20,"total",21,"returned",20,"keys",java.util.stream.IntStream.rangeClosed(1,20).mapToObj(i->"id:"+i).toList(),"contentTruncated",false));
   for(var last:List.of(Map.of("page",2,"size",20,"total",21,"returned",1,"keys",List.of("id:21"),"contentTruncated",false),Map.of("page",2,"size",20,"total",21,"returned",1,"keys",List.of("id:1"),"contentTruncated",false),Map.of("page",2,"size",20,"total",21,"returned",1,"keys",List.of("id:21"),"contentTruncated",true))){
@@ -69,5 +73,19 @@ class AgentOutcomeVerifierTest {
   var checkpoint=json.createObjectNode();checkpoint.set("queryProofs",json.valueToTree(List.of(Map.of("tool","leads","truncated",false,"asOf",LocalDateTime.now().toString(),"arguments",Map.of("keyword","小周")),Map.of("tool","leads","truncated",false,"asOf",LocalDateTime.now().toString(),"arguments",Map.of("keyword","小李")))));
   var task=new AgentTaskStore.View("id",0,"查询姓名为小周的潜客","RUNNING",json.createObjectNode(),checkpoint,LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);when(receipts.list(me,"id")).thenReturn(List.of());
   assertTrue(new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,mock(AgentDomainVerifier.class)).verify(me,"id",0,"document",json.createObjectNode()).complete());
+ }
+ @Test void aLeadDetailProofCannotSubstituteForAnotherIdOrAListQuery(){
+  for(String goal:List.of("查询潜客编号#7的详情","查询潜客"))for(int leadId:List.of(6,7)){
+   var checkpoint=json.createObjectNode();checkpoint.set("queryProofs",json.valueToTree(List.of(Map.of("tool","leads","truncated",false,"asOf",LocalDateTime.now().toString(),"arguments",Map.of("leadId",leadId)))));
+   var task=new AgentTaskStore.View("id",0,goal,"RUNNING",json.createObjectNode(),checkpoint,LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);when(receipts.list(me,"id")).thenReturn(List.of());
+   assertEquals(goal.contains("#7")&&leadId==7,new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,mock(AgentDomainVerifier.class)).verify(me,"id",0,"document",json.createObjectNode()).complete());
+  }
+ }
+ @Test void followUpOutcomeAndTrainingNotesCannotReplaceTheRequestedOperationType(){
+  for(var scenario:List.of(List.of("为潜客小李登记电话跟进，内容今天联系，结果愿意体验","lead","/api/v1/leads/2/follow-ups"),List.of("为学员小李创建训练计划草稿，标题基础训练，备注下周体验","training","/api/v1/training-plans"))){
+   var task=new AgentTaskStore.View("id",0,scenario.get(0),"RUNNING",json.createObjectNode(),json.createObjectNode(),LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);
+   var r=new AgentMutationReceiptService.Receipt("r","id",0,"POST",scenario.get(2),"SUCCEEDED",json.createObjectNode(),json.createObjectNode(),json.valueToTree(Map.of("code",0)),LocalDateTime.now());when(receipts.list(me,"id")).thenReturn(List.of(r));var domain=mock(AgentDomainVerifier.class);when(domain.verify(eq(scenario.get(1)),any(),anyString(),anyBoolean())).thenReturn(true);
+   assertTrue(new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,domain).verify(me,"id",0,"document",json.createObjectNode()).complete());
+  }
  }
 }

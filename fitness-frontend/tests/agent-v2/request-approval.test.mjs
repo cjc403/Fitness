@@ -30,3 +30,10 @@ test('cancelling a pending old goal during reservation cannot create a preview',
   const pending=gate.intercept({method:'put',url:'/v1/admin/courses/1',baseURL:'/api',data:{fee:99},headers:{}})
   const rejected=assert.rejects(pending,/失效|停止/);await tick();gate.cancelPending();release({id:'old-permit'});await rejected;assert.equal(shown,0);assert.equal(gate.pending,undefined);gate.cancel()
 })
+test('a failed transport retains the attempted permit id for read-only reconciliation',async()=>{
+ const gate=createRequestGate();let preview,transport
+ gate.bind({verify:async()=>{},prepare:async()=>({id:'permit-unknown'}),approve:async()=>{},onPending:p=>preview=p,onReceipt:(_ok,_detail,value)=>transport=value})
+ const sending=gate.intercept({method:'post',url:'/v1/leads',baseURL:'/api',data:{name:'验收潜客'},headers:{}})
+ await tick();await gate.confirm(preview.id);const config=await sending;gate.settle(config,false,'response lost')
+ assert.equal(transport.permitId,'permit-unknown');assert.equal(transport.receiptId,undefined);gate.cancel()
+})
