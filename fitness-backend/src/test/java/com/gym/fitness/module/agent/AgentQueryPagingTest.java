@@ -4,6 +4,10 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 class AgentQueryPagingTest {
+ @Test void memberPageResultItemsExposeRealPagingWithoutPretendingTheFirstPageIsComplete(){
+  var source=json.valueToTree(Map.of("items",List.of(Map.of("id",21)),"total",21,"page",2,"size",20));var result=AgentQueryPaging.slice("members",source,2);
+  assertNotNull(result.pagination());assertEquals(21,result.pagination().total());assertEquals(2,result.pagination().page());assertEquals(List.of("id:21"),result.pagination().keys());assertEquals(1,result.data().path("items").size());
+ }
  final ObjectMapper json=new ObjectMapper();
  @Test void arrayQueriesExposeEveryPageWithoutChangingTheLegacyArrayShape(){
   var source=json.valueToTree(java.util.stream.IntStream.rangeClosed(1,45).mapToObj(i->Map.of("id",i)).toList());

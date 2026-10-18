@@ -8,6 +8,7 @@ import { pageRequestGate, frozenRequestTarget } from './requestGate.mjs'
 import { buildPageContext, chooseSemanticAction } from './pageContext.mjs'
 import { createDocumentLeaseId } from './taskLease.mjs'
 import { loadAgentVersion } from './capabilities.mjs'
+import { historyTask } from './taskHistory.mjs'
 import type { ComputerTask, ComputerRequestConfig, ComputerResult, ComputerAgentStatus, ComputerArtifact } from '@/api/modules/computerAgent'
 
 let engine: PageTaskEngine | undefined
@@ -93,10 +94,10 @@ async function result<T>(operation:()=>T|Promise<T>,config:ComputerRequestConfig
   assert();const data=await operation();assert();return {code:0,message:'成功',data}
 }
 export const getComputerAgentStatus=(config?:ComputerRequestConfig)=>result<ComputerAgentStatus>(async()=>{await api('/computer/session');v2Available=await loadAgentVersion(()=>api('/tasks/capabilities'))===2;const current=ensure();current.options.persistence=v2Available?current.options.v2Persistence:undefined;return {available:true,platform:v2Available?'current-page-v2':'current-page',scope:'正在使用的 FitChain 标签页',outputDirectory:'本机文件能力连接后可保存课表'}},config)
-const remoteView=(t:RemoteTask)=>({...t,remoteVersion:t.version,durable:true,restorable:!['SUCCEEDED','FAILED','PARTIAL','CANCELLED'].includes(t.status),status:!['SUCCEEDED','FAILED','PARTIAL','CANCELLED'].includes(t.status)?'PAUSED':t.status,steps:[],artifacts:[],pauseReason:'USER'}) as ComputerTask
-export const listComputerTasks=(config?:ComputerRequestConfig)=>result(async()=>{const local=ensure().list() as ComputerTask[];if(!v2Available)return local;const remote=await api<RemoteTask[]>('/tasks',undefined,config?.signal);return [...local,...remote.filter(t=>!local.some(l=>l.id===t.id)).map(remoteView)]},config)
+const remoteView=(t:RemoteTask,readOnly=false)=>historyTask(t,readOnly) as ComputerTask
+export const listComputerTasks=(config?:ComputerRequestConfig)=>result(async()=>{const local=ensure().list() as ComputerTask[];if(!v2Available)return local;const remote=await api<{task:RemoteTask;readOnly:boolean}[]>('/tasks/history',undefined,config?.signal);return [...local,...remote.filter(t=>!local.some(l=>l.id===t.task.id)).map(t=>remoteView(t.task,t.readOnly))]},config)
 export const createComputerTask=(goal:string,config?:ComputerRequestConfig)=>result(()=>ensure().create(goal,config) as Promise<ComputerTask>,config)
-export const getComputerTask=(id:string,config?:ComputerRequestConfig)=>result(async()=>{const local=ensure().list().find(t=>t.id===id);if(local)return local as ComputerTask;if(v2Available)return remoteView(await api<RemoteTask>(`/tasks/${id}`,undefined,config?.signal));throw Error('未找到当前账号任务')},config)
+export const getComputerTask=(id:string,config?:ComputerRequestConfig)=>result(async()=>{const local=ensure().list().find(t=>t.id===id);if(local)return local as ComputerTask;if(v2Available){const item=await api<{task:RemoteTask;readOnly:boolean}>(`/tasks/history/${id}`,undefined,config?.signal);return remoteView(item.task,item.readOnly)}throw Error('未找到当前账号任务')},config)
 export const pauseComputerTask=(id:string,config?:ComputerRequestConfig)=>result(()=>ensure().pause(id) as ComputerTask,config)
 export const resumeComputerTask=(id:string,config?:ComputerRequestConfig)=>result(()=>ensure().resume(id) as ComputerTask,config)
 export const stopComputerTask=(id:string,config?:ComputerRequestConfig)=>result(async()=>{if(ensure().list().some(t=>t.id===id))return ensure().stop(id) as ComputerTask;let task=await api<RemoteTask>(`/tasks/${id}`);if(['SUCCEEDED','FAILED','PARTIAL','CANCELLED'].includes(task.status))return remoteView(task);task=await api<RemoteTask>(`/tasks/${id}/recover`,{version:task.version,document:documentNonce},config?.signal);return remoteView(await api<RemoteTask>(`/tasks/${id}/cancel`,{version:task.version,document:documentNonce},config?.signal))},config)

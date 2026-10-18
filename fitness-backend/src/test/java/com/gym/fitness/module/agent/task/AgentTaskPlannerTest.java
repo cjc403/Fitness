@@ -21,6 +21,7 @@ class AgentTaskPlannerTest {
     final AgentMutationReceiptService receipts=mock(AgentMutationReceiptService.class);
     final ComputerAgentDtos.Session me=new ComputerAgentDtos.Session(1L,"COACH",1L,"session","/coach-workbench",List.of("ASSISTANT_USE"),null);
     AgentTaskPlanner planner;AgentTaskStore.View task;
+    final com.gym.fitness.config.AiProperties config=new com.gym.fitness.config.AiProperties();
     @BeforeEach void setup(){
         task=new AgentTaskStore.View("12345678-1234-1234-1234-123456789abc",0,"打开训练计划", "RUNNING",json.createObjectNode(),json.createObjectNode(),LocalDateTime.now(),LocalDateTime.now());
         when(computer.session()).thenReturn(me);when(store.check(eq(me),anyString(),anyLong(),anyString())).thenReturn(task);
@@ -30,9 +31,13 @@ class AgentTaskPlannerTest {
         when(computer.validatePlannedAction(anyString(),any(),any())).thenAnswer(i->new ComputerAgentDtos.Decision(i.getArgument(0),i.getArgument(1),"validated"));
         when(receipts.list(any(),anyString())).thenReturn(List.of());
         var counter=new java.util.concurrent.atomic.AtomicInteger();when(store.reserveModelCall(any(),anyString(),anyLong(),anyString())).thenAnswer(i->counter.incrementAndGet());
-        planner=new AgentTaskPlanner(store,computer,model,business,tools,json,receipts);
+        planner=new AgentTaskPlanner(store,computer,model,business,tools,json,receipts,config);
     }
     JsonNode request(){return json.valueToTree(Map.of("version",0,"document","document-a","observation",Map.of("url","http://localhost:5173/coach-workbench","title","教练","text","当前页","revision","r1","nodes",List.of()),"history",List.of(),"artifacts",List.of()));}
+    @Test void aDisabledNavigationGroupAlsoBlocksTheBackAction()throws Exception{
+        config.setTaskDisabledSkills(Set.of("navigation"));when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("back","{}","fixture"));
+        assertThrows(RuntimeException.class,()->planner.next(task.id(),request()));verify(computer,never()).validatePlannedAction(anyString(),any(),any());
+    }
     AgentModelClient.Outcome action(String name,String args,String reasoning)throws Exception{
         var call=new AgentModelClient.Call("provider-id",name,args);var turn=Map.<String,Object>of("role","assistant","content","","reasoning_content",reasoning,"tool_calls",List.of(Map.of("id",call.id(),"type","function","function",Map.of("name",name,"arguments",args))));
         return new AgentModelClient.Outcome(new AgentModelClient.Completion("",List.of(call),"fixture",1,turn),null);
@@ -47,7 +52,7 @@ class AgentTaskPlannerTest {
     @Test void aServerVerificationVersionKeepsTheGenuineQueryResultAvailable()throws Exception{
         when(tools.available()).thenReturn(List.of(new AgentDtos.Tool("students","学员","真实关系",false,json.createObjectNode())));
         when(business.query(eq("students"),any())).thenReturn(new AgentDtos.ToolResult("students","学员",json.valueToTree(List.of(Map.of("id",17,"name","宁安"))),"db",LocalDateTime.now(),false));
-        when(business.modelContext(any())).thenReturn(Map.of("tool","students","data",List.of(Map.of("id",17,"name","宁安"))));
+        when(business.modelContext(any(),any())).thenReturn(Map.of("tool","students","data",List.of(Map.of("id",17,"name","宁安"))));
         when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("query_students","{}","genuine student reasoning"));
         planner.next(task.id(),request());planner.acknowledgeVerification(task.id(),1,2);
         when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenAnswer(i->{String messages=i.getArgument(0).toString();assertTrue(messages.contains("genuine student reasoning"));assertTrue(messages.contains("宁安"));assertTrue(messages.contains("17"));return action("navigate","{\"path\":\"/training-plans\"}","next");});

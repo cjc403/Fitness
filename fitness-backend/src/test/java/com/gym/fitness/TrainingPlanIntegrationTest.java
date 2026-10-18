@@ -31,6 +31,24 @@ class TrainingPlanIntegrationTest {
     @Autowired com.gym.fitness.module.booking.repository.BookingRepository bookings;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     @Autowired jakarta.persistence.EntityManager em;
+    @Autowired com.gym.fitness.module.agent.task.AgentDomainVerifier agentVerifier;
+    @Autowired com.gym.fitness.security.DatabaseUserDetailsService userDetails;
+    @Test void agentVerifiesFeedbackOutsideTheFirstTwentyWithoutChangingTheOriginalPagedResponse() throws Exception {
+        var coach=account("COACH",0);var learner=member(coach);var owner=account("MEMBER",0);learner.setUserId(owner.getId());members.saveAndFlush(learner);
+        var d=write(coach,"",create(learner),0);long id=d.path("plan").path("id").asLong();d=write(coach,"/"+id+"/publish",version(0),0);long exercise=d.path("exercises").get(0).path("id").asLong(),oldest=0;
+        for(int i=0;i<21;i++){d=write(coach,"/"+id+"/sessions",session(d.path("plan").path("version").asLong(),List.of(Map.of("exerciseId",exercise,"status","DONE","sets",3,"reps",12))),0);if(i==0)oldest=d.path("sessions").path("records").get(0).path("id").asLong();}
+        var feedback=version(0);feedback.put("rating",5);feedback.put("content","旧记录的精确反馈");var result=memberWrite(owner,"/"+id+"/sessions/"+oldest+"/feedback",feedback,0);
+        assertThat(result.path("sessions").path("total").asLong()).isEqualTo(21);assertThat(result.path("sessions").path("records").size()).isEqualTo(20);for(var row:result.path("sessions").path("records"))assertThat(row.path("id").asLong()).isNotEqualTo(oldest);
+        String hash=java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes("旧记录的精确反馈")));
+        var receipt=new com.gym.fitness.module.agent.task.AgentMutationReceiptService.Receipt("r","t",0,"POST","/api/v1/member/training-plans/"+id+"/sessions/"+oldest+"/feedback","SUCCEEDED",json.valueToTree(Map.of("rating",5,"contentHash",hash)),json.createObjectNode(),json.valueToTree(Map.of("code",0,"data",result)),LocalDateTime.now());
+        String goal="为训练计划#"+id+"中训练记录#"+oldest+"提交反馈，评分5，内容旧记录的精确反馈";
+        try{
+            var details=userDetails.loadUserByUsername(owner.getUsername());org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(details,null,details.getAuthorities()));
+            assertThat(agentVerifier.verify("training",receipt,goal,true)).isTrue();
+            var other=account("MEMBER",0);details=userDetails.loadUserByUsername(other.getUsername());org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(details,null,details.getAuthorities()));
+            assertThat(agentVerifier.verify("training",receipt,goal,true)).isFalse();
+        }finally{org.springframework.security.core.context.SecurityContextHolder.clearContext();}
+    }
     @Test void createReplayReauthorizesOriginalVenueAfterCoachTransfer() throws Exception {
         var c=account("COACH",0);var m=member(c);var request=create(m);var d=write(c,"",request,0);long id=d.path("plan").path("id").asLong();
         assertThat(write(c,"",request,0).path("plan").path("id").asLong()).isEqualTo(id);

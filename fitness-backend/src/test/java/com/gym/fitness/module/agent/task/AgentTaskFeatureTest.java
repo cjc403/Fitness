@@ -7,6 +7,14 @@ import org.springframework.mock.web.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 class AgentTaskFeatureTest {
+ @Test void disabledBusinessGroupRejectsPreviewAndAlreadyIssuedPermitsButNotManualRequests()throws Exception{
+  var config=new AiProperties();config.setTaskDisabledSkills(java.util.Set.of("courses"));var store=mock(AgentTaskStore.class);when(store.schemaAvailable()).thenReturn(true);var computer=mock(ComputerAgentService.class);var receipts=mock(AgentMutationReceiptService.class);
+  var controller=new AgentTaskController(store,mock(AgentTaskPlanner.class),computer,new ObjectMapper().findAndRegisterModules(),receipts,mock(AgentOutcomeVerifier.class),config);
+  assertEquals(7,((java.util.Set<?>)controller.capabilities().getData().get("enabledSkillGroups")).size());
+  assertThrows(RuntimeException.class,()->controller.prepare("id","{\"version\":0,\"document\":\"d\",\"method\":\"PUT\",\"path\":\"/api/v1/admin/courses/1\",\"body\":{}}"));
+  var filter=new AgentMutationFilter(receipts,computer,new ObjectMapper().findAndRegisterModules(),config);var request=new MockHttpServletRequest("PUT","/api/v1/admin/courses/1");request.addHeader("X-FitChain-Agent-Permit","previously-approved");var response=new MockHttpServletResponse();var calls=new java.util.concurrent.atomic.AtomicInteger();filter.doFilter(request,response,(a,b)->calls.incrementAndGet());assertEquals(400,response.getStatus());assertEquals(0,calls.get());verifyNoInteractions(receipts);
+  filter.doFilter(new MockHttpServletRequest("PUT","/api/v1/admin/courses/1"),new MockHttpServletResponse(),(a,b)->calls.incrementAndGet());assertEquals(1,calls.get());
+ }
  @Test void disablingV2RejectsNewPlanningAndPermitsButKeepsManualRequestsAvailable()throws Exception{
   var config=new AiProperties();config.setTaskV2Enabled(false);var store=mock(AgentTaskStore.class);var computer=mock(ComputerAgentService.class);var receipts=mock(AgentMutationReceiptService.class);
   var controller=new AgentTaskController(store,mock(AgentTaskPlanner.class),computer,new ObjectMapper().findAndRegisterModules(),receipts,mock(AgentOutcomeVerifier.class),config);

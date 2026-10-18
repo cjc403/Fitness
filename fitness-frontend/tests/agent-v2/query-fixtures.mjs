@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {fixtureApi,seedFreeSchedule,day} from './fixtures.mjs'
-export const queryRows=v=>Array.isArray(v)?v:v?.records||[]
+export const queryRows=v=>Array.isArray(v)?v:v?.records||v?.items||[]
 const ids=(v,key='id')=>queryRows(v).map(x=>x[key]??x.id).sort((a,b)=>a-b)
 function dates(goal){
  if(!/本周|下周/.test(goal))return {from:day(),to:day(7)}

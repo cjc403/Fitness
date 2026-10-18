@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { transformSync } from 'esbuild'
 import * as vue from 'vue'
+import * as taskHistory from '../src/agent/taskHistory.mjs'
 
 const sourceRoot = new URL('../src/', import.meta.url)
 function execute(path, deps, globals, names = []) {
@@ -44,6 +45,7 @@ function runtime(options = {}) {
     }
   }
   const deps = { vue: { ...vue, onMounted: fn => mounted.push(fn), onBeforeUnmount: fn => unmounted.push(fn) }, '@/store/modules/auth': { useAuthStore: () => auth } }
+  deps['@/agent/taskHistory.mjs'] = taskHistory
   const api = execute('api/modules/computerAgent.ts', deps, globals)
   deps['@/api/modules/computerAgent'] = api
   deps['@/agent/currentPageAgent'] = { ...api, suspendPageTasks() {} }

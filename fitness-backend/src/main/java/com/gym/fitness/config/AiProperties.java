@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class AiProperties {
     private boolean enabled = true;
     private boolean taskV2Enabled = true;
+    private java.util.Set<String> taskDisabledSkills = java.util.Set.of();
     private String baseUrl = "https://api.deepseek.com";
     private String apiKey = "";
     private String model = "deepseek-flash";

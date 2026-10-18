@@ -16,6 +16,12 @@ export function buildPageContext({document,window,root,nodes,resolve,title,candi
     const select=e.matches('[role="combobox"]')&&e.closest('.el-select')
     const slider=e.matches('[role="slider"]')
     if(select||slider||['INPUT','TEXTAREA','SELECT'].includes(e.tagName))fields.push({ref:node.ref,key:field?.getAttribute('data-agent-field')||'',name:node.name,value:privateText(slider?e.getAttribute('aria-valuenow'):select?compact(select.querySelector('.el-select__selected-item:not(.is-transparent)')?.textContent):e.value),controlType:slider?'slider':select?'combobox':e.type||e.tagName.toLowerCase(),checked:e.checked===true,writable:slider?e.getAttribute('aria-disabled')!=='true'&&e.getAttribute('aria-readonly')!=='true':select?!select.classList.contains('is-disabled')&&!e.disabled:!e.disabled&&!e.readOnly,entityType:host?.getAttribute('data-agent-type')||scopeHost?.getAttribute('data-agent-type')||'',entityId:host?.getAttribute('data-agent-id')||scopeHost?.getAttribute('data-agent-id')||''})
+    if(select&&fields.at(-1)?.ref===node.ref){
+      const f=fields.at(-1)
+      if(field?.getAttribute('data-agent-option-type'))f.optionType=field.getAttribute('data-agent-option-type')
+      const selected=field?.getAttribute('data-agent-value-id');if(selected&&/^\d+$/.test(selected))f.selectedId=selected
+      if(e.getAttribute('aria-readonly')==='true')f.writable=false
+    }
   }
   const errors=[...area.querySelectorAll('.el-form-item__error,[role="alert"],.el-alert--error')].filter(visible).map(e=>privateText(compact(e.textContent))).filter(Boolean).slice(0,8)
   const selectedTabs=[...document.querySelectorAll('[role="tab"][aria-selected="true"],.el-tabs__item.is-active')].filter(visible).map(e=>privateText(compact(e.textContent))).slice(0,10)
@@ -44,8 +50,9 @@ export function chooseSemanticAction(context={},args={}){
       return fields[0].checked?{action:'observe',arguments:{},alreadySatisfied:true}:{action:'click',arguments:{ref:fields[0].ref}}
     }
     if(fields.length!==1)return null
+    if(fields[0].optionType&&fields[0].selectedId===String(args.value))return {action:'observe',arguments:{},alreadySatisfied:true}
     if(String(fields[0].value)===String(args.value)||String(fields[0].value)===requestedValue)return {action:'observe',arguments:{},alreadySatisfied:true}
-    if(fields[0].controlType==='combobox')return {action:'select_option',arguments:{ref:fields[0].ref,value:requestedValue}}
+    if(fields[0].controlType==='combobox')return {action:'select_option',arguments:{ref:fields[0].ref,value:requestedValue,...(fields[0].optionType?{optionType:fields[0].optionType}:{})}}
     return {action:'fill',arguments:{ref:fields[0].ref,value:String(args.value)}}
   }
   return null

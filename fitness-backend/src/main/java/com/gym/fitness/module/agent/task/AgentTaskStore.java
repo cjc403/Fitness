@@ -32,6 +32,13 @@ public class AgentTaskStore {
         });
     }
     public View get(Session me,String id){return owned(me,id,false).view;}
+    public record HistoryView(View task,boolean readOnly){}
+    public HistoryView history(Session me,String id){var row=owned(me,id,false,false);return new HistoryView(row.view,!row.session.equals(me.sessionKey()));}
+    public Map<String,Object> modelUsage(Session me,String id){
+        var row=owned(me,id,false);int reserved=jdbc.queryForObject("SELECT count(*) FROM agent_task_step WHERE task_id=? AND kind='MODEL_CALL'",Integer.class,id),measured=jdbc.queryForObject("SELECT count(*) FROM agent_task_step WHERE task_id=? AND kind='MODEL_USAGE'",Integer.class,id);
+        return Map.of("reservedCalls",reserved,"measuredCalls",measured,"totalTokens",row.view.checkpoint().path("totalTokens").asInt(),"complete",reserved==measured);
+    }
+    public List<HistoryView> historyList(Session me){return jdbc.query("SELECT id FROM agent_task WHERE user_id=? AND role=? AND venue_id=? ORDER BY updated_at DESC LIMIT 30",(r,i)->history(me,r.getString(1)),me.userId(),me.role(),me.venueId());}
     public boolean schemaAvailable(){try{jdbc.queryForObject("SELECT count(*) FROM agent_task WHERE 1=0",Integer.class);jdbc.queryForObject("SELECT count(*) FROM agent_task_receipt WHERE 1=0",Integer.class);return true;}catch(org.springframework.dao.DataAccessException unavailable){return false;}}
     public int reserveModelCall(Session me,String id,long expected,String document){
         return tx.execute(ignored->{var row=owned(me,id,true);checkVersion(row,expected,document);if(!"RUNNING".equals(row.view.status()))throw invalid("任务当前不可规划");
@@ -77,10 +84,13 @@ public class AgentTaskStore {
     }
     public View pause(Session me,String id,String document){return tx.execute(ignored->{var row=owned(me,id,true);checkVersion(row,row.view.version(),document);if(TERMINAL.contains(row.view.status()))return row.view;if("PAUSED".equals(row.view.status()))return row.view;return update(me,id,row.view.version(),document,"PAUSED",row.view.plan(),row.view.checkpoint());});}
     private Row owned(Session me,String id,boolean lock){
+        return owned(me,id,lock,true);
+    }
+    private Row owned(Session me,String id,boolean lock,boolean sessionRequired){
         if(id==null||!id.matches("[a-f0-9-]{36}"))throw denied();
         var rows=jdbc.query("SELECT * FROM agent_task WHERE id=?"+(lock?" FOR UPDATE":""),(r,i)->new Row(view(r),r.getLong("user_id"),r.getLong("venue_id"),r.getString("role"),r.getString("session_hash"),r.getString("document_nonce")),id);
         if(rows.size()!=1)throw denied();var row=rows.get(0);
-        if(row.user!=me.userId()||row.venue!=me.venueId()||!row.role.equals(me.role())||!row.session.equals(me.sessionKey()))throw denied();
+        if(row.user!=me.userId()||row.venue!=me.venueId()||!row.role.equals(me.role())||sessionRequired&&!row.session.equals(me.sessionKey()))throw denied();
         int tokens=0;for(var detail:jdbc.queryForList("SELECT detail_json FROM agent_task_step WHERE task_id=? AND kind='MODEL_USAGE'",String.class,id))tokens+=decode(detail).path("tokens").asInt();
         var checkpoint=row.view.checkpoint().isObject()?(com.fasterxml.jackson.databind.node.ObjectNode)row.view.checkpoint().deepCopy():json.createObjectNode();checkpoint.put("totalTokens",Math.max(tokens,checkpoint.path("totalTokens").asInt()));
         var view=row.view;return new Row(new View(view.id(),view.version(),view.goal(),view.status(),view.plan(),checkpoint,view.createdAt(),view.updatedAt()),row.user,row.venue,row.role,row.session,row.document);

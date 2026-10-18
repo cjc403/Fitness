@@ -89,7 +89,7 @@ public class AgentOutcomeVerifier {
             }
             boolean path=switch(type){case "trial"->r.path().matches("/api/v1/leads/\\d+/trials(/\\d+/result)?");case "lead"->r.path().startsWith("/api/v1/leads");case "training"->r.path().contains("/training-plans");case "booking"->r.path().contains("/bookings");case "retention"->r.path().matches("/api/v1/admin/members/\\d+/follow-ups");case "member"->r.path().matches("/api/v1/admin/members(/\\d+)?");case "course"->r.path().matches("/api/v1/admin/courses(/\\d+)?");case "schedule"->r.path().startsWith("/api/v1/admin/schedules");default->false;};
             boolean operation=(!clause.contains("发布")||r.path().endsWith("/publish"))&&(!clause.contains("归档")||r.path().endsWith("/archive"))&&(!clause.contains("取消")||r.path().endsWith("/cancel"))&&(!clause.contains("签到")||r.path().endsWith("/check-in"));
-            if(path&&operation&&r.result().path("code").asInt(-1)==0&&domains.verify(type,r,clause,member)){used.add(r.id());return true;}
+            if(path&&operation&&AgentOperationIntent.permits(clause,r.method(),r.path())&&r.result().path("code").asInt(-1)==0&&domains.verify(type,r,clause,member)){used.add(r.id());return true;}
         }return false;
     }
     private String header(String text){return AgentOperationIntent.unquoted(text).split("[，,。；;]",2)[0].trim();}

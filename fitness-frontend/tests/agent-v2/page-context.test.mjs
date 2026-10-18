@@ -14,6 +14,11 @@ test('semantic field filling skips values already achieved and never guesses dup
   context.fields.push({...context.fields[0],ref:'fee2'})
   assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'fee',value:'109'}),null)
 })
+test('an already selected typed object is compared by its ID rather than a display label',()=>{
+ const context={fields:[{key:'memberId',name:'会员',value:'林晓雨 · FC20260001',selectedId:'1',optionType:'member',ref:'m',writable:true,controlType:'combobox'}]}
+ assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'memberId',value:'1'}).alreadySatisfied,true)
+ assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'memberId',value:'2'}).action,'select_option')
+})
 test('context summaries retain validation and truncation without logging private values',()=>{
   const summary=summarizePageContext({scope:{title:'编辑课程'},entities:[],fields:[{name:'手机号',value:'13812345678'}],errors:['时间已被占用'],truncated:true})
   assert.ok(summary.includes('时间已被占用'));assert.ok(summary.includes('截断'));assert.ok(!summary.includes('13812345678'))

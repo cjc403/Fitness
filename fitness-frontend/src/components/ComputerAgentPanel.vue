@@ -31,10 +31,11 @@
         <p v-if="task.error" class="computer-error">{{ task.error }}</p>
         <p v-if="task.status === 'SUCCEEDED'" class="computer-success">任务已完成，请查看当前页面及下方实际操作结果。</p>
         <p v-if="task.status === 'CANCELLED'" class="computer-muted">任务已停止。</p>
-        <p v-if="task.status === 'PAUSED'" class="computer-muted" role="status">{{ pauseExplanation(task.pauseReason) }}点击“继续”后才会继续执行；若有待确认的提交，继续后仍需单独确认。</p>
+        <p v-if="task.status === 'PAUSED' && !task.readOnly" class="computer-muted" role="status">{{ pauseExplanation(task.pauseReason) }}点击“继续”后才会继续执行；若有待确认的提交，继续后仍需单独确认。</p>
+        <p v-if="task.readOnly" class="computer-muted" role="status">这是上次登录的历史记录，仅供查看。旧会话的确认和执行许可不会恢复；需要继续办理时请创建新任务。</p>
         <div class="computer-controls">
-          <button v-if="task.status === 'RUNNING'" type="button" :disabled="!canWrite" @click="pauseTask">暂停</button>
-          <button v-if="task.status === 'PAUSED'" type="button" :disabled="!canWrite" @click="resumeTask">{{ task.restorable ? '在当前网页恢复' : '继续' }}</button>
+          <button v-if="!task.readOnly && task.status === 'RUNNING'" type="button" :disabled="!canWrite" @click="pauseTask">暂停</button>
+          <button v-if="!task.readOnly && task.status === 'PAUSED'" type="button" :disabled="!canWrite" @click="resumeTask">{{ task.restorable ? '在当前网页恢复' : '继续' }}</button>
           <button v-if="isActiveTask(task)" type="button" class="computer-stop" :disabled="!canWrite" @click="stopTask">停止任务</button>
           <button type="button" :disabled="busy" @click="takeOverCurrentPage">手动接管（刷新当前页）</button>
         </div>
@@ -73,6 +74,7 @@
 </template>
 
 <script setup lang="ts">
+import { isExecutableTask } from '@/agent/taskHistory.mjs'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/store/modules/auth'
 import AgentData from '@/components/AgentData.vue'
@@ -101,7 +103,7 @@ const screenshotSource = computed(() => typeof task.value?.screenshot === 'strin
 const statusLabel = (status: ComputerTaskStatus) => ({ RUNNING: '执行中', PAUSED: '已暂停', WAITING_CONFIRMATION: '待你确认', WAITING_INPUT: '待补充信息', SUCCEEDED: '已完成', PARTIAL:'部分完成', FAILED: '执行失败', CANCELLED: '已停止' })[status] || '状态未知'
 const pauseExplanation = (reason?: ComputerTask['pauseReason']) => ({ USER: '你已手动暂停任务。', PAGE_HIDDEN: '当前网页曾被隐藏（如切换标签页或最小化），任务已自动暂停。', ASSISTANT_CLOSED: '助手面板已关闭或重新加载，任务已自动暂停。', OFFLINE: '网络已断开，任务已自动暂停。', WRITE_UNKNOWN: '提交结果尚未确认，已暂停且不会重试业务；恢复后先回查同一回执。' } as Record<string,string>)[reason || ''] || '任务已暂停。'
 const stepStatusLabel = (status: string) => ({ RUNNING: '执行中', SUCCEEDED: '完成', FAILED: '失败', CANCELLED: '已停止', PAUSED: '暂停', WAITING_CONFIRMATION: '等待确认', WAITING_INPUT: '等待补充', PENDING: '等待执行' } as Record<string, string>)[status] || status
-const isActiveTask = (value: ComputerTask) => ['RUNNING', 'PAUSED', 'WAITING_CONFIRMATION', 'WAITING_INPUT'].includes(value.status)
+const isActiveTask = (value: ComputerTask) => isExecutableTask(value)
 const formatTime = (value: string) => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—'
 const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
 const fieldLabel = (label: string) => ({ fee: '价格（元）', maxCapacity: '容量', durationMinutes: '时长（分钟）', intensity: '强度', type: '类型', description: '简介', name: '姓名 / 名称', phone: '联系电话', source: '咨询来源', intent: '意向程度', ownerId: '负责顾问编号', venueId: '门店编号', memberId: '会员编号', recipientUserId: '收件人账号编号', coachId: '教练编号', scheduleId: '排课编号', note: '备注', content: '内容', title: '标题', nextFollowAt: '下次联系时间', startsAt: '开始时间', endsAt: '结束时间', idempotencyKey: '重复提交保护标识', expectedVersion: '资料版本', productId: '商品编号', paidAmount: '实收金额', paymentMethod: '收款方式' } as Record<string,string>)[label] || label
@@ -133,7 +135,7 @@ const acceptTask = (value: ComputerTask, announce = false) => {
   task.value = copy
   pendingPreview.value = copy.status === 'WAITING_CONFIRMATION' && copy.pendingConfirmation ? JSON.parse(JSON.stringify(copy.pendingConfirmation)) : null
   tasks.value = [copy, ...tasks.value.filter(item => item.id !== copy.id)].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30)
-  if (announce && !isActiveTask(copy) && !announced.has(copy.id)) {
+  if (announce && !copy.readOnly && !isActiveTask(copy) && !announced.has(copy.id)) {
     announced.add(copy.id)
     emit('reply', copy.status === 'SUCCEEDED' ? `网页任务已完成：${copy.goal}${copy.artifacts.length ? `。已生成 ${copy.artifacts.length} 个成果文件，请在网页任务中查看。` : '。请在网页任务中查看实际步骤。'}` : copy.status === 'PARTIAL' ? `任务部分完成，已成功提交的业务仍保留；剩余部分：${copy.error || '请查看目标核验'}。` : copy.status === 'FAILED' ? `网页任务执行失败：${copy.error || '请查看任务详情'}。` : `网页任务已停止：${copy.goal}`)
   }

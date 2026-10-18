@@ -12,6 +12,11 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AgentTaskStoreTest {
+    @Test void reservedCallsWithoutProviderUsageAreNotAssumedToBeFree()throws Exception{
+        var task=store.create(me,"usage-doc","打开训练计划");int call=store.reserveModelCall(me,task.id(),0,"usage-doc");var method=AgentTaskStore.class.getMethod("modelUsage",Session.class,String.class);
+        var first=(Map<?,?>)method.invoke(store,me,task.id());assertEquals(false,first.get("complete"));assertEquals(1,first.get("reservedCalls"));assertEquals(0,first.get("measuredCalls"));
+        store.recordModelUsage(me,task.id(),call,12);var measured=(Map<?,?>)method.invoke(store,me,task.id());assertEquals(true,measured.get("complete"));assertEquals(12,measured.get("totalTokens"));
+    }
     private AgentTaskStore store;
     private final Session me=new Session(1L,"COACH",1L,"session-a","/coach-workbench",List.of("ASSISTANT_USE"),null);
     @BeforeEach void setup(){
@@ -29,6 +34,13 @@ class AgentTaskStoreTest {
         assertThrows(RuntimeException.class,()->store.get(new Session(2L,"COACH",1L,"session-a","/coach-workbench",List.of(),null),task.id()));
         assertThrows(RuntimeException.class,()->store.get(new Session(1L,"COACH",2L,"session-a","/coach-workbench",List.of(),null),task.id()));
         assertFalse(task.toString().contains("session-a"));assertFalse(task.toString().contains("document-a"));
+    }
+    @Test void reloginCanReadOwnHistoryButCannotRecoverOrExecuteTheOldSession(){
+        var task=store.create(me,"document-a","打开训练计划");var relogin=new Session(1L,"COACH",1L,"session-b","/coach-workbench",List.of("ASSISTANT_USE"),null);
+        assertEquals(task.id(),store.history(relogin,task.id()).task().id());assertTrue(store.history(relogin,task.id()).readOnly());assertFalse(store.history(me,task.id()).readOnly());assertEquals(1,store.historyList(relogin).size());
+        assertThrows(RuntimeException.class,()->store.check(relogin,task.id(),0,"document-a"));assertThrows(RuntimeException.class,()->store.recover(relogin,task.id(),0,"document-b"));
+        assertThrows(RuntimeException.class,()->store.history(new Session(2L,"COACH",1L,"session-b","/coach-workbench",List.of(),null),task.id()));assertThrows(RuntimeException.class,()->store.history(new Session(1L,"COACH",2L,"session-b","/coach-workbench",List.of(),null),task.id()));
+        assertEquals("RUNNING",store.get(me,task.id()).status());
     }
     @Test void revisionsAndRecoveryRejectOldVersionAndOldDocumentLease(){
         var task=store.create(me,"document-a","把指定课程价格改成99");

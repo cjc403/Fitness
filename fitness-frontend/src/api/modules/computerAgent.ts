@@ -8,7 +8,7 @@ export interface ComputerTask {
   id: string; goal: string; status: ComputerTaskStatus; createdAt: string; updatedAt: string
   steps: ComputerTaskStep[]; artifacts: ComputerArtifact[]; pendingConfirmation?: ComputerConfirmation
   question?: string; error?: string; screenshot?: string
-  durable?:boolean;restorable?:boolean;remoteVersion?:number;syncError?:string
+  durable?:boolean;restorable?:boolean;readOnly?:boolean;remoteVersion?:number;syncError?:string
   plan?:{steps?:{id:string;label:string;kind:string}[]}
   verification?:{complete:boolean;partial?:boolean;outcomes:{id:string;label:string;status:string;evidence?:string}[]}
   facts?:unknown[]

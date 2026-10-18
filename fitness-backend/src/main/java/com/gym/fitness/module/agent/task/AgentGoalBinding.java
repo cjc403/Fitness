@@ -4,6 +4,10 @@ import java.util.regex.Pattern;
 
 final class AgentGoalBinding {
     private AgentGoalBinding() {}
+    static boolean explicitId(String goal,long id,String kind){
+        String type=switch(kind){case "training"->"训练计划|计划";case "booking"->"预约";case "schedule"->"排课|排期";case "member"->"会员|学员";case "lead"->"潜客";case "account"->"账号|用户";default->"课程";};
+        return Pattern.compile("(?:"+type+")(?:编号)?\\s*#?\\s*"+id+"(?!\\d)").matcher(goal).find();
+    }
     static boolean nestedMatches(String goal,String path){
         var session=Pattern.compile("/training-plans/\\d+/sessions/(\\d+)/(feedback|void)$").matcher(path);
         var trial=Pattern.compile("/leads/\\d+/trials/(\\d+)/result$").matcher(path);

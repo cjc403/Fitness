@@ -18,6 +18,7 @@ import static com.gym.fitness.module.agent.AgentIdentity.invalid;
 public class AgentTaskPlanner {
     private final AgentTaskStore store;private final ComputerAgentService computer;private final AgentModelClient model;
     private final AgentBusiness business;private final AgentTools tools;private final ObjectMapper json;private final AgentMutationReceiptService receipts;
+    private final com.gym.fitness.config.AiProperties aiProperties;
     private final Map<String,Episode> episodes=new ConcurrentHashMap<>();
     private static class Episode {final ReentrantLock lock=new ReentrantLock();final List<Map<String,Object>> messages=new ArrayList<>();Map<String,Object> observation;String pendingId;String pendingAction;long expectedVersion=-1;int calls,tokens;boolean thinking;Instant touched=Instant.now();}
     public record Turn(ComputerAgentDtos.Decision decision,AgentTaskStore.View task,List<Object> facts,AgentModelClient.Failure failure){}
@@ -66,7 +67,8 @@ public class AgentTaskPlanner {
             episode.messages.add(episode.observation);
             var definitions=new ArrayList<>(frame.tools());
             definitions.add(tool("set_plan","为多步骤任务记录最多8项必要子目标；标签不能减少原请求要求",Map.of("steps",Map.of("type","array","minItems",1,"maxItems",8,"items",Map.of("type","object","additionalProperties",false,"properties",Map.of("id",Map.of("type","string","maxLength",30),"label",Map.of("type","string","maxLength",180),"kind",Map.of("type","string","enum",List.of("NAVIGATE","QUERY","MUTATE"))),"required",List.of("id","label","kind"))))));
-            var reads=tools.available().stream().filter(t->!t.write()).toList();
+            var rollout=new AgentSkillRollout(aiProperties);
+            var reads=tools.available().stream().filter(t->!t.write()&&rollout.queryEnabled(t.name())).toList();
             for(var read:reads)definitions.add(Map.of("type","function","function",Map.of("name","query_"+read.name(),"description",read.description(),"parameters",read.parameters())));
             definitions.add(Map.of("type","function","function",Map.of("name","use_skill","description","按当前context中的编号/门店操作对象，或填写已注册字段，不能猜测同名按钮序号。entity_action提供entityType,id,venueId,action；fill_field提供field,value；已知多个字段时优先fill_fields，fields为最多8个{field,value}，只填写不保存；动态动作键如exercises.0.name。","parameters",Map.of("type","object","additionalProperties",false,"properties",Map.of("kind",Map.of("type","string","enum",List.of("entity_action","fill_field","fill_fields")),"entityType",Map.of("type","string"),"id",Map.of("type","string"),"venueId",Map.of("type","string"),"label",Map.of("type","string"),"action",Map.of("type","string"),"field",Map.of("type","string"),"value",Map.of("type","string"),"fields",Map.of("type","array","minItems",1,"maxItems",8,"items",Map.of("type","object","additionalProperties",false,"properties",Map.of("field",Map.of("type","string","maxLength",100),"value",Map.of("type","string","maxLength",2000)),"required",List.of("field","value")))),"required",List.of("kind")))));
             if(!reads.isEmpty())definitions.add(tool("query_business","查询当前身份允许的真实业务数据；此工具只有读取，不执行任何写入",Map.of("tool",Map.of("type","string","enum",reads.stream().map(AgentDtos.Tool::name).toList()),"arguments",Map.of("type","object"))));
@@ -98,11 +100,12 @@ public class AgentTaskPlanner {
                 }
                 boolean answered=false;
                 try{
+                if(Set.of("navigate","back","click").contains(call.name())||"use_skill".equals(call.name())&&"entity_action".equals(args.path("kind").asText()))rollout.requireNavigation();
                 if("query_business".equals(call.name())||call.name().startsWith("query_")){
                     String name;JsonNode queryArgs;
                     if("query_business".equals(call.name())){AgentService.allow(args,Set.of("tool","arguments"));name=args.path("tool").asText();queryArgs=args.path("arguments");}else{name=call.name().substring(6);queryArgs=args;}
                     if(reads.stream().noneMatch(t->t.name().equals(name)))throw invalid("此角色没有该查询能力");
-                    var result=business.query(name,queryArgs);Object context=business.modelContext(result);facts.add(result);
+                    var result=business.query(name,queryArgs);Object context=business.modelContext(result,queryArgs);facts.add(result);
                     var checkpoint=(ObjectNode)task.checkpoint().deepCopy();var proofs=checkpoint.withArray("queryProofs");
                     while(proofs.size()>=12)proofs.remove(0);
                     proofs.add(json.valueToTree(Map.of("tool",name,"arguments",queryArgs,"asOf",result.asOf().toString(),"truncated",result.truncated(),"pagination",result.pagination()==null?json.nullNode():json.valueToTree(result.pagination()))));

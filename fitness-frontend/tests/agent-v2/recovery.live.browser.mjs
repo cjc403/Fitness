@@ -1,3 +1,4 @@
+import {guardWaveBudget,captureUsage} from './budget.mjs'
 // Explicit paid-model recovery tests. Faults are injected at the browser/RPC boundary,
 // never claimed to be real provider outages; final outcomes use the real page and server.
 import assert from 'node:assert/strict'
@@ -13,6 +14,7 @@ const out=fileURLToPath(new URL('../../../docs/qa/agent-v2-20261017/',import.met
 const report={wave,startedAt:new Date().toISOString(),cases:[],errors:[],blocked:[],notRun:cases.filter(c=>!selected.includes(c)).map(c=>c.id)},browser=await createBrowser()
 try{
  for(const c of selected){
+  guardWaveBudget(report)
   let context,page,t,release;const entry={id:c.id,role:c.role,kind:c.kind,split:c.split,goal:c.goal,fault:c.fault,startedAt:new Date().toISOString()};report.cases.push(entry)
   try{
    const [user,home]=roleAccounts[c.role];let panel;({context,page,panel}=await loginPage(browser,user,home,report));const witness=await page.evaluate(()=>performance.timeOrigin),writes=[]
@@ -31,7 +33,7 @@ try{
      return route.fulfill({response,json:body})
     }return route.fulfill({response})
    })
-   t=await startTask(page,panel,c.goal)
+   t=await startTask(page,panel,c.goal);entry.taskId=t.id
    if(c.fault==='pause-resume'){
     await Promise.race([observed,new Promise((_,reject)=>setTimeout(()=>reject(Error('No genuine provider response to pause')),100000))]);await call(page,'pauseComputerTask',t.id);const pausedPath=page.url();release();await page.waitForTimeout(900)
     assert.equal((await call(page,'getComputerTask',t.id)).status,'PAUSED');assert.equal(page.url(),pausedPath);entry.pausedCallbackBlocked=true;await call(page,'resumeComputerTask',t.id)
@@ -42,6 +44,6 @@ try{
    assert.equal(await page.locator('[data-recovery-fault]:visible,.el-message-box:visible,.el-dialog:visible').count(),0);assert.notEqual(await page.evaluate(()=>window.__wrongRecoverySubmit),true)
    assert.ok(injected>0);assert.equal(writes.length,0);entry.afterWrites=0;entry.sameDocument=context.pages().length===1&&await page.evaluate(()=>performance.timeOrigin)===witness;assert.equal(entry.sameDocument,true);entry.evidenceChecked=true
   }catch(error){entry.failure=error.message}
-  finally{release?.();if(page&&t)try{const current=await call(page,'getComputerTask',t.id);if(!['SUCCEEDED','FAILED','PARTIAL','CANCELLED'].includes(current.status))await call(page,'stopComputerTask',t.id)}catch{};if(context)await context.close();entry.endedAt=new Date().toISOString();entry.grade=gradeCase({...c,expected:{goals:1}},entry);console.log(c.id+' '+(entry.grade.passed?'PASS':'FAIL')+' '+(entry.failure||''));report.summary=summarize(report.cases.map(c=>c.grade));await writeFile(out+'evaluation-'+wave+'.json',JSON.stringify(report,null,2))}
+  finally{release?.();if(page&&t)try{const current=await call(page,'getComputerTask',t.id);if(!['SUCCEEDED','FAILED','PARTIAL','CANCELLED'].includes(current.status))await call(page,'stopComputerTask',t.id)}catch{};await captureUsage(page,entry);if(context)await context.close();entry.endedAt=new Date().toISOString();entry.grade=gradeCase({...c,expected:{goals:1}},entry);console.log(c.id+' '+(entry.grade.passed?'PASS':'FAIL')+' '+(entry.failure||''));report.summary=summarize(report.cases.map(c=>c.grade));await writeFile(out+'evaluation-'+wave+'.json',JSON.stringify(report,null,2))}
  }
 }finally{await browser.close();report.endedAt=new Date().toISOString();await writeFile(out+'evaluation-'+wave+'.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report.summary));if(report.cases.some(c=>!c.grade.passed)||report.errors.length||report.blocked.length)process.exitCode=1}

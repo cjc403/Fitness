@@ -1,6 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {checkQuery} from './query-fixtures.mjs'
+test('the independent member oracle reads actual PageResult items and rejects a missing member',async()=>{
+ const rows=[{id:1},{id:2}],api=async()=>({items:rows,total:2,page:1,size:20}),c={role:'SUPER_ADMIN',goal:'查询会员'}
+ const facts=[{tool:'members',asOf:new Date().toISOString(),data:{items:rows,total:2,page:1,size:20},pagination:{page:1,size:20,total:2,contentTruncated:false}}]
+ assert.equal((await checkQuery(api,c,{facts})).expectedIds.length,2)
+ facts[0].data.items=[{id:1}];await assert.rejects(checkQuery(api,c,{facts}),/differs from original scoped API/)
+})
 test('the independent oracle checks every original API page and rejects a missing evidence page',async()=>{
  const all=Array.from({length:45},(_,i)=>({id:i+1})),calls=[],c={role:'SUPER_ADMIN',goal:'查询会员'}
  const api=async path=>{calls.push(path);const page=Number(new URL(path,'http://fixture').searchParams.get('page'));return {records:all.slice((page-1)*20,page*20),total:45}}

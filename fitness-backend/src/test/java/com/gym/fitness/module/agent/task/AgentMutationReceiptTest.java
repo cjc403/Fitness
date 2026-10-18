@@ -11,6 +11,22 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AgentMutationReceiptTest {
+    @Test void deletingACourseCannotBorrowAnotherRequestedCourseId(){
+        task=tasks.revise(me,task.id(),0,"document-a","改为任务：删除课程#2");
+        assertThrows(RuntimeException.class,()->receipts.prepare(me,task.id(),task.version(),"document-a","DELETE","/api/v1/admin/courses/1",json.nullNode()));
+    }
+    @Test void duplicateContactNamesNeedAnExplicitAccountIdBeforeAnyPreview(){
+        var chat=org.mockito.Mockito.mock(com.gym.fitness.module.chat.service.ChatService.class);var a=new com.gym.fitness.module.chat.dto.ChatDtos.Contact(2L,"李四","COACH","教练","翠湖店",false,0);var b=new com.gym.fitness.module.chat.dto.ChatDtos.Contact(3L,"李四","COACH","教练","滨江店",false,0);org.mockito.Mockito.when(chat.contacts()).thenReturn(new com.gym.fitness.module.chat.dto.ChatDtos.ContactGroups(List.of(a,b),List.of()));
+        var domains=org.mockito.Mockito.mock(AgentDomainVerifier.class);org.mockito.Mockito.when(domains.before(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.any())).thenAnswer(i->json.createObjectNode());var service=new AgentMutationReceiptService(jdbc,new DataSourceTransactionManager(jdbc.getDataSource()),json,tasks,chat,domains);task=tasks.revise(me,task.id(),0,"document-a","改为任务：给李四发送：你好");var body=json.valueToTree(Map.of("recipientUserId",2,"content","你好"));
+        assertThrows(RuntimeException.class,()->service.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/messages/send",body));
+        task=tasks.revise(me,task.id(),task.version(),"document-a","改为任务：给用户编号#2发送：你好");assertNotNull(service.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/messages/send",body));
+    }
+    @Test void recordedSessionIdComesFromTheCommittedActorAndIdempotencyEventNotTheFirstPage(){
+        jdbc.execute("CREATE TABLE training_plan_event(plan_id BIGINT,actor_id BIGINT,idempotency_key VARCHAR(80),type VARCHAR(30),session_id BIGINT)");var domains=org.mockito.Mockito.mock(AgentDomainVerifier.class);org.mockito.Mockito.when(domains.before(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.any())).thenReturn(json.valueToTree(Map.of("kind","training","id",2,"name","基础训练","sessionHighWatermark",20)));
+        var service=new AgentMutationReceiptService(jdbc,new DataSourceTransactionManager(jdbc.getDataSource()),json,tasks,org.mockito.Mockito.mock(com.gym.fitness.module.chat.service.ChatService.class),domains);task=tasks.revise(me,task.id(),0,"document-a","改为任务：为训练计划#2登记今天训练");var body=json.valueToTree(Map.of("idempotencyKey","backdated","durationMinutes",30,"exercises",List.of()));var p=service.prepare(me,task.id(),task.version(),"document-a","POST","/api/v1/training-plans/2/sessions",body);service.approve(me,p.id(),task.version(),"document-a");
+        var response=service.execute(me,p.id(),"POST",p.path(),body,()->{jdbc.update("INSERT INTO training_plan_event VALUES(2,1,'backdated','RECORD',99)");return json.valueToTree(Map.of("code",0,"data",Map.of("plan",Map.of("id",2),"sessions",Map.of("records",List.of()))));});
+        assertFalse(response.path("data").has("recordedSessionId"));assertEquals(99,service.get(me,p.id()).result().path("data").path("recordedSessionId").asLong());
+    }
     final ObjectMapper json=new ObjectMapper();final Session me=new Session(1L,"SUPER_ADMIN",1L,"session","/dashboard",List.of("ASSISTANT_USE","COURSE_WRITE"),null);
     JdbcTemplate jdbc;AgentTaskStore tasks;AgentMutationReceiptService receipts;AgentTaskStore.View task;
     @BeforeEach void setup(){

@@ -19,8 +19,8 @@ public final class AgentQueryPaging {
    var container=key.isEmpty()?data:data.path(key);
    if(container.isArray()){
     total=container.size();records=part(container,page,size);((ObjectNode)data).set(key,records);
-   }else if(container.path("records").isArray()&&container.path("total").canConvertToLong()){
-    records=container.path("records");total=container.path("total").asLong();page=container.path("page").asInt(page);size=container.path("size").asInt(20);
+   }else if((container.path("records").isArray()||container.path("items").isArray())&&container.path("total").canConvertToLong()){
+    records=container.path(container.path("records").isArray()?"records":"items");total=container.path("total").asLong();page=container.path("page").asInt(page);size=container.path("size").asInt(20);
     if(size<1||size>20||records.size()>size||total<records.size())throw invalid("业务查询分页信息不完整");
    }else return new Slice(data,null);
   }

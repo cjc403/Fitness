@@ -10,6 +10,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AgentOutcomeVerifierTest {
+ @Test void aPreviousLeadFollowUpCannotSatisfyARevisedProfileOperationEvenForTheSameId(){
+  var task=new AgentTaskStore.View("id",1,"修改潜客编号#2的意向为高","RUNNING",json.createObjectNode(),json.createObjectNode(),LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",1,"document")).thenReturn(task);
+  var r=new AgentMutationReceiptService.Receipt("old","id",0,"POST","/api/v1/leads/2/follow-ups","SUCCEEDED",json.createObjectNode(),json.createObjectNode(),json.valueToTree(Map.of("code",0)),LocalDateTime.now());when(receipts.list(me,"id")).thenReturn(List.of(r));var domains=mock(AgentDomainVerifier.class);when(domains.verify(anyString(),any(),anyString(),anyBoolean())).thenReturn(true);
+  assertFalse(new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,domains).verify(me,"id",1,"document",json.createObjectNode()).complete());
+ }
  @Test void anUnrelatedModalCannotCountAsOpeningTheUnderlyingPage(){
   var task=new AgentTaskStore.View("id",0,"打开训练计划","RUNNING",json.createObjectNode(),json.createObjectNode(),LocalDateTime.now(),LocalDateTime.now());when(store.check(me,"id",0,"document")).thenReturn(task);when(receipts.list(me,"id")).thenReturn(List.of());
   assertFalse(new AgentOutcomeVerifier(store,receipts,computer,courses,chat,json,mock(AgentDomainVerifier.class)).verify(me,"id",0,"document",json.valueToTree(Map.of("path","/training-plans","scope",Map.of("type","dialog","title","上一项操作")))).complete());

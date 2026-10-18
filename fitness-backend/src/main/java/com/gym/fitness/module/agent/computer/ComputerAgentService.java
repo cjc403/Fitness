@@ -148,7 +148,12 @@ public class ComputerAgentService {
     public record PlanningFrame(String system,List<Map<String,Object>> tools){}
     public PlanningFrame planningFrame(JsonNode request){
         Scope current=scope();validateRequest(request,current);
-        return new PlanningFrame(messages(request,current).get(0).get("content").toString(),definitions(request,current));
+        String system=messages(request,current).get(0).get("content").toString()
+                .replace("自定义下拉框使用click展开，再点击最新option引用，select仅用于原生SELECT。", "")
+                + "V2表单技能：context.fields已注册字段优先use_skill的fill_fields一次填写全部已知值（最多8个），只填写不保存；避免每个字段再单独展开、观察和点击。"
+                + "字段optionType为member或schedule时，用查询得到的真实编号字符串填写memberId或scheduleId，执行器负责在本字段选项内定位，不把编号当作显示文字。其他枚举使用页面中文标签；没有注册的控件才使用基础点击。"
+                + "courses工具返回已安排的排课scheduleId和时间，不是课程模板库；编辑课程价格或容量应在课程与排课页面按course实体编号/门店定位，不因排课查询为空而反复换关键词查模板。预约则先查询members和courses明确memberId、scheduleId，再批量填写两个字段，核对后保存到人工确认。";
+        return new PlanningFrame(system,definitions(request,current));
     }
     public Decision validatePlannedAction(String action,JsonNode arguments,JsonNode request){
         Scope current=scope();validateRequest(request,current);return validateAction(action,arguments,request,current);
