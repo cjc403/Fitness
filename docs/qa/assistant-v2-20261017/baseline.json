@@ -1,0 +1,10 @@
+{
+  "kind": "reduced historic baseline authorized by user",
+  "rerunOldFullCorpus": false,
+  "historicEvidence": [
+    "docs/qa/agent-grounding-20261016/verification.json",
+    "docs/qa/page-agent-chat-20261016/verification.json"
+  ],
+  "fullOldVersionComparableRate": null,
+  "note": "Historical repaired tasks are reused; development-iteration comparisons cannot be interpreted as a full old-versus-new success-rate improvement."
+}

@@ -7,9 +7,13 @@ function dates(goal){
  const now=new Date(),dow=now.getDay()||7;now.setDate(now.getDate()-dow+1+(goal.includes('下周')?7:0))
  const local=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),from=local(now);now.setDate(now.getDate()+6);return {from,to:local(now)}
 }
+export async function createQueryLead(api,name,suffix){
+ const me=await api('/agent/computer/session');assert.equal(me.role,'SALES');assert.ok(me.userId>0&&me.venueId>0)
+ return api('/leads','POST',{name,phone:'139'+Date.now().toString().slice(-8),source:'WALK_IN',intent:'HIGH',ownerId:me.userId,venueId:me.venueId,idempotencyKey:'query_'+suffix})
+}
 export async function bindQuery(c){
  let goal=c.goal;const suffix=Date.now().toString(36)
- if(goal.includes('{leadName}')){const api=await fixtureApi('advisor'),name='查询潜客验收'+suffix;await api('/leads','POST',{name,phone:'139'+Date.now().toString().slice(-8),source:'WALK_IN',intent:'HIGH',idempotencyKey:'query_'+suffix});goal=goal.replaceAll('{leadName}',name)}
+ if(goal.includes('{leadName}')){const api=await fixtureApi('advisor'),name='查询潜客验收'+suffix;await createQueryLead(api,name,suffix);goal=goal.replaceAll('{leadName}',name)}
  if(goal.includes('{courseName}')){const name='查询课程验收'+suffix;await seedFreeSchedule(name,2);goal=goal.replaceAll('{courseName}',name)}
  return {...c,goal}
 }

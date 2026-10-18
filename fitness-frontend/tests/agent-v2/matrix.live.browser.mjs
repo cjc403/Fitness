@@ -21,9 +21,12 @@ async function fingerprint(){
 }
 const source=await fingerprint(),report={prefix,sourceFingerprint:source,coreIds,startedAt:new Date().toISOString(),rounds:[],totalExpected:cases.length*rounds}
 const budget=Number(process.env.AGENT_V2_MATRIX_TOKEN_BUDGET||15000000),resetScript=process.env.AGENT_V2_ROUND_RESET_SCRIPT
+const priorTokens=Number(process.env.AGENT_V2_PRIOR_TOKENS||0),priorCalls=Number(process.env.AGENT_V2_PRIOR_CALLS||0)
 assert.ok(Number.isSafeInteger(budget)&&budget>=200000,'An explicit bounded token budget is required')
+assert.ok(Number.isSafeInteger(priorTokens)&&priorTokens>=0&&Number.isSafeInteger(priorCalls)&&priorCalls>=0,'Prior aborted-wave usage must be a known nonnegative count')
 assert.ok(resetScript,'A guarded marked-QA round snapshot/reset script is required')
 report.tokenBudget=budget;report.resetScriptSha256=createHash('sha256').update(await readFile(resetScript)).digest('hex')
+report.priorAbortedUsage={tokens:priorTokens,calls:priorCalls}
 async function reset(action){
  const code=await new Promise((resolve,reject)=>{const child=spawn(process.env.FITCHAIN_POWERSHELL||'pwsh.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',resetScript,'-Action',action,'-Name',prefix],{windowsHide:true,stdio:'inherit'});child.on('error',reject);child.on('exit',resolve)})
  assert.equal(code,0,'Guarded QA '+action+' failed');await assertV2Target()
@@ -42,7 +45,7 @@ for(let round=1;round<=rounds;round++){
  for(const group of groups){
   assert.equal(await fingerprint(),source,'Product source changed during acceptance; this wave is invalid')
   const wave=prefix+'-r'+round+'-'+group.name,selected=cases.filter(group.select),script=fileURLToPath(new URL('./'+group.script,import.meta.url));assert.ok(selected.length)
-  report.usage=usageOf(report.rounds.flatMap(r=>r.cases));assert.deepEqual(report.usage.unknown,[],'Unverified usage stops further paid calls');const remaining=budget-report.usage.tokens;assert.ok(remaining>=200000,'Matrix token budget exhausted; remaining cases NOT_RUN')
+  report.usage=usageOf(report.rounds.flatMap(r=>r.cases));assert.deepEqual(report.usage.unknown,[],'Unverified usage stops further paid calls');const remaining=budget-priorTokens-report.usage.tokens;assert.ok(remaining>=200000,'Matrix token budget exhausted; remaining cases NOT_RUN')
   console.log('START '+wave+' '+selected.length+' cases')
   const code=await new Promise((resolve,reject)=>{const child=spawn(process.execPath,[script],{cwd:repo,env:{...process.env,AGENT_V2_WAVE:wave,AGENT_V2_WAVE_TOKEN_BUDGET:String(remaining),AGENT_V2_CASE_IDS:selected.map(c=>c.id).join(',')},windowsHide:true,stdio:'inherit'});child.on('error',reject);child.on('exit',resolve)})
   const evidence=JSON.parse(await readFile(path.join(out,'evaluation-'+wave+'.json'),'utf8'))
@@ -58,4 +61,4 @@ for(let round=1;round<=rounds;round++){
 }
 report.sourceUnchanged=await fingerprint()===source;report.gate=acceptanceGate(report.rounds,report.sourceUnchanged);report.accepted=report.gate.accepted
 }catch(error){report.accepted=false;report.stoppedReason=error.message}
-finally{report.completedAt=new Date().toISOString();report.usage=usageOf(report.rounds.flatMap(r=>r.cases));report.performance=usageStats(report.rounds.flatMap(r=>r.cases));await save();console.log('MATRIX '+JSON.stringify({accepted:report.accepted,usage:report.usage,gate:report.gate,stoppedReason:report.stoppedReason}));if(!report.accepted)process.exitCode=1}
+finally{report.completedAt=new Date().toISOString();report.usage=usageOf(report.rounds.flatMap(r=>r.cases));report.totalPaidUsage={tokens:priorTokens+report.usage.tokens,calls:priorCalls+report.usage.calls,unknown:report.usage.unknown};report.performance=usageStats(report.rounds.flatMap(r=>r.cases));await save();console.log('MATRIX '+JSON.stringify({accepted:report.accepted,usage:report.usage,totalPaidUsage:report.totalPaidUsage,gate:report.gate,stoppedReason:report.stoppedReason}));if(!report.accepted)process.exitCode=1}

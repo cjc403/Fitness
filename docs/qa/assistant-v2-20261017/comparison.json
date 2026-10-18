@@ -1,0 +1,66 @@
+{
+  "scope": "Development iteration R22 vs R23, one sample per case; NOT the old-V1 versus V2 full-corpus score",
+  "changes": [
+    "items pagination and exact keyword grounding",
+    "selected entity ID and widget writable state",
+    "registered form batch fields and public select adapter"
+  ],
+  "taskTokenLimitUnchanged": 100000,
+  "cases": [
+    {
+      "caseId": "reception-08",
+      "before": {
+        "id": "reception-08",
+        "status": "FAILED",
+        "evidenceChecked": null,
+        "beforeWrites": null,
+        "afterWrites": null,
+        "duplicateRejected": null,
+        "sameDocument": null,
+        "calls": 14,
+        "tokens": 104266,
+        "usageComplete": true
+      },
+      "after": {
+        "id": "reception-08",
+        "status": "SUCCEEDED",
+        "evidenceChecked": true,
+        "beforeWrites": 0,
+        "afterWrites": 1,
+        "duplicateRejected": true,
+        "sameDocument": true,
+        "calls": 8,
+        "tokens": 69499,
+        "usageComplete": true
+      }
+    },
+    {
+      "caseId": "sales-09",
+      "before": {
+        "id": "sales-09",
+        "status": "FAILED",
+        "evidenceChecked": null,
+        "beforeWrites": null,
+        "afterWrites": null,
+        "duplicateRejected": null,
+        "sameDocument": null,
+        "calls": 18,
+        "tokens": 103711,
+        "usageComplete": true
+      },
+      "after": {
+        "id": "sales-09",
+        "status": "SUCCEEDED",
+        "evidenceChecked": true,
+        "beforeWrites": 0,
+        "afterWrites": 1,
+        "duplicateRejected": true,
+        "sameDocument": true,
+        "calls": 10,
+        "tokens": 53878,
+        "usageComplete": true
+      }
+    }
+  ],
+  "fullAcceptance": "RUNNING; see matrix-candidate-r24b-20261018.json"
+}

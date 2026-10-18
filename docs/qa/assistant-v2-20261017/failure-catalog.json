@@ -1,0 +1,49 @@
+{
+  "fixes": [
+    {
+      "id": "F1",
+      "cause": "Goal revision lost negative constraints or switched targets",
+      "regression": "AgentGoalRevisionTest",
+      "status": "REGRESSION_PASSED; full corpus acceptance pending"
+    },
+    {
+      "id": "F2",
+      "cause": "Ambiguous cross-venue/nested business target or wrong booking time",
+      "regression": "AgentDomainVerifierTest + AgentTaskIntegrationTest + AgentMutationReceiptTest",
+      "status": "REGRESSION_PASSED; full corpus acceptance pending"
+    },
+    {
+      "id": "F3",
+      "cause": "Old follow-up receipt substituted for a revised profile operation",
+      "regression": "AgentOutcomeVerifierTest + AgentDomainVerifierTest",
+      "status": "REGRESSION_PASSED; full corpus acceptance pending"
+    },
+    {
+      "id": "F4",
+      "cause": "Verifier depended on the first 20 training sessions",
+      "regression": "TrainingPlanIntegrationTest + TrainingSessionEvidenceTest + AgentMutationReceiptTest",
+      "status": "REGRESSION_PASSED; full corpus acceptance pending"
+    },
+    {
+      "id": "F5",
+      "cause": "Read-only own history was incorrectly tied to old login execution session",
+      "regression": "AgentTaskStoreTest + AgentTaskIntegrationTest + history.browser.mjs",
+      "status": "REGRESSION_PASSED; full corpus acceptance pending"
+    },
+    {
+      "id": "F6",
+      "cause": "Original member PageResult.items and oracle pagination were unrecognized",
+      "regression": "AgentQueryPagingTest + AgentModelContextTest + query-oracle.test.mjs",
+      "status": "REGRESSION_PASSED; full corpus acceptance pending"
+    },
+    {
+      "id": "F7",
+      "cause": "Selected typed IDs and custom-select API were not represented consistently",
+      "regression": "page-context.test.mjs + semantic-controls.test.mjs + real R23 affected writes",
+      "status": "REGRESSION_PASSED; full corpus acceptance pending"
+    }
+  ],
+  "preserveFailedWaves": true,
+  "claimCommercialParity": false,
+  "visionDelivered": false
+}

@@ -26,12 +26,13 @@ async function denialWitness(page,c,t,done){
 try{
  for(const original of selected){
   guardWaveBudget(report)
-  const c={...await bindQuery(original),expected:{goals:original.kind==='multi'?2:1}},[user,home]=roles[c.role],entry={id:c.id,role:c.role,kind:c.kind,split:c.split,goal:c.goal,startedAt:new Date().toISOString()};report.cases.push(entry)
+  let c={...original,expected:{goals:original.kind==='multi'?2:1}},phase='fixture';const [user,home]=roles[c.role],entry={id:c.id,role:c.role,kind:c.kind,split:c.split,goal:c.goal,startedAt:new Date().toISOString()};report.cases.push(entry)
   let context,page
   try{
+   c={...await bindQuery(c)};entry.goal=c.goal;
    ({context,page}=await loginPage(browser,user,home,report));const panel=page.getByRole('dialog',{name:'FitChain 业务助手'}),witness=await page.evaluate(()=>performance.timeOrigin),writes=[]
    page.on('request',r=>{if(!['GET','HEAD'].includes(r.method())&&new URL(r.url()).pathname.startsWith('/api/v1/')&&!new URL(r.url()).pathname.startsWith('/api/v1/agent/'))writes.push(r.method()+' '+new URL(r.url()).pathname)})
-   const t=await startTask(page,panel,c.goal);entry.taskId=t.id;const done=await waitTask(page,t.id);Object.assign(entry,{status:done.status,verification:done.verification,error:done.error,question:done.question,steps:done.steps,afterWrites:writes.length,sameDocument:context.pages().length===1&&await page.evaluate(()=>performance.timeOrigin)===witness})
+   phase='task';const t=await startTask(page,panel,c.goal);entry.taskId=t.id;const done=await waitTask(page,t.id);Object.assign(entry,{status:done.status,verification:done.verification,error:done.error,question:done.question,steps:done.steps,afterWrites:writes.length,sameDocument:context.pages().length===1&&await page.evaluate(()=>performance.timeOrigin)===witness})
    if(c.kind==='deny'){entry.denialProof=await denialWitness(page,c,t,done);assert.equal(writes.length,0);entry.denialVerified=true}else{
     assert.equal(done.status,'SUCCEEDED',done.error||done.question);entry.oracle=[]
     for(const clause of c.goal.split('，再')){
@@ -44,7 +45,7 @@ try{
     assert.equal(writes.length,0);entry.evidenceChecked=true
    }
    entry.diagnostics=await apiFromPage(page,'/agent/tasks/'+t.id+'/diagnostics')
-  }catch(error){entry.failure=error.message}
+  }catch(error){entry.failure=error.message;if(phase==='fixture')entry.environmentError=true}
   finally{if(page)try{const t=(await call(page,'listComputerTasks'))[0];if(t&&!['SUCCEEDED','FAILED','PARTIAL','CANCELLED'].includes(t.status))await call(page,'stopComputerTask',t.id)}catch{};await captureUsage(page,entry);if(context)await context.close();entry.endedAt=new Date().toISOString();entry.grade=gradeCase(c,entry);console.log(c.id+' '+(entry.grade.passed?'PASS':'FAIL')+' '+(entry.failure||entry.error||''));report.summary=summarize(report.cases.map(e=>e.grade));await writeFile(out+'evaluation-'+wave+'.json',JSON.stringify(report,null,2))}
  }
  assert.deepEqual(report.errors,[]);assert.deepEqual(report.blocked,[])

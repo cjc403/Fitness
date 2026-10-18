@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {checkQuery} from './query-fixtures.mjs'
+import {checkQuery,createQueryLead} from './query-fixtures.mjs'
+test('a query lead fixture uses the original advisor identity and venue rather than omitted ownership',async()=>{
+ const calls=[];const api=async(path,method,body)=>{calls.push({path,method,body});if(path==='/agent/computer/session')return {userId:33,venueId:2,role:'SALES'};assert.equal(path,'/leads');assert.equal(method,'POST');assert.equal(body.ownerId,33);assert.equal(body.venueId,2);return {lead:{id:1,name:body.name}}}
+ const created=await createQueryLead(api,'专属查询夹具','fixture_123');assert.equal(created.lead.name,'专属查询夹具');assert.equal(calls.length,2)
+})
 test('the independent member oracle reads actual PageResult items and rejects a missing member',async()=>{
  const rows=[{id:1},{id:2}],api=async()=>({items:rows,total:2,page:1,size:20}),c={role:'SUPER_ADMIN',goal:'查询会员'}
  const facts=[{tool:'members',asOf:new Date().toISOString(),data:{items:rows,total:2,page:1,size:20},pagination:{page:1,size:20,total:2,contentTruncated:false}}]
