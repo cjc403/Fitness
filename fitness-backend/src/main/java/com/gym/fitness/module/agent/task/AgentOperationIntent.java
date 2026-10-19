@@ -23,6 +23,7 @@ final class AgentOperationIntent {
   String outside=unquoted(goal);
   if(outside.matches("(?s).*(?:^|[，,。；;]|但|但是|并且)(?:不要|不必|无需|别|不)(?:再)?(?:提交|保存).*"))return false;
   String operation;
+  if(AgentProductPrice.target(path))return method.equals("PUT")&&positiveClauses(goal).stream().anyMatch(c->c.matches(".*(?:修改|更新|编辑|调整|改成|改为|改到|设为|设成).*"));
   if(path.equals("/api/v1/messages/send")&&method.equals("POST")){if(outside.matches("(?s).*(?:^|[，,。；;]|但|但是|并且)(?:不要|不必|无需|别|不)(?:再)?发送.*"))return false;operation="发送|发(?:个|一条)?消息|发给";}
   else if(path.matches("/api/v1/admin/courses(?:/\\d+)?"))operation=method.equals("DELETE")?"删除|移除|删掉":method.equals("POST")?"新建|新增|创建|添加":method.equals("PUT")?"修改|更新|编辑|调整|改成|改为|改到|设为|设成":"(?!)";
   else if(path.matches("/api/v1/admin/schedules(?:/\\d+)?"))operation=method.equals("DELETE")?"删除|移除|删掉":method.equals("POST")?"创建|新增|安排|排课|排一":method.equals("PUT")?"修改|更新|调整|改成|改为|改到":"(?!)";
@@ -34,6 +35,7 @@ final class AgentOperationIntent {
   return positiveClauses(goal).stream().anyMatch(c->Pattern.compile(operation).matcher(c).find());
  }
  private static boolean registeredMethod(String method,String path){
+  if(AgentProductPrice.target(path))return method.equals("PUT");
   if(path.equals("/api/v1/messages/send"))return method.equals("POST");
   if(path.matches("/api/v1/admin/(?:courses|schedules)"))return method.equals("POST");
   if(path.matches("/api/v1/admin/(?:courses|schedules)/\\d+"))return Set.of("PUT","DELETE").contains(method);

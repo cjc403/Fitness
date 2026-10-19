@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 final class AgentGoalBinding {
     private AgentGoalBinding() {}
     static boolean explicitId(String goal,long id,String kind){
-        String type=switch(kind){case "training"->"训练计划|计划";case "booking"->"预约";case "schedule"->"排课|排期";case "member"->"会员|学员";case "lead"->"潜客";case "account"->"账号|用户";default->"课程";};
+        String type=switch(kind){case "training"->"训练计划|计划";case "booking"->"预约";case "schedule"->"排课|排期";case "member"->"会员|学员";case "lead"->"潜客";case "account"->"账号|用户";case "product"->"商品|会籍商品";default->"课程";};
         return Pattern.compile("(?:"+type+")(?:编号)?\\s*#?\\s*"+id+"(?!\\d)").matcher(goal).find();
     }
     static boolean nestedMatches(String goal,String path){
@@ -25,14 +25,14 @@ final class AgentGoalBinding {
         return labelMatches(goal,name,id,"course");
     }
     static boolean labelMatches(String goal,String name,long id,String kind) {
-        String type=switch(kind){case "training"->"训练计划|计划";case "booking"->"预约";case "schedule"->"排课|排期";case "member"->"会员|学员";case "lead"->"潜客";case "account"->"账号|用户";default->"课程";};
+        String type=switch(kind){case "training"->"训练计划|计划";case "booking"->"预约";case "schedule"->"排课|排期";case "member"->"会员|学员";case "lead"->"潜客";case "account"->"账号|用户";case "product"->"商品|会籍商品";default->"课程";};
         var typed=Pattern.compile("(?:"+type+")(?:编号)?\\s*#?\\s*(\\d+)(?!\\d)").matcher(goal);
         boolean hasTyped=false;
         while(typed.find()){hasTyped=true;if(Long.toString(id).equals(typed.group(1)))return true;}
         if(hasTyped)return false;
         // A bare number is usable only in a single-object request; never borrow a
         // session/member/account number to authorize a course or training plan.
-        boolean anyTyped=Pattern.compile("(?:训练计划|计划|训练记录|记录|体验预约|体验课|体验|试课|预约|排课|排期|会员|学员|潜客|账号|用户|课程)(?:编号)?\\s*#?\\s*\\d+").matcher(goal).find();
+        boolean anyTyped=Pattern.compile("(?:训练计划|计划|训练记录|记录|体验预约|体验课|体验|试课|预约|排课|排期|会员|学员|潜客|账号|用户|课程|商品|会籍商品)(?:编号)?\\s*#?\\s*\\d+").matcher(goal).find();
         var bare=Pattern.compile("(?:编号\\s*#?|#)\\s*(\\d+)(?!\\d)").matcher(goal);
         if(!anyTyped&&bare.find()){String value=bare.group(1);if(!bare.find()&&Long.toString(id).equals(value))return true;}
         if(name==null||name.isBlank())return false;

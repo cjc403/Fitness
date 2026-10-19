@@ -14,6 +14,12 @@ test('semantic field filling skips values already achieved and never guesses dup
   context.fields.push({...context.fields[0],ref:'fee2'})
   assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'fee',value:'109'}),null)
 })
+test('product price uses its own field and decimal formatting does not cause repeated filling',()=>{
+ const context={fields:[{key:'price',entityType:'product',entityId:'7',name:'售价',value:'1299.00',ref:'product-price',writable:true,controlType:'text'}],errors:[]}
+ assert.deepEqual(chooseSemanticAction(context,{kind:'fill_field',field:'价格',value:'998'}),{action:'fill',arguments:{ref:'product-price',value:'998'}})
+ context.fields[0].value='998.00'
+ assert.deepEqual(chooseSemanticAction(context,{kind:'fill_field',field:'price',value:'998'}),{action:'observe',arguments:{},alreadySatisfied:true})
+})
 test('an already selected typed object is compared by its ID rather than a display label',()=>{
  const context={fields:[{key:'memberId',name:'会员',value:'林晓雨 · FC20260001',selectedId:'1',optionType:'member',ref:'m',writable:true,controlType:'combobox'}]}
  assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'memberId',value:'1'}).alreadySatisfied,true)

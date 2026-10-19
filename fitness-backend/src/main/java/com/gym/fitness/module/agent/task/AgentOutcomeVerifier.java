@@ -29,7 +29,7 @@ public class AgentOutcomeVerifier {
             Matcher fee=Pattern.compile("(?:价格|费用|售价).*?(?:改为|改成|改到|设为|设成|调整为|调整到|调整成|修改为)\\s*[¥￥]?\\s*(\\d+(?:\\.\\d{1,2})?)").matcher(clause);
             Matcher capacity=Pattern.compile("容量.*?(?:改为|改成|改到|设为|设成|调整为|调整到|调整成)\\s*(\\d+)").matcher(clause);
             boolean fieldChange=false;
-            if(fee.find()){fieldChange=true;add(outcomes,clause,verifiedCourse(received,"fee",fee.group(1),targetContext),"课程成功回执及当前价格回查");}
+            if(fee.find()){fieldChange=true;String expected=fee.group(1);String bound=targetContext;add(outcomes,clause,verifiedCourse(received,"fee",expected,bound)||received.stream().anyMatch(r->receipts.verifyProductPrice(me,r,bound,expected)),"成功提交回执及当前对象价格回查");}
             if(capacity.find()){fieldChange=true;add(outcomes,clause,verifiedCourse(received,"maxCapacity",capacity.group(1),targetContext),"课程成功回执及当前容量回查");}
             if(!fieldChange&&isMutation(clause)){
                 String type=mutationType(header(clause));
@@ -105,6 +105,7 @@ public class AgentOutcomeVerifier {
     private boolean isMutation(String text){text=header(text);return text.matches(".*(?:新建|新增|创建|修改|改为|改成|设为|更新|删除|提交|保存|发送|发(?:个|一条)?消息|发给|发布|预约|签到|录入|记录为|标记|作废|归档|登记|添加跟进|安排.*体验|提交.*反馈).*" )&&!text.matches("^(?:查看|查询|统计).*" )&&!text.matches("^(?:打开|进入|切换到|点击|点开)(?:我的)?(?:预约与签到|预约|课程预约|训练计划|我的训练)$");}
     private String destination(String text,String role){
         if("MEMBER".equals(role))return "/member-home";
+        if(text.matches(".*(?:会籍与商业|会籍商品|商业中心).*"))return "/commercial";
         if(text.contains("训练"))return "/training-plans";if(text.contains("站内消息"))return "/chat";if(text.contains("周课表"))return "/schedule-week";
         if(text.matches(".*(?:课程与排课|课程库).*"))return "/courses";if(text.matches(".*(?:会员列表|会员管理).*"))return "/members";if(text.matches(".*(?:潜客|体验).*"))return "/leads";if(text.matches(".*(?:续费|回访).*"))return "/retention";if(text.matches(".*(?:交班|日结).*"))return "/cash-shifts";if(text.contains("经营分析"))return "/analytics";if(text.matches(".*(?:经营看板|总部总览|经营概况).*"))return "/dashboard";return null;
     }

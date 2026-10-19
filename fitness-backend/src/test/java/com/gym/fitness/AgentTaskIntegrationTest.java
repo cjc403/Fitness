@@ -27,6 +27,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AgentTaskIntegrationTest {
     @Autowired MockMvc mvc;@Autowired ObjectMapper json;@Autowired SysUserRepository users;@Autowired RoleRepository roles;@Autowired VenueRepository venues;@Autowired CourseRepository courses;@Autowired JwtTokenProvider jwt;@Autowired DataSource ds;
     @Autowired com.gym.fitness.module.lead.repository.SalesLeadRepository leadRows;
+    @Autowired com.gym.fitness.module.commercial.repository.MembershipProductRepository productRows;
+    @Test void productPriceUsesActualControllerAndVerifierWithoutChangingExistingCommercialData()throws Exception{
+        var u=account("MANAGER");var p=new com.gym.fitness.module.commercial.entity.MembershipProductEntity();
+        p.setName("隔离季卡"+UUID.randomUUID().toString().substring(0,8));p.setCategory("CARD");p.setProductType("QUARTER_CARD");p.setDescription("保留商品说明");p.setVenueId(u.getVenueId());p.setValidityDays(90);p.setPrice(new BigDecimal("1299"));p.setStatus("ACTIVE");p=productRows.saveAndFlush(p);
+        var body=new LinkedHashMap<String,Object>();body.put("id",p.getId());body.put("name",p.getName());body.put("category","CARD");body.put("productType","QUARTER_CARD");body.put("description",p.getDescription());body.put("validityDays",90);body.put("totalUses",null);body.put("accessAllowed",true);body.put("venueId",u.getVenueId());body.put("status","ACTIVE");body.put("price",998);
+        String path="/api/v1/commercial/products/"+p.getId();
+        String task=postTask(u,"",Map.of("document","product-document","goal","点开 会籍与商业，并把"+p.getName()+"的价格改为998"),0).path("id").asText();
+        String receipt=postTask(u,"/"+task+"/prepare",Map.of("version",0,"document","product-document","method","PUT","path",path,"body",body),0).path("id").asText();
+        assertThat(productRows.findById(p.getId()).orElseThrow().getPrice()).isEqualByComparingTo("1299");
+        postTask(u,"/"+task+"/approve/"+receipt,Map.of("version",0,"document","product-document"),0);
+        mvc.perform(put(path).header("Authorization",token(u,"v2-session")).header("X-FitChain-Agent-Permit",receipt).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(body))).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0)).andExpect(header().string("X-FitChain-Agent-Receipt",receipt));
+        assertThat(productRows.findById(p.getId()).orElseThrow().getPrice()).isEqualByComparingTo("998");
+        assertThat(productRows.findById(p.getId()).orElseThrow().getValidityDays()).isEqualTo(90);
+        assertThat(postTask(u,"/"+task+"/verify",Map.of("version",0,"document","product-document","context",Map.of("path","/commercial")),0).path("complete").asBoolean()).isTrue();
+        mvc.perform(put(path).header("Authorization",token(u,"v2-session")).header("X-FitChain-Agent-Permit",receipt).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(body))).andExpect(status().isBadRequest());
+    }
     @BeforeAll void ledgerSchema(){new ResourceDatabasePopulator(new ClassPathResource("db/migration/V24__agent_task_ledger.sql"),new ClassPathResource("db/migration/V25__agent_mutation_receipts.sql")).execute(ds);}
     SysUserEntity account(String role){var u=new SysUserEntity();u.setUsername("v2-"+UUID.randomUUID());u.setRealName("隔离任务账号");u.setPasswordHash("unused-isolated");var r=roles.findByCode(role).orElseThrow();u.setRoleId(r.getId());u.setRole(r);var v=venues.findAll().get(0);u.setVenueId(v.getId());u.setVenue(v);u.setStatus("ACTIVE");return users.saveAndFlush(u);}
     String token(SysUserEntity u,String session){return "Bearer "+jwt.generateToken(u.getId(),u.getUsername(),u.getRole().getCode(),u.getVenueId(),u.currentSessionVersion(),UUID.nameUUIDFromBytes((u.getId()+session).getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString());}

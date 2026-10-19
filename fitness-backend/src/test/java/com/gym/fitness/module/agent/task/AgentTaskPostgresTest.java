@@ -48,6 +48,17 @@ class AgentTaskPostgresTest {
   var body=json.valueToTree(Map.of("fee",99));var p=receipts.prepare(me,task.id(),0,"document-a","PUT","/api/v1/admin/courses/1",body);receipts.approve(me,p.id(),0,"document-a");tasks.revise(me,task.id(),0,"document-a","价格改为109");
   assertThrows(RuntimeException.class,()->receipts.execute(me,p.id(),"PUT",p.path(),body,()->{fail("must not invoke business");return null;}));assertEquals(88,jdbc.queryForObject("SELECT fee FROM course WHERE id=1",Integer.class));
  }
+ @Test void productPriceApprovalIsConsumedByOnlyOneConcurrentTransaction(){
+  jdbc.execute("CREATE TABLE membership_product(id BIGINT PRIMARY KEY,name VARCHAR(100),category VARCHAR(20),product_type VARCHAR(30),description VARCHAR(500),validity_days INT,total_uses INT,access_allowed BOOLEAN,price DECIMAL(12,2),venue_id BIGINT,status VARCHAR(20))");
+  jdbc.update("INSERT INTO membership_product VALUES(7,'进阶季卡','CARD','QUARTER_CARD','原说明',90,NULL,TRUE,1299,1,'ACTIVE')");
+  var actor=new Session(1L,"SUPER_ADMIN",1L,"session","/dashboard",List.of("ASSISTANT_USE","PRODUCT_WRITE"),null);
+  task=tasks.revise(actor,task.id(),0,"document-a","改为任务：把商品编号#7价格改为998");
+  var body=json.createObjectNode().put("name","进阶季卡").put("category","CARD").put("productType","QUARTER_CARD").put("description","原说明").put("validityDays",90).putNull("totalUses").put("accessAllowed",true).put("price",998).put("venueId",1).put("status","ACTIVE");
+  var p=receipts.prepare(actor,task.id(),task.version(),"document-a","PUT","/api/v1/commercial/products/7",body);receipts.approve(actor,p.id(),task.version(),"document-a");
+  var writes=new AtomicInteger();
+  try{assertEquals(1,race(()->{try{receipts.execute(actor,p.id(),"PUT",p.path(),body,()->{jdbc.update("UPDATE membership_product SET price=998 WHERE id=7");writes.incrementAndGet();return json.valueToTree(Map.of("code",0,"data",Map.of("id",7,"price",998)));});return true;}catch(RuntimeException rejected){return false;}}));}catch(Exception e){throw new AssertionError(e);}
+  assertEquals(1,writes.get());assertEquals("SUCCEEDED",receipts.get(actor,p.id()).status());assertEquals(998,jdbc.queryForObject("SELECT price FROM membership_product WHERE id=7",Integer.class));
+ }
  @Test void businessRollbackCannotLeaveSuccessfulReceipt(){
   var body=json.valueToTree(Map.of("fee",99));var p=receipts.prepare(me,task.id(),0,"document-a","PUT","/api/v1/admin/courses/1",body);receipts.approve(me,p.id(),0,"document-a");
   assertThrows(RuntimeException.class,()->receipts.execute(me,p.id(),"PUT",p.path(),body,()->{jdbc.update("UPDATE course SET fee=99 WHERE id=1");throw new IllegalStateException("fixture failure");}));
