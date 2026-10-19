@@ -17,7 +17,7 @@ public class AgentService {
  private final AgentChatContext contexts;
  private static final Map<String,String> NAMES=Map.of("SUPER_ADMIN","总部经营助手","MANAGER","门店运营助手","RECEPTION","前台接待助手","SALES","会员顾问助手","COACH","教练训练助手","MEMBER","我的健身助手");
  public Map<String,Object> profile(){String role=identity.role();return Map.of("role",role,"roleName",NAMES.getOrDefault(role,"FitChain助手"),"greeting",greeting(role),"suggestions",suggestions(role),"tools",tools.available(),"model",model.status());}
- private String greeting(String role){return "你好，我是"+NAMES.getOrDefault(role,"FitChain助手")+"。可以查询权限范围内的真实业务数据，并准备操作预览；只有点击确认后才会办理。";}
+ private String greeting(String role){return "你好，我是"+NAMES.getOrDefault(role,"FitChain助手")+"。可以讲解系统用法、查询权限范围内的真实业务数据，并准备操作预览；只有点击确认后才会办理。";}
  private List<String> suggestions(String role){return switch(role){case "MEMBER"->List.of("本周有哪些课程？","查看我的预约","查看我的训练计划");case "COACH"->List.of("本周我有哪些课程？","查看我的学员","查看训练计划");case "SALES"->List.of("查看我的潜客","有哪些续费回访任务？","查询接待顾问");case "RECEPTION"->List.of("今天有哪些课程？","查询预约","查看交班概况");default->List.of("查看经营概况","查看本周课程","查看交班概况");};}
  public Reply chat(JsonNode request){
   if(request==null||!request.isObject())throw invalid("请求格式不正确");allow(request,Set.of("message","history","contextId"));
@@ -30,6 +30,11 @@ public class AgentService {
   if(request.has("contextId")&&(!request.get("contextId").isTextual()||request.get("contextId").asText().length()>36))throw invalid("对话上下文格式不正确");
   var context=contexts.open(request.path("contextId").asText(null),new AgentChatContext.Owner(actor.getId(),role,identity.contextVenue(),identity.session()));
   var allowed=tools.available();
+  if(AgentGuidance.applicable(message.asText(),context)){
+   var help=AgentGuidance.answer(message.asText(),role,context,history,model,allowed);
+   context=contexts.remember(context,null,null,AgentGuidance.marker(help.topic()));
+   return reply(context,role,results,prepared,trace,help.mode(),help.text());
+  }
   if(AgentRevenueAnswer.applicable(message.asText(),context)){
    if(allowed.stream().noneMatch(t->"analytics".equals(t.name())))throw denied();
    // This tool aggregates the current role's scope; it cannot silently satisfy a named-store filter.
@@ -86,7 +91,7 @@ public class AgentService {
   catch(BusinessException e){answer+="当前角色不能执行此查询，可选择下方已授权工具。";}
   return reply(context,role,results,prepared,trace,"LOCAL",answer);
  }
- private Reply reply(AgentChatContext.Context context,String role,List<ToolResult> r,List<Action>a,String trace,String mode,String text){contexts.remember(context,null,null,context.pendingTool());return new Reply(text,suggestions(role),"FitChain 业务工具回执",mode,r,a,trace,context.id());}
+ private Reply reply(AgentChatContext.Context context,String role,List<ToolResult> r,List<Action>a,String trace,String mode,String text){contexts.remember(context,null,null,context.pendingTool());return new Reply(text,suggestions(role),mode.startsWith("GUIDANCE")?"FitChain 功能讲解（非业务回执）":"FitChain 业务工具回执",mode,r,a,trace,context.id());}
  private AgentChatContext.Context remember(AgentChatContext.Context c,String tool,JsonNode args,ToolResult data){var saved=args.deepCopy();if("analytics".equals(tool)&&data.data()!=null&&data.data().path("from").isTextual()&&data.data().path("to").isTextual()){var a=json.createObjectNode();a.set("from",data.data().get("from"));a.set("to",data.data().get("to"));saved=a;}return contexts.remember(c,tool,saved,null);}
  private String queryAnswer(List<ToolResult> results){return results.stream().map(r->"analytics".equals(r.tool())?AgentRevenueAnswer.answer(r):"已查询当前权限范围内的"+r.label()+"，请查看对应的真实结果卡和查询时间。").distinct().collect(java.util.stream.Collectors.joining("\n"));}
  private Map<String,Object> clarificationDefinition(List<Tool> available){var schema=json.createObjectNode().put("type","object").put("additionalProperties",false);var p=schema.putObject("properties");var names=p.putObject("tool").put("type","string").putArray("enum");available.forEach(t->names.add(t.name()));var f=p.putObject("fields").put("type","array").put("minItems",1).put("maxItems",8);f.putObject("items").put("type","string").put("maxLength",60);schema.putArray("required").add("tool").add("fields");return Map.of("type","function","function",Map.of("name","request_clarification","description","缺少参数时询问用户；tool须为已授权业务工具，fields为其参数名。由服务器生成具体问题，不执行写入。","parameters",schema));}

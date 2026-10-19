@@ -17,7 +17,7 @@ final class AgentRevenueAnswer {
  static boolean applicable(String text,AgentChatContext.Context context){
   if(text.matches("(?s).*(?:修改|删除|创建|新增|保存|发送|发消息|预约|取消|收款|退款|改成|更改|导出).*"))return false;
   if(text.matches("(?s).*(?:营收|营业额|销售额|收入|经营概况).*"))return true;
-  boolean lastAnalytics=!context.queries().isEmpty()&&"analytics".equals(context.queries().get(context.queries().size()-1).tool());
+  boolean lastAnalytics=!AgentGuidance.isPrevious(context)&&!context.queries().isEmpty()&&"analytics".equals(context.queries().get(context.queries().size()-1).tool());
   return ("analytics".equals(context.pendingTool())||lastAnalytics)&&
     (text.matches("(?s).*(?:具体数字|具体金额|多少钱|多少元|再说一遍|统计范围|开始日期|结束日期).*" )||
       text.matches("[\\d\\s年月日/.:至到~—－-]+")||text.matches("(?:查|看|查询|查看|统计|那|改为|换成|按)?(?:今天|昨天|本周|上周|本月|上月|最近\\d{1,3}天|近\\d{1,3}天)[。？?！! ]*"));

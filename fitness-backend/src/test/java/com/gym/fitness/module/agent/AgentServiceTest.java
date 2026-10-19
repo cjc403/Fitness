@@ -94,4 +94,80 @@ class AgentServiceTest {
  @Test void invalidRangeDoesNotQueryOrSpendTokens(){analytics();for(String text:List.of("2026-02-30至2026-03-01营收","2026-10-19至2026-10-01营收","最近94天营收"))assertThat(service.chat(request(text)).answer()).contains("未完成");verifyNoInteractions(business,model,actions);}
  @Test void currentStoreQueryKeepsTheExistingScopeInsteadOfRejectingIt(){analytics();identity.actor().getRole().setCode("MANAGER");when(business.query(eq("analytics"),any())).thenReturn(revenue("12.34"));assertThat(service.chat(request("本店本月营收" )).answer()).contains("12.34 元");}
  @Test void aStartDateAloneDoesNotSilentlyBecomeASingleDayRange(){analytics();assertThat(service.chat(request("营收开始日期2026-10-01，结束日期还没选" )).answer()).contains("结束日期").doesNotContain("未完成");verifyNoInteractions(business,model,actions);}
+ @Test void teachingAnswerIsDisplayedWithoutQueryingOrPreparingBusinessActions(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("先确定训练目标，再设置周期和动作；力量动作填写组数与次数，先保存草稿，核对后再发布。")));
+  var r=service.chat(request("训练计划怎样设置比较好，你教教我"));
+  assertThat(r.answer()).contains("训练目标","组数","草稿").doesNotContain("请说明要查询的业务","统计营收请提供");
+  assertThat(r.mode()).isEqualTo("GUIDANCE");assertThat(r.results()).isEmpty();assertThat(r.actions()).isEmpty();
+  verify(model).complete(anyList(),eq(List.of()));verifyNoInteractions(business,actions);
+ }
+ @Test void teachingAboutRevenueDoesNotBecomeARequestForADateRange(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("区间营收按销售订单登记的实付金额合计；它不等同于扣除退款后的净收款。")));
+  var r=service.chat(request("区间营收是什么意思，怎么计算，教我看这个指标"));
+  assertThat(r.answer()).contains("实付金额","净收款").doesNotContain("请提供开始日期");assertThat(r.mode()).isEqualTo("GUIDANCE");verifyNoInteractions(business,actions);
+ }
+ @Test void missingModelStillProvidesActualTrainingHelpInsteadOfQueryFallback(){
+  when(model.isConfigured()).thenReturn(false);
+  var r=service.chat(request("训练计划怎样设置比较好，你教教我"));
+  assertThat(r.answer()).contains("我的训练","教练","目标").doesNotContain("已切换本地业务工具");assertThat(r.mode()).isEqualTo("GUIDANCE_LOCAL");verifyNoInteractions(business,actions);
+ }
+ @Test void guidanceFallbackExplainsTheActualTrainingBoundaryForAllSixRoles(){
+  when(model.isConfigured()).thenReturn(false);
+  for(var e:Map.of("SUPER_ADMIN","归档","MANAGER","归档","COACH","服务关系","RECEPTION","没有训练计划模块","SALES","没有训练计划模块","MEMBER","我的训练").entrySet()){
+   identity.actor().getRole().setCode(e.getKey());var r=service.chat(request("教我设置训练计划"));
+   assertThat(r.answer()).contains(e.getValue(),"草稿","组数","本轮没有创建");assertThat(r.results()).isEmpty();assertThat(r.actions()).isEmpty();
+  }
+  verifyNoInteractions(business,actions);verify(model,never()).complete(anyList(),anyList());
+ }
+ @Test void explanatoryFollowUpsStayOnTrainingAfterAnEarlierRevenueQuery(){
+  analytics();when(business.query(eq("analytics"),any())).thenReturn(revenue("1234.50"));
+  var revenue=service.chat(request("本月营收"));
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("先选择训练目标并保存草稿，再由教练核对动作。")),Optional.of(reply("示例：每个动作分别填写目标组数和次数，先核对周期再由教练确认。")));
+  var teach=service.chat(follow("训练计划怎样设置比较好，你教教我",revenue.contextId()));
+  var follow=service.chat(follow("举个例子",teach.contextId()));
+  assertThat(follow.mode()).isEqualTo("GUIDANCE");assertThat(follow.answer()).contains("示例","组数").doesNotContain("1234.50","统计营收请提供");
+  verify(business,times(1)).query(eq("analytics"),any());verify(model,times(2)).complete(anyList(),eq(List.of()));verifyNoInteractions(actions);
+ }
+ @Test void teachingNeverTurnsAProviderToolCallOrFakeSuccessIntoABusinessAction(){
+  for(var completion:List.of(reply("我已经为你创建并发布了训练计划。"),reply("预约搞定了，还需要帮助吗？"),reply("",new AgentModelClient.Call("evil","training_draft","{}")))){
+   when(model.complete(anyList(),anyList())).thenReturn(Optional.of(completion));var r=service.chat(request("教我设置训练计划"));
+   assertThat(r.mode()).isEqualTo("GUIDANCE_LOCAL");assertThat(r.answer()).contains("训练目标").doesNotContain("已经为你创建","预约搞定了");assertThat(r.actions()).isEmpty();
+  }
+  verifyNoInteractions(business,actions);
+ }
+ @Test void headquartersAndManagerAreNotToldToUseCoachOnlyCreationButtons(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("你可以直接点击创建训练计划，然后发布计划。")));
+  for(String role:List.of("SUPER_ADMIN","MANAGER")){identity.actor().getRole().setCode(role);var r=service.chat(request("教我设置训练计划"));assertThat(r.mode()).isEqualTo("GUIDANCE_LOCAL");assertThat(r.answer()).contains("由教练").doesNotContain("你可以直接点击");}
+  verifyNoInteractions(business,actions);
+ }
+ @Test void teachingDoesNotAllowTheProviderToInventAnActualRevenueNumber(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("本店本月营收为999999.00元，说明经营非常健康。")));
+  var r=service.chat(request("营收这个指标是什么意思，教我看"));
+  assertThat(r.answer()).doesNotContain("999999").contains("实付金额");assertThat(r.mode()).isEqualTo("GUIDANCE_LOCAL");verifyNoInteractions(business,actions);
+ }
+ @Test void actualRevenueQuestionAfterGuidanceStillUsesFreshScopedData(){
+  analytics();when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("先确认训练目标，再由教练设置动作和周期。")));
+  var teach=service.chat(request("教我设置训练计划"));when(business.query(eq("analytics"),any())).thenReturn(revenue("12.34"));
+  var r=service.chat(follow("本月营收是多少",teach.contextId()));assertThat(r.answer()).contains("12.34 元");assertThat(r.results()).hasSize(1);assertThat(r.mode()).isEqualTo("LOCAL");
+ }
+ @Test void askingForARealPreviewAfterTeachingDoesNotGetTrappedInGuidance(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("先选择排课，再核对时间与适用权益。")));
+  var teach=service.chat(request("怎么给会员预约课程"));var a=new Action("new","book_course","预约课程","待确认",json.createObjectNode(),"PENDING",LocalDateTime.now(),LocalDateTime.now().plusMinutes(10),null,null);
+  when(tools.get("book_course")).thenReturn(new Tool("book_course","预约课程","预览",true,json.createObjectNode()));when(actions.preview(eq("book_course"),any())).thenReturn(a);
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("",new AgentModelClient.Call("next","book_course","{\"scheduleId\":3}"))),Optional.of(reply("已预约成功")));
+  var r=service.chat(follow("帮我预约排课3",teach.contextId()));assertThat(r.actions()).hasSize(1);assertThat(r.answer()).contains("尚未办理").doesNotContain("已预约成功");verify(actions,never()).confirm(anyString());verify(business,never()).execute(anyString(),any(),anyString());
+ }
+ @Test void teachingResponseMasksSecretAndPersonalNumberPatterns(){when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("教程示例字符串sk-abcdefghijklmnopqrstuv；示例手机号13800000000；先选目标再填动作。")));var r=service.chat(request("训练计划怎么设置"));assertThat(r.answer()).contains("先选目标").doesNotContain("sk-abcdefghijklmnopqrstuv","13800000000");}
+ @Test void conceptQuestionWithWhatIsUsesTheTeachingChannel(){when(model.isConfigured()).thenReturn(false);var r=service.chat(request("什么是训练计划"));assertThat(r.mode()).isEqualTo("GUIDANCE_LOCAL");assertThat(r.answer()).contains("目标","草稿");verifyNoInteractions(business,actions);}
+ @Test void anExplicitActionFollowingARecommendationStillCreatesOnlyTheRequestedPreview(){
+  when(tools.get("book_course")).thenReturn(new Tool("book_course","预约课程","预览",true,json.createObjectNode()));
+  var a=new Action("recommended","book_course","预约课程","待确认",json.createObjectNode(),"PENDING",LocalDateTime.now(),LocalDateTime.now().plusMinutes(10),null,null);when(actions.preview(eq("book_course"),any())).thenReturn(a);
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("",new AgentModelClient.Call("r","book_course","{\"scheduleId\":3}"))),Optional.of(reply("已预约成功")));
+  var r=service.chat(request("按你推荐的方式，帮我预约排课3"));assertThat(r.actions()).hasSize(1);assertThat(r.answer()).contains("尚未办理").doesNotContain("已预约成功");verify(actions,never()).confirm(anyString());
+ }
+ @Test void explainingSavedDraftsAndPublishedPlanStatesIsNotMistakenForAWriteReceipt(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("教练先核对已保存的草稿，再决定是否发布；已发布计划需要先归档再重建。会员可以查看已发布的计划。")));
+  var r=service.chat(request("训练计划的草稿和发布状态有什么区别，教我看"));
+  assertThat(r.mode()).isEqualTo("GUIDANCE");assertThat(r.answer()).contains("核对已保存的草稿","已发布计划需要");verifyNoInteractions(business,actions);
+ }
 }

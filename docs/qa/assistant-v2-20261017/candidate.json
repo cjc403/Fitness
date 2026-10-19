@@ -4,6 +4,8 @@
   "readyForUserAcceptance": true,
   "entryUrl": "http://localhost:5173/login",
   "dailyVersion": 25,
+  "runtimeJarSha256": "e235720486c234f48d5856be10dcde89b2a816f6390cdf36e9cba55b957d9a97",
+  "guidancePatch": {"date": "2026-10-19", "activatedLocally": true, "backendTests": {"total": 538, "passed": 525, "skipped": 13}, "frontendTests": 275, "v2FrontendTests": 64, "realModelTeachingChecks": 1, "modelCounterDelta": 1, "browserBusinessWrites": 0, "browserPageErrors": 0, "dailyTablesCompared": 74, "wholeRowDigestsUnchanged": true, "details": "docs/业务问答教学讲解修复_20261019.md", "note": "Supersedes the business-chat runtime jar below. Original R26 paid-wave identity, scores and unmet full gate are historical and unchanged"},
   "businessChatPatch": {"date": "2026-10-19", "activatedLocally": true, "jarSha256": "02919dd1137d910e92279ca2734dbcd551e45445ed5e6face2a8add9338e525f", "backendTests": {"total": 524, "passed": 511, "skipped": 13}, "frontendTests": 275, "v2FrontendTests": 64, "browserChecksPassed": 5, "paidModelTestCalls": 0, "dailyTablesCompared": 74, "wholeRowDigestsUnchanged": true, "details": "docs/业务问答营收追问修复_20261019.md", "note": "Original R26 wave identity and paid scores below are historical and unchanged; full three-round gate remains unmet"},
   "knownIssue": "coach-06: next-week date interpreted as current-week; safely stopped; not fixed",
   "localActivation": {"backupHashesVerified": true, "originalTablesCompared": 71, "wholeRowDigestsUnchanged": true, "noModelPageSmokePassed": true, "automaticLoginPerformed": false},
