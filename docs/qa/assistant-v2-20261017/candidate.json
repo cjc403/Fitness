@@ -1,22 +1,39 @@
 {
-  "phase": "R26_FIX_VERIFICATION",
+  "phase": "LOCAL_CANDIDATE_FOR_USER_ACCEPTANCE",
   "accepted": false,
-  "productRevision": "a31ff6c plus uncommitted R26 fixes",
-  "harnessRevision": "a31ff6c",
-  "wave": null,
-  "sourceFingerprint": null,
+  "readyForUserAcceptance": true,
+  "entryUrl": "http://localhost:5173/login",
+  "dailyVersion": 25,
+  "knownIssue": "coach-06: next-week date interpreted as current-week; safely stopped; not fixed",
+  "localActivation": {"backupHashesVerified": true, "originalTablesCompared": 71, "wholeRowDigestsUnchanged": true, "noModelPageSmokePassed": true, "automaticLoginPerformed": false},
+  "productRevision": "01a1ffd",
+  "harnessRevision": "01a1ffd",
+  "wave": "candidate-r26-20261019",
+  "sourceFingerprint": "97434ced31006d881fb02b541e187b012dbf2acf6682f853408ab1b7a5863723",
   "activeQaJarSha256": "a416f324c5bbf93a1258a53a10422860e7af797cb8ba93e4ba297b80623512c8",
-  "scope": "Six roles, current page/document, marked local QA only",
-  "dailyV2ActivatedByThisRun": false,
+  "scope": "Six-role tests in marked QA; user requested reduced acceptance and a local trial candidate",
+  "dailyV2ActivatedByThisRun": true,
   "serverUpdatedByThisRun": false,
-  "rawReport": "docs/qa/agent-v2-20261017/matrix-candidate-r25c-20261018.json",
+  "rawReport": "docs/qa/agent-v2-20261017/matrix-candidate-r26-20261019-budget-stop.json",
   "priorAbortedUsage": {
-    "tokens": 2759870,
-    "calls": 405
+    "tokens": 2961587,
+    "calls": 433
   },
   "totalTokenBudget": 15000000,
   "previousWave": "candidate-r25c-20261018",
   "corpusRevision": 2,
   "corpusSha256": "947da10673a4ebbd64d2ce4dfb1c336ecd2e06d3d0b43ab2833d96ace586635d",
-  "previousWaveStatus": "STOPPED_FOR_CORE_FAILURE; incomplete, not accepted"
+  "previousWaveStatus": "STOPPED_FOR_CORE_FAILURE; incomplete, not accepted",
+  "functionalCompletedAtLastGroupCheckpoint": 96,
+  "paidTestsStopped": true,
+  "functionalCompleted": 100,
+  "functionalPassed": 99,
+  "writesPassed": 30,
+  "denialsPassed": 12,
+  "fullThreeRoundGate": "NOT_MET / deferred by user cost steering",
+  "totalPaidIncludingLinkedPrior": {
+    "tokens": 5498948,
+    "calls": 789,
+    "unknown": []
+  }
 }

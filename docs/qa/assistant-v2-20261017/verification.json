@@ -1,7 +1,11 @@
 {
-  "phase": "IN_PROGRESS",
+  "phase": "LOCAL_CANDIDATE_FOR_USER_ACCEPTANCE",
   "accepted": false,
-  "at": "2026-10-18T13:31:39.848078+00:00",
+  "readyForUserAcceptance": true,
+  "dailyV2ActivatedByThisRun": true,
+  "dailyVersion": 25,
+  "at": "2026-10-19T01:54:47.174Z",
+  "activation": {"backupHashesVerified": true, "originalTablesCompared": 71, "wholeRowDigestsUnchanged": true, "noModelPageSmokePassed": true, "modelRequests": 0, "automaticLoginPerformed": false, "rateConfiguredPerMinute": 120, "paidRateLoadTestRun": false},
   "backend": {
     "freshTempPackage": true,
     "total": 508,
@@ -30,13 +34,13 @@
     "scope": "R26 fresh unit/component/PG and current candidate real commit/lost-response evidence",
     "currentCandidateLostResponseRerun": "PASSED"
   },
-  "functionalMatrix": "Pending fresh corpus revision2 120x3; all3 affected DEV real tasks passed",
+  "functionalMatrix": "Stopped by user cost request:100completed99pass;30writes and12denials passed. Not a full360 verdict.",
   "migrationOriginalBytesUnchanged": 23,
   "pending": [
-    "Complete fixed120x3 matrix and thresholds",
-    "Fresh live lost-response/restart verification",
-    "Final report and role catalog",
-    "Backup and activate local daily runtime after gates"
+    "Known relative-date query issue coach-06, safely stopped but not fixed",
+    "Three-round acceptance and remaining fault combinations deferred by user",
+    "Visual enhancement and paid performance comparison deferred",
+    "Server deployment needs separate explicit user request"
   ],
   "serverUpdated": false,
   "planningResponseLoss": {
@@ -54,5 +58,16 @@
     "replayedBusinessWrites": 0,
     "oldPermitRejected": true,
     "modelCallsAfterRecovery": 0
+  },
+  "paidTestsStopped": true,
+  "functionalCompleted": 100,
+  "functionalPassed": 99,
+  "writesPassed": 30,
+  "denialsPassed": 12,
+  "fullThreeRoundGate": "NOT_MET / deferred by user cost steering",
+  "totalPaidIncludingLinkedPrior": {
+    "tokens": 5498948,
+    "calls": 789,
+    "unknown": []
   }
 }

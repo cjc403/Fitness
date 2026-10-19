@@ -62,7 +62,7 @@
       }
     }
   ],
-  "fullAcceptance": "PENDING fresh revision2 corpus 120x3; development samples are not an overall success rate",
+  "fullAcceptance": "Stopped for user cost control:100completed99pass; not a360-task or commercial-parity score",
   "additionalR25cToR26DevelopmentSamples": [
     {
       "caseId": "coach-08",
