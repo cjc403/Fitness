@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-19",
+  "sourceCommit": "92bdee6",
+  "runtimeJarSha256": "704add182daa15bdab91b2ce4fa1e5da0fcf06e3e7a81ca2d05db2fb3da0d3e9",
+  "providerSwitch": {
+    "requested": "AgentRouter/deepseek-v4-flash",
+    "activated": false,
+    "httpStatus": 401,
+    "code": "unauthorized_client_error",
+    "existingConfigurationPreserved": true,
+    "visionVerified": false
+  },
+  "backend": {
+    "total": 547,
+    "passed": 534,
+    "skipped": 13,
+    "agentPgExecuted": 17,
+    "freshBuild": true,
+    "initialEnvironmentFailureRetained": true
+  },
+  "frontend": {
+    "regularPassed": 275,
+    "v2Passed": 65,
+    "buildPassed": true,
+    "largeChunkWarningRemains": true
+  },
+  "targetedRealTask": {
+    "passed": true,
+    "taskId": "8b552167-5663-430c-bee6-c06c5f1131b8",
+    "steps": 5,
+    "modelCalls": 4,
+    "totalTokens": 24848,
+    "usageComplete": true,
+    "originalCommand": "点开 会籍与商业，并把进阶季卡的价格改为998",
+    "verification": [
+      {
+        "id": "g1",
+        "label": "点开 会籍与商业",
+        "status": "SATISFIED",
+        "evidence": "当前网页入口及选中页签"
+      },
+      {
+        "id": "g2",
+        "label": "并把进阶季卡的价格改为998",
+        "status": "SATISFIED",
+        "evidence": "成功提交回执及当前对象价格回查"
+      }
+    ],
+    "confirmedBusinessWrites": 1,
+    "beforeConfirmationWrites": 0,
+    "otherDataAssertionsReachedBeforeHarnessError": true,
+    "pageErrors": 0,
+    "readonlyFollowup": true,
+    "additionalModelCalls": 0,
+    "harnessNote": "The original task completed and all product/order/entitlement/same-document assertions passed before diagnostics. The test used a separately logged-in token for the session-bound diagnostics endpoint; 1003 was the expected ownership rejection. This follow-up only reads current product, durable receipt and own read-only history; no paid task was repeated.",
+    "priceVisible": true
+  },
+  "dailyActivation": {
+    "serverUpdated": false,
+    "jarSha256": "704ADD182DAA15BDAB91B2CE4FA1E5DA0FCF06E3E7A81CA2D05DB2FB3DA0D3E9",
+    "allTablesUnchanged": true,
+    "dailyVersion": "25",
+    "ready": true,
+    "tableCount": 74,
+    "beforeVersion": "25",
+    "activationModelCalls": 0
+  },
+  "dailySmoke": {
+    "at": "2026-10-19T06:31:17.431Z",
+    "errors": [],
+    "apiRequests": 0,
+    "automaticLogin": false,
+    "modelCalls": 0,
+    "businessWrites": 0,
+    "workspaceVerified": true,
+    "passed": true
+  },
+  "full360Gate": "NOT_MET; original R26 scores unchanged",
+  "qaApplicationsStopped": true,
+  "serverUpdated": false,
+  "gitPushed": false
+}
