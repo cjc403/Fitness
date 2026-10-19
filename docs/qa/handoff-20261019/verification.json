@@ -1,26 +1,26 @@
 {
   "date": "2026-10-19",
-  "sourceCommit": "92bdee6",
-  "sharedHandoffBytes": 139458,
-  "sharedHandoffLines": 1119,
-  "portableGuideLines": 397,
+  "sourceCommit": "31c8a84",
+  "sharedHandoffBytes": 144718,
+  "sharedHandoffLines": 1147,
+  "portableGuideLines": 407,
   "credentialSectionByteIdentical": true,
   "historicalChangeLogPreserved": true,
   "originalHandoffProtectedBackup": true,
-  "portableLocalLinksChecked": 30,
+  "portableLocalLinksChecked": 34,
   "brokenLinks": [],
   "fencesAndSectionHierarchyChecked": true,
   "noCredentialValuesInPortableDocuments": true,
   "existingMigrationsByteIdentical": 25,
   "backendEvidence": {
-    "tests": 547,
+    "tests": 554,
     "failures": 0,
     "errors": 0,
     "skipped": 13
   },
-  "runtimeJarSha256": "704add182daa15bdab91b2ce4fa1e5da0fcf06e3e7a81ca2d05db2fb3da0d3e9",
+  "runtimeJarSha256": "026ee370f970a5fd9c530db7fe037ac90b7fde2af680cf570c8f02546a952241",
   "serverConnected": false,
   "paidMatrixResumed": false,
   "documentationChecksOnly": true,
-  "note": "Application tests and one targeted live task were executed earlier in this same task; this file records document/link/history integrity checks, not another test execution."
+  "note": "Application evidence is linked separately; this is document integrity verification."
 }

@@ -4,7 +4,7 @@
   "readyForUserAcceptance": true,
   "entryUrl": "http://localhost:5173/login",
   "dailyVersion": 25,
-  "runtimeJarSha256": "704add182daa15bdab91b2ce4fa1e5da0fcf06e3e7a81ca2d05db2fb3da0d3e9",
+  "runtimeJarSha256": "026ee370f970a5fd9c530db7fe037ac90b7fde2af680cf570c8f02546a952241",
   "guidancePatch": {
     "date": "2026-10-19",
     "activatedLocally": true,
@@ -80,7 +80,7 @@
     "calls": 789,
     "unknown": []
   },
-  "runtimeSourceCommit": "92bdee6",
+  "runtimeSourceCommit": "31c8a84",
   "productPricePatch": {
     "date": "2026-10-19",
     "activatedLocally": true,
@@ -104,5 +104,52 @@
     "relayHttpStatus": 401,
     "details": "docs/中转站接入与商品改价修复_20261019.md",
     "note": "Original R26 wave identity and scores are historical and unchanged; full gate remains unmet. Original targeted test had a post-success session-bound diagnostics reader error; readonly follow-up passed without repeating paid work."
+  },
+  "roomCreationPatch": {
+    "backend": {
+      "tests": 554,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 13
+    },
+    "frontendTests": 276,
+    "v2FrontendTests": 66,
+    "targetedTask": {
+      "goal": "点开课程与排课，帮我新增一个教室，所属场馆为总部，名称为操课房F，可容纳50人",
+      "status": "SUCCEEDED",
+      "steps": 6,
+      "modelCalls": 5,
+      "tokens": 39211,
+      "usageComplete": true,
+      "beforeConfirmationWrites": 0,
+      "afterConfirmationWrites": 1,
+      "otherRoomsCoursesAndSchedulesUnchanged": true,
+      "duplicateApprovalRejected": true,
+      "samePageAndDocument": true,
+      "pageErrors": 0
+    },
+    "paidUsageThisTurn": {
+      "tasksAttempted": 2,
+      "reservedCalls": 22,
+      "measuredCalls": 22,
+      "knownTokens": 262252,
+      "unknownCalls": 0
+    },
+    "aggregateTokenCutoffRemoved": true,
+    "retainedProtections": [
+      "100 model calls per task",
+      "30 page steps",
+      "10 minutes active execution",
+      "repeat-action blocking",
+      "role and venue scope",
+      "separate human approval for each write",
+      "single-use receipts"
+    ],
+    "date": "2026-10-19",
+    "activatedLocally": true,
+    "dailyTablesCompared": 74,
+    "wholeRowDigestsUnchanged": true,
+    "details": "docs/新增教室与任务限额修复_20261019.md",
+    "note": "Historical R26 matrix scores unchanged; first diagnostic attempt is not acceptance; no server deployment."
   }
 }
