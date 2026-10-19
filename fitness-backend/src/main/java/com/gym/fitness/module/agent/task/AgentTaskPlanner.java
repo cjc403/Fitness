@@ -20,7 +20,7 @@ public class AgentTaskPlanner {
     private final AgentBusiness business;private final AgentTools tools;private final ObjectMapper json;private final AgentMutationReceiptService receipts;
     private final com.gym.fitness.config.AiProperties aiProperties;
     private final Map<String,Episode> episodes=new ConcurrentHashMap<>();
-    private static class Episode {final ReentrantLock lock=new ReentrantLock();final List<Map<String,Object>> messages=new ArrayList<>();Map<String,Object> observation;String pendingId;String pendingAction;long expectedVersion=-1;int calls,tokens;boolean thinking;Instant touched=Instant.now();}
+    private static class Episode {final ReentrantLock lock=new ReentrantLock();final List<Map<String,Object>> messages=new ArrayList<>();Map<String,Object> observation;String pendingId;String pendingAction;long expectedVersion=-1;int calls,tokens;boolean thinking;Instant touched=Instant.now();volatile String inflightKey;final java.util.concurrent.atomic.AtomicBoolean replayWaiter=new java.util.concurrent.atomic.AtomicBoolean();String replayKey;Turn replay;Instant replayUntil=Instant.EPOCH;}
     public record Turn(ComputerAgentDtos.Decision decision,AgentTaskStore.View task,List<Object> facts,AgentModelClient.Failure failure){}
     public void forget(String id){episodes.remove(id);}
     /** Only the controller's completed server verification may advance this lease. */
@@ -32,6 +32,7 @@ public class AgentTaskPlanner {
         AgentService.allow(request,Set.of("version","document","observation","history","artifacts","input"));
         if(!request.path("version").isIntegralNumber()||!request.path("document").isTextual())throw invalid("缺少任务版本或网页租约");
         var me=computer.session();long version=request.get("version").asLong();String document=request.get("document").asText();
+        String requestKey=requestKey(request);var replay=replay(me,id,document,requestKey);if(replay!=null)return replay;
         var task=store.check(me,id,version,document);
         if(!"RUNNING".equals(task.status()))throw invalid("任务尚未处于运行状态");
         var body=json.createObjectNode();body.put("goal",task.goal());
@@ -45,6 +46,7 @@ public class AgentTaskPlanner {
         Episode episode=episodes.computeIfAbsent(id,k->new Episode());
         if(!episode.lock.tryLock())throw invalid("该任务已有规划请求，请等待结果");
         try{
+            episode.inflightKey=requestKey;
             long deadline=System.nanoTime()+Duration.ofSeconds(90).toNanos();
             episode.calls=Math.max(episode.calls,task.checkpoint().path("modelCalls").asInt());
             episode.tokens=Math.max(episode.tokens,task.checkpoint().path("totalTokens").asInt());
@@ -82,7 +84,7 @@ public class AgentTaskPlanner {
                     log.warn("Agent planning failed task={} code={} trace={}",id,outcome.failure().code(),outcome.failure().traceId());
                     var checkpoint=(ObjectNode)task.checkpoint().deepCopy();checkpoint.put("modelCalls",episode.calls);checkpoint.put("totalTokens",episode.tokens);checkpoint.set("lastFailure",json.valueToTree(outcome.failure()));
                     store.check(computer.session(),id,version,document);var saved=store.update(me,id,version,document,"RUNNING",task.plan(),checkpoint);episode.expectedVersion=saved.version();
-                    return new Turn(null,saved,List.copyOf(facts),outcome.failure());
+                    return remember(episode,requestKey,new Turn(null,saved,List.copyOf(facts),outcome.failure()));
                 }
                 var completion=outcome.completion();store.recordModelUsage(me,id,episode.calls,completion.totalTokens());episode.tokens+=completion.totalTokens();
                 // Only the transport's actual assistant turn is retained; never reconstruct parameters.
@@ -117,7 +119,7 @@ public class AgentTaskPlanner {
                     checkpoint.put("modelCalls",episode.calls);checkpoint.put("totalTokens",episode.tokens);checkpoint.put("lastAction",call.name());
                     store.check(computer.session(),id,version,document);
                     var saved=store.update(me,id,version,document,"RUNNING",task.plan(),checkpoint);episode.expectedVersion=saved.version();
-                    return new Turn(new ComputerAgentDtos.Decision("observe",json.createObjectNode(),"已取得服务端真实查询结果"),saved,List.copyOf(facts),null);
+                    return remember(episode,requestKey,new Turn(new ComputerAgentDtos.Decision("observe",json.createObjectNode(),"已取得服务端真实查询结果"),saved,List.copyOf(facts),null));
                 }
                 Object plan=task.plan();ComputerAgentDtos.Decision decision;
                 if("set_plan".equals(call.name())){
@@ -142,7 +144,7 @@ public class AgentTaskPlanner {
                 var checkpoint=(ObjectNode)task.checkpoint().deepCopy();checkpoint.put("modelCalls",episode.calls);checkpoint.put("totalTokens",episode.tokens);checkpoint.put("lastAction",call.name());
                 var saved=store.update(me,id,version,document,"RUNNING",plan,checkpoint);
                 episode.expectedVersion=saved.version();episode.pendingId=call.id();episode.pendingAction=call.name();
-                return new Turn(decision,saved,List.copyOf(facts),null);
+                return remember(episode,requestKey,new Turn(decision,saved,List.copyOf(facts),null));
                 }catch(com.gym.fitness.common.exception.BusinessException bad){
                     if(answered){episode.messages.clear();episode.pendingId=null;throw bad;}
                     episode.messages.add(Map.of("role","tool","tool_call_id",call.id(),"content",encode(Map.of("error","INVALID_ACTION","executed",false,"detail",bad.getMessage().substring(0,Math.min(300,bad.getMessage().length()))))));
@@ -150,7 +152,20 @@ public class AgentTaskPlanner {
                 }
             }
             throw invalid("本轮查询预算已达上限，请根据已获取数据继续");
-        }finally{episode.lock.unlock();}
+        }finally{episode.inflightKey=null;episode.lock.unlock();}
+    }
+    private String requestKey(JsonNode request){try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes(request)));}catch(Exception failure){throw invalid("任务请求指纹生成失败");}}
+    private Turn remember(Episode episode,String key,Turn turn){episode.replayKey=key;episode.replay=turn;episode.replayUntil=Instant.now().plusSeconds(30);return turn;}
+    /** Replay only an identical, unconsumed planning response. Never replay a business write. */
+    private Turn replay(ComputerAgentDtos.Session me,String id,String document,String key){
+        var episode=episodes.get(id);if(episode==null)return null;boolean locked=false,waiter=false;
+        try{
+            if(key.equals(episode.inflightKey)&&episode.replayWaiter.compareAndSet(false,true)){waiter=true;locked=episode.lock.tryLock(95,java.util.concurrent.TimeUnit.SECONDS);}else locked=episode.lock.tryLock();
+            if(!locked||episode.replay==null||!key.equals(episode.replayKey)||!Instant.now().isBefore(episode.replayUntil))return null;
+            var current=store.get(me,id);if(current.version()!=episode.replay.task().version()||!"RUNNING".equals(current.status()))return null;
+            store.check(me,id,current.version(),document);return episode.replay;
+        }catch(InterruptedException cancelled){Thread.currentThread().interrupt();throw invalid("规划重连已取消，请核对当前任务");}
+        finally{if(locked)episode.lock.unlock();if(waiter)episode.replayWaiter.set(false);}
     }
     private Map<String,Object> tool(String name,String description,Map<String,Object> props){return Map.of("type","function","function",Map.of("name",name,"description",description,"parameters",Map.of("type","object","additionalProperties",false,"properties",props,"required",List.copyOf(props.keySet()))));}
     private JsonNode read(String source){try{JsonNode n=json.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS,DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY).readTree(source);if(n==null||!n.isObject()||source.length()>12000)throw invalid("动作格式不正确");return n;}catch(java.io.IOException e){throw invalid("动作格式不正确");}}

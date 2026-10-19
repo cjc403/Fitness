@@ -24,6 +24,7 @@ test('real Element Plus semantic actions bind the venue, fill a bounded form, an
   const before=await page.evaluate(()=>driver.observe({v2:true}));assert.equal(before.context.scope.entityId,'2');assert.ok(before.context.errors.includes('容量已被其他人修改'))
   await page.evaluate(()=>driver.act('use_skill',{kind:'fill_fields',fields:[{field:'fee',value:'99'},{field:'goal',value:'增肌'},{field:'maxCapacity',value:'21'}]}))
   assert.deepEqual(await page.evaluate(()=>[vm.selected,vm.fee,vm.capacity,vm.goal]),[2,99,21,"MUSCLE_GAIN"]);assert.equal(await page.locator('[data-page-agent-target]').count(),1)
+  const actualGoal=await page.evaluate(()=>driver.observe({v2:true}));assert.equal(actualGoal.context.fields.find(f=>f.key==='goal').value,'增肌','The selected label must not be read from ElSelect hidden input wrapper')
   await page.evaluate(()=>{const o=driver.observe({v2:true});return driver.act('select',{ref:o.context.fields.find(f=>f.key==='goal').ref,value:'综合训练'})});assert.equal(await page.evaluate(()=>vm.goal),'GENERAL','The public select action must adapt a registered ElSelect instead of asking the model to repair an API mismatch')
   const rating=await page.evaluate(()=>driver.observe({v2:true}));assert.equal(rating.context.fields.find(f=>f.key==='rating')?.controlType,'slider')
   await page.evaluate(()=>driver.act('use_skill',{kind:'fill_field',field:'rating',value:'5'}));assert.equal(await page.evaluate(()=>vm.rating),5)

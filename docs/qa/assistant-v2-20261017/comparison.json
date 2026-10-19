@@ -62,5 +62,88 @@
       }
     }
   ],
-  "fullAcceptance": "RUNNING; see matrix-candidate-r24b-20261018.json"
+  "fullAcceptance": "PENDING fresh revision2 corpus 120x3; development samples are not an overall success rate",
+  "additionalR25cToR26DevelopmentSamples": [
+    {
+      "caseId": "coach-08",
+      "before": {
+        "id": "coach-08",
+        "status": "FAILED",
+        "evidenceChecked": null,
+        "beforeWrites": null,
+        "afterWrites": null,
+        "duplicateRejected": null,
+        "sameDocument": null,
+        "calls": 11,
+        "tokens": 104962,
+        "usageComplete": true
+      },
+      "after": {
+        "id": "coach-08",
+        "status": "SUCCEEDED",
+        "evidenceChecked": true,
+        "beforeWrites": 0,
+        "afterWrites": 1,
+        "duplicateRejected": true,
+        "sameDocument": true,
+        "calls": 8,
+        "tokens": 73896,
+        "usageComplete": true
+      }
+    },
+    {
+      "caseId": "sales-07",
+      "before": {
+        "id": "sales-07",
+        "status": "FAILED",
+        "evidenceChecked": null,
+        "beforeWrites": null,
+        "afterWrites": null,
+        "duplicateRejected": null,
+        "sameDocument": null,
+        "calls": 1,
+        "tokens": 4017,
+        "usageComplete": true
+      },
+      "after": {
+        "id": "sales-07",
+        "status": "SUCCEEDED",
+        "evidenceChecked": true,
+        "beforeWrites": 0,
+        "afterWrites": 1,
+        "duplicateRejected": true,
+        "sameDocument": true,
+        "calls": 4,
+        "tokens": 24621,
+        "usageComplete": true
+      }
+    },
+    {
+      "caseId": "sales-08",
+      "before": {
+        "id": "sales-08",
+        "status": "FAILED",
+        "evidenceChecked": null,
+        "beforeWrites": null,
+        "afterWrites": null,
+        "duplicateRejected": null,
+        "sameDocument": null,
+        "calls": 18,
+        "tokens": 100952,
+        "usageComplete": true
+      },
+      "after": {
+        "id": "sales-08",
+        "status": "SUCCEEDED",
+        "evidenceChecked": true,
+        "beforeWrites": 0,
+        "afterWrites": 1,
+        "duplicateRejected": true,
+        "sameDocument": true,
+        "calls": 6,
+        "tokens": 35362,
+        "usageComplete": true
+      }
+    }
+  ]
 }

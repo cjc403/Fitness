@@ -3,7 +3,7 @@ const privateText=s=>String(s??'').replace(/(?<!\d)\d{17}[\dXx](?!\d)|(?<!\d)1[3
 export function buildPageContext({document,window,root,nodes,resolve,title,candidateCount=nodes.length}){
   const visible=e=>{if(!e||e.closest('[data-page-agent-exclude],[aria-hidden="true"],[hidden]'))return false;const r=e.getBoundingClientRect(),s=window.getComputedStyle(e);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'}
   const area=root||document.querySelector('main')||document.body,entities=new Map(),fields=[]
-  const scopeHost=root?.querySelector('[data-agent-type][data-agent-id]')||root?.closest('[data-agent-type][data-agent-id]')
+  const scopeHost=root?.querySelector('form[data-agent-type][data-agent-id],[data-agent-scope][data-agent-type][data-agent-id]')||root?.closest('[data-agent-type][data-agent-id]')
   for(const node of nodes){
     const e=resolve(node.ref);if(!e)continue
     const host=e.closest('[data-agent-type][data-agent-id]'),field=e.closest('[data-agent-field]')
@@ -15,7 +15,7 @@ export function buildPageContext({document,window,root,nodes,resolve,title,candi
     }
     const select=e.matches('[role="combobox"]')&&e.closest('.el-select')
     const slider=e.matches('[role="slider"]')
-    if(select||slider||['INPUT','TEXTAREA','SELECT'].includes(e.tagName))fields.push({ref:node.ref,key:field?.getAttribute('data-agent-field')||'',name:node.name,value:privateText(slider?e.getAttribute('aria-valuenow'):select?compact(select.querySelector('.el-select__selected-item:not(.is-transparent)')?.textContent):e.value),controlType:slider?'slider':select?'combobox':e.type||e.tagName.toLowerCase(),checked:e.checked===true,writable:slider?e.getAttribute('aria-disabled')!=='true'&&e.getAttribute('aria-readonly')!=='true':select?!select.classList.contains('is-disabled')&&!e.disabled:!e.disabled&&!e.readOnly,entityType:host?.getAttribute('data-agent-type')||scopeHost?.getAttribute('data-agent-type')||'',entityId:host?.getAttribute('data-agent-id')||scopeHost?.getAttribute('data-agent-id')||''})
+    if(select||slider||['INPUT','TEXTAREA','SELECT'].includes(e.tagName))fields.push({ref:node.ref,key:field?.getAttribute('data-agent-field')||'',name:node.name,value:privateText(slider?e.getAttribute('aria-valuenow'):select?compact(select.querySelector('.el-select__selected-item:not(.is-transparent):not(.is-hidden):not(.el-select__input-wrapper)')?.textContent):e.value),controlType:slider?'slider':select?'combobox':e.type||e.tagName.toLowerCase(),checked:e.checked===true,writable:slider?e.getAttribute('aria-disabled')!=='true'&&e.getAttribute('aria-readonly')!=='true':select?!select.classList.contains('is-disabled')&&!e.disabled:!e.disabled&&!e.readOnly,entityType:host?.getAttribute('data-agent-type')||scopeHost?.getAttribute('data-agent-type')||'',entityId:host?.getAttribute('data-agent-id')||scopeHost?.getAttribute('data-agent-id')||''})
     if(select&&fields.at(-1)?.ref===node.ref){
       const f=fields.at(-1)
       if(field?.getAttribute('data-agent-option-type'))f.optionType=field.getAttribute('data-agent-option-type')

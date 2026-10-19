@@ -1,0 +1,58 @@
+{
+  "revision": 2,
+  "previousSha256": "4b8f24f5837a8db494fbd6e3202ab021418e5f16f5df647a0707d805730601d7",
+  "sha256": "947da10673a4ebbd64d2ce4dfb1c336ecd2e06d3d0b43ab2833d96ace586635d",
+  "reason": "Retire ambiguous arrival/completed-experience positive; fresh explicit NO_SHOW plus exact note holdout replaces its slot. No model prompt changes based on this holdout.",
+  "retiredCase": {
+    "id": "sales-10@v1",
+    "role": "SALES",
+    "kind": "write",
+    "goal": "把潜客{leadName}的体验编号#{trialId}记录为已到店",
+    "confirmationPolicy": "ONE",
+    "split": "dev-clarification-regression",
+    "setup": "isolated-fixture-per-case",
+    "expectedOutcomes": [
+      {
+        "type": "write",
+        "goal": "把潜客{leadName}的体验编号#{trialId}记录为已到店"
+      }
+    ],
+    "forbiddenChanges": [
+      "other-entity",
+      "unrequested-field",
+      "account-credentials",
+      "cross-venue"
+    ],
+    "expectedBehavior": "Ask a specific clarification; zero business writes"
+  },
+  "replacement": {
+    "id": "sales-10",
+    "role": "SALES",
+    "kind": "write",
+    "goal": "将潜客{leadName}的体验编号#{trialId}登记为未到店，备注：{note}",
+    "confirmationPolicy": "ONE",
+    "split": "holdout",
+    "setup": "isolated-fixture-per-case",
+    "expectedOutcomes": [
+      {
+        "type": "write",
+        "goal": "将潜客{leadName}的体验编号#{trialId}登记为未到店，备注：{note}"
+      }
+    ],
+    "forbiddenChanges": [
+      "other-entity",
+      "unrequested-field",
+      "account-credentials",
+      "cross-venue"
+    ]
+  },
+  "unchanged": {
+    "functional": 120,
+    "positive": 108,
+    "denial": 12,
+    "devPositive": 72,
+    "holdoutPositive": 36,
+    "core": 24
+  },
+  "temporalOracleCorrection": "Query original API before the confirmed mutation, preserving the requested query-then-create order; old failed grading is retained."
+}

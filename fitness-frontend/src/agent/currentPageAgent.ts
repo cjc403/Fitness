@@ -9,6 +9,7 @@ import { buildPageContext, chooseSemanticAction } from './pageContext.mjs'
 import { createDocumentLeaseId } from './taskLease.mjs'
 import { loadAgentVersion } from './capabilities.mjs'
 import { historyTask } from './taskHistory.mjs'
+import { fetchPlanningTurn } from './planningTransport.mjs'
 import type { ComputerTask, ComputerRequestConfig, ComputerResult, ComputerAgentStatus, ComputerArtifact } from '@/api/modules/computerAgent'
 
 let engine: PageTaskEngine | undefined
@@ -23,7 +24,7 @@ async function api<T>(path: string, body?: unknown, signal?: AbortSignal, local=
   if(navigator.onLine===false)throw Error('当前离线，无法执行网页任务')
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),/\/tasks\/[^/]+\/next$/.test(path)?100000:35000)
   try {
-    const response=await fetch((local?'/local-agent/v1':'/api/v1/agent')+path,{method:body===undefined?'GET':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),credentials:'same-origin',redirect:'error',cache:'no-store',signal:signal?AbortSignal.any([signal,controller.signal]):controller.signal})
+    const response=await fetchPlanningTurn((local?'/local-agent/v1':'/api/v1/agent')+path,{method:body===undefined?'GET':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),credentials:'same-origin',redirect:'error',cache:'no-store',signal:signal?AbortSignal.any([signal,controller.signal]):controller.signal},{canRetry:()=>identity()===key})
     if(identity()!==key)throw Error('登录身份已变更')
     let result
     try {result=await response.json()}catch{throw Object.assign(Error(local?'本机文件能力未连接，请启动本地服务':'网页规划服务返回格式不正确'),{httpStatus:response.status})}

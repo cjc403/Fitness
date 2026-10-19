@@ -1,0 +1,58 @@
+{
+  "phase": "IN_PROGRESS",
+  "accepted": false,
+  "at": "2026-10-18T13:31:39.848078+00:00",
+  "backend": {
+    "freshTempPackage": true,
+    "total": 508,
+    "passed": 495,
+    "failed": 0,
+    "skipped": 13,
+    "newAgentPostgresExecuted": 5,
+    "originalAgentPostgresExecuted": 11,
+    "artifactSha256": "a416f324c5bbf93a1258a53a10422860e7af797cb8ba93e4ba297b80623512c8"
+  },
+  "frontend": {
+    "regularPassed": 274,
+    "v2Passed": 64,
+    "productionBuildPassed": true
+  },
+  "review": {
+    "freshReviewCount": 1,
+    "critical": 0,
+    "importantFindings": 5,
+    "regressionsAndFixPassComplete": true,
+    "secondReview": false
+  },
+  "safety": {
+    "mappedCases": 40,
+    "mappedPassed": 40,
+    "scope": "R26 fresh unit/component/PG and current candidate real commit/lost-response evidence",
+    "currentCandidateLostResponseRerun": "PASSED"
+  },
+  "functionalMatrix": "Pending fresh corpus revision2 120x3; all3 affected DEV real tasks passed",
+  "migrationOriginalBytesUnchanged": 23,
+  "pending": [
+    "Complete fixed120x3 matrix and thresholds",
+    "Fresh live lost-response/restart verification",
+    "Final report and role catalog",
+    "Backup and activate local daily runtime after gates"
+  ],
+  "serverUpdated": false,
+  "planningResponseLoss": {
+    "passed": true,
+    "httpRequests": 2,
+    "modelCalls": 1,
+    "businessWrites": 0,
+    "sameDocument": true
+  },
+  "restartRecovery": {
+    "passed": true,
+    "backendRestarted": true,
+    "newDocument": true,
+    "committedWrites": 1,
+    "replayedBusinessWrites": 0,
+    "oldPermitRejected": true,
+    "modelCallsAfterRecovery": 0
+  }
+}

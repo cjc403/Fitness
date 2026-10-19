@@ -12,7 +12,7 @@ const writes={
  MANAGER:['把{courseName}容量改成{capacity}','给{contactName}发送：{message}','为{memberName}登记回访，内容：{note}','取消预约编号#{bookingId}'],
  RECEPTION:['给{contactName}发送：{message}','为会员{memberName}预约{courseName}，时间{scheduleTime}','为预约编号#{bookingId}签到','取消预约编号#{bookingId}'],
  COACH:['给{contactName}发送：{message}','为学员{memberName}创建训练计划草稿，标题{planTitle}，{startDate}到{endDate}，综合体能，深蹲3组每组10次，自重，不发布','发布训练计划编号#{planId}','为计划编号#{planId}登记{performedOn}的训练，时长30分钟，深蹲已完成3组每组10次'],
- SALES:['新建潜客，姓名{leadName}，电话{phone}，自然到店，高意向，其他默认','为潜客{leadName}登记电话跟进，内容{note}，结果愿意体验','为潜客{leadName}安排{trialStart}到{trialEnd}的体验，接待顾问{advisorName}，内容{trialContent}','把潜客{leadName}的体验编号#{trialId}记录为已到店'],
+ SALES:['新建潜客，姓名{leadName}，电话{phone}，自然到店，高意向，其他默认','为潜客{leadName}登记电话跟进，内容{note}，结果愿意体验','为潜客{leadName}安排{trialStart}到{trialEnd}的体验，接待顾问{advisorName}，内容{trialContent}','将潜客{leadName}的体验编号#{trialId}登记为未到店，备注：{note}'],
  MEMBER:['给{contactName}发送：{message}','帮我预约{courseName}，时间{scheduleTime}','取消我的预约编号#{bookingId}','为训练计划#{planId}中训练记录#{sessionId}提交反馈，评分5，内容{note}']
 }
 const nav={SUPER_ADMIN:'打开训练计划',MANAGER:'打开课程与排课',RECEPTION:'打开周课表',COACH:'打开训练计划',SALES:'打开潜客与体验课',MEMBER:'打开我的训练'}

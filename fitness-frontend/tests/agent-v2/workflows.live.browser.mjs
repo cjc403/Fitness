@@ -23,8 +23,9 @@ try{
    const preview=pending.pendingConfirmation;assert.equal(preview.path.split('?')[0],fixture.path);assert.equal(preview.method,fixture.method)
    for(const [name,value] of Object.entries(fixture.fields))assert.ok(preview.fields.some(f=>f.label===name&&f.value===String(value)),'Frozen request mismatch: '+name)
    assert.equal(writes.length,0);assert.deepEqual(await fixture.read(),before);Object.assign(entry,{beforeWrites:0,previewMatches:true});await page.screenshot({path:out+c.id+'-'+wave+'-preview.png'})
+   if(c.kind==='multi')entry.queryOracle=await checkQuery(path=>api(page,path),{...c,goal:fixture.goal.split('，再')[0]},pending)
    await panel.getByRole('button',{name:'确认并提交这一次',exact:true}).click();const done=await waitTask(page,t.id,preview.id);Object.assign(entry,{status:done.status,steps:done.steps,error:done.error,question:done.question,verification:done.verification});assert.equal(done.status,'SUCCEEDED',done.error||done.question||JSON.stringify(done.verification));assert.equal(writes.length,1);assert.deepEqual(writes[0],{method:fixture.method,path:fixture.path})
-   fixture.check(await fixture.read(),before);if(c.kind==='multi')entry.queryOracle=await checkQuery(path=>api(page,path),{...c,goal:fixture.goal.split('，再')[0]},done);entry.evidenceChecked=true;entry.afterWrites=1
+   fixture.check(await fixture.read(),before);entry.evidenceChecked=true;entry.afterWrites=1
    await assert.rejects(call(page,'confirmComputerTask',t.id,preview.id));entry.duplicateRejected=true;assert.equal(writes.length,1);entry.sameDocument=context.pages().length===1&&await page.evaluate(()=>performance.timeOrigin)===witness;assert.equal(entry.sameDocument,true)
    entry.diagnostics=await api(page,'/agent/tasks/'+t.id+'/diagnostics');await page.screenshot({path:out+c.id+'-'+wave+'-complete.png'})
   }catch(error){entry.failure=error.message;if(phase==='fixture')entry.environmentError=true;if(page)await page.screenshot({path:out+c.id+'-'+wave+'-failure.png'})}

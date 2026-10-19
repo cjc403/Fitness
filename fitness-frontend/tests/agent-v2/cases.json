@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "frozenAt": "2026-10-17",
+  "frozenAt": "2026-10-18",
   "cases": [
     {
       "id": "super_admin-01",
@@ -1891,14 +1891,14 @@
       "id": "sales-10",
       "role": "SALES",
       "kind": "write",
-      "goal": "把潜客{leadName}的体验编号#{trialId}记录为已到店",
+      "goal": "将潜客{leadName}的体验编号#{trialId}登记为未到店，备注：{note}",
       "confirmationPolicy": "ONE",
       "split": "holdout",
       "setup": "isolated-fixture-per-case",
       "expectedOutcomes": [
         {
           "type": "write",
-          "goal": "把潜客{leadName}的体验编号#{trialId}记录为已到店"
+          "goal": "将潜客{leadName}的体验编号#{trialId}登记为未到店，备注：{note}"
         }
       ],
       "forbiddenChanges": [
@@ -2748,5 +2748,6 @@
       "name": "do-not-publish",
       "status": "NOT_RUN"
     }
-  ]
+  ],
+  "corpusRevision": 2
 }

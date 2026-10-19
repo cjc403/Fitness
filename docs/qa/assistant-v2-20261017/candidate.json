@@ -1,0 +1,22 @@
+{
+  "phase": "R26_FIX_VERIFICATION",
+  "accepted": false,
+  "productRevision": "a31ff6c plus uncommitted R26 fixes",
+  "harnessRevision": "a31ff6c",
+  "wave": null,
+  "sourceFingerprint": null,
+  "activeQaJarSha256": "a416f324c5bbf93a1258a53a10422860e7af797cb8ba93e4ba297b80623512c8",
+  "scope": "Six roles, current page/document, marked local QA only",
+  "dailyV2ActivatedByThisRun": false,
+  "serverUpdatedByThisRun": false,
+  "rawReport": "docs/qa/agent-v2-20261017/matrix-candidate-r25c-20261018.json",
+  "priorAbortedUsage": {
+    "tokens": 2759870,
+    "calls": 405
+  },
+  "totalTokenBudget": 15000000,
+  "previousWave": "candidate-r25c-20261018",
+  "corpusRevision": 2,
+  "corpusSha256": "947da10673a4ebbd64d2ce4dfb1c336ecd2e06d3d0b43ab2833d96ace586635d",
+  "previousWaveStatus": "STOPPED_FOR_CORE_FAILURE; incomplete, not accepted"
+}

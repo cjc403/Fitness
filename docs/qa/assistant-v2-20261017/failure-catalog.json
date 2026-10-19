@@ -41,6 +41,18 @@
       "cause": "Selected typed IDs and custom-select API were not represented consistently",
       "regression": "page-context.test.mjs + semantic-controls.test.mjs + real R23 affected writes",
       "status": "REGRESSION_PASSED; full corpus acceptance pending"
+    },
+    {
+      "id": "F8",
+      "cause": "Hidden select input masked selected label; candidate student used as current form; date keys swallowed",
+      "regression": "semantic-controls.test.mjs + training-form.browser.mjs + affected-r26 actual DEV tasks",
+      "status": "REGRESSION_PASSED; full corpus pending"
+    },
+    {
+      "id": "F9",
+      "cause": "Planning response transport loss could fail a task after the server advanced its version",
+      "regression": "AgentTaskPlannerTest + planning-transport.test.mjs + planning-response-loss.browser.mjs",
+      "status": "REGRESSION_PASSED; 2 HTTP requests / 1 provider call / 0 business writes"
     }
   ],
   "preserveFailedWaves": true,
