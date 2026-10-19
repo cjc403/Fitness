@@ -77,6 +77,6 @@ class AgentTaskStoreTest {
         var task=store.create(me,"document-a","查看课程");int call=store.reserveModelCall(me,task.id(),0,"document-a");
         store.recordModelUsage(me,task.id(),call,100001);store.recordModelUsage(me,task.id(),call,100001);
         assertEquals(100001,store.get(me,task.id()).checkpoint().path("totalTokens").asInt());assertEquals(0,store.get(me,task.id()).version());
-        assertThrows(RuntimeException.class,()->store.reserveModelCall(me,task.id(),0,"document-a"));
+        assertEquals(2,store.reserveModelCall(me,task.id(),0,"document-a"));
     }
 }

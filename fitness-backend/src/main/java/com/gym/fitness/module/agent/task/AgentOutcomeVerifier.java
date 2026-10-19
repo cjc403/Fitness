@@ -33,7 +33,7 @@ public class AgentOutcomeVerifier {
             if(capacity.find()){fieldChange=true;add(outcomes,clause,verifiedCourse(received,"maxCapacity",capacity.group(1),targetContext),"课程成功回执及当前容量回查");}
             if(!fieldChange&&isMutation(clause)){
                 String type=mutationType(header(clause));
-                add(outcomes,clause,verifiedMutation(received,type,clause,used,"MEMBER".equals(me.role())),"已授权业务服务提交回执及对象核对");
+                add(outcomes,clause,verifiedMutation(received,type,clause,used,me),"已授权业务服务提交回执及对象核对");
             }
             if(!fieldChange&&header(clause).matches(".*(?:打开|进入|切换到|点击|点开).*")){
                 String path=destination(clause,me.role());boolean matched=path!=null&&path.equals(context.path("path").asText())&&!"dialog".equals(context.path("scope").path("type").asText());
@@ -80,21 +80,23 @@ public class AgentOutcomeVerifier {
             }
         }return false;
     }
-    private boolean verifiedMutation(List<AgentMutationReceiptService.Receipt> received,String type,String clause,Set<String> used,boolean member){
+    private boolean verifiedMutation(List<AgentMutationReceiptService.Receipt> received,String type,String clause,Set<String> used,ComputerAgentDtos.Session me){
         for(var r:received){
             if(used.contains(r.id()))continue;
+            if("room".equals(type)&&receipts.verifyRoomCreation(me,r,clause)){used.add(r.id());return true;}
             if("message".equals(type)&&r.path().equals("/api/v1/messages/send")){
                 long recipient=r.request().path("recipientUserId").asLong(),id=r.result().path("data").path("id").asLong();
                 if(id>0&&chat.thread(recipient).messages().stream().anyMatch(m->m.id()==id&&m.mine()&&AgentGoalBinding.messageMatches(clause,r.before().path("recipientName").asText(),recipient,m.content()))){used.add(r.id());return true;}
             }
             boolean path=switch(type){case "trial"->r.path().matches("/api/v1/leads/\\d+/trials(/\\d+/result)?");case "lead"->r.path().startsWith("/api/v1/leads");case "training"->r.path().contains("/training-plans");case "booking"->r.path().contains("/bookings");case "retention"->r.path().matches("/api/v1/admin/members/\\d+/follow-ups");case "member"->r.path().matches("/api/v1/admin/members(/\\d+)?");case "course"->r.path().matches("/api/v1/admin/courses(/\\d+)?");case "schedule"->r.path().startsWith("/api/v1/admin/schedules");default->false;};
             boolean operation=(!clause.contains("发布")||r.path().endsWith("/publish"))&&(!clause.contains("归档")||r.path().endsWith("/archive"))&&(!clause.contains("取消")||r.path().endsWith("/cancel"))&&(!clause.contains("签到")||r.path().endsWith("/check-in"));
-            if(path&&operation&&AgentOperationIntent.permits(clause,r.method(),r.path())&&r.result().path("code").asInt(-1)==0&&domains.verify(type,r,clause,member)){used.add(r.id());return true;}
+            if(path&&operation&&AgentOperationIntent.permits(clause,r.method(),r.path())&&r.result().path("code").asInt(-1)==0&&domains.verify(type,r,clause,"MEMBER".equals(me.role()))){used.add(r.id());return true;}
         }return false;
     }
     private String header(String text){return AgentOperationIntent.unquoted(text).split("[，,。；;]",2)[0].trim();}
     private String mutationType(String text){
         if(text.matches(".*(?:发送|发(?:个|一条)?消息|发给).*"))return "message";
+        if(text.contains("教室"))return "room";
         if(text.contains("潜客"))return text.contains("体验")&&text.matches(".*(?:安排|预约|记录为|到店|标记).*" )?"trial":"lead";
         if(text.matches(".*(?:训练|计划|动作|反馈).*"))return "training";
         if(text.contains("体验")&&text.matches(".*(?:安排|预约|记录为|到店|标记).*"))return "trial";

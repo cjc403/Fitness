@@ -13,7 +13,7 @@ public final class AgentSkillRollout {
  public boolean queryEnabled(String name){String group=switch(name){case "courses"->"courses";case "members","bookings"->"members";case "leads","lead_options"->"leads";case "retention"->"retention";case "training_plans","students"->"training";case "analytics","cash_summary"->"operations";case "contacts","messages"->"messages";default->null;};return group==null||enabled().contains(group);}
  public void requireNavigation(){require("navigation");}
  public void requireMutation(String path){
-  String group=path.contains("/training-plans")?"training":path.contains("/follow-ups")&&path.contains("/members/")?"retention":path.contains("/leads")?"leads":path.contains("/messages/")?"messages":path.contains("/courses")||path.contains("/schedules")?"courses":path.contains("/members")||path.contains("/bookings")?"members":"operations";
+  String group=path.contains("/training-plans")?"training":path.contains("/follow-ups")&&path.contains("/members/")?"retention":path.contains("/leads")?"leads":path.contains("/messages/")?"messages":path.contains("/courses")||path.contains("/schedules")||path.contains("/admin/rooms")?"courses":path.contains("/members")||path.contains("/bookings")?"members":"operations";
   require(group);
  }
  private void require(String group){if(!enabled().contains(group))throw invalid("该组Agent能力暂未启用（"+group+"），请使用原业务页面手动办理；没有执行本次操作");}

@@ -77,7 +77,11 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     const typedMatch=typedLabel.length>1&&lastGoal.includes(typedLabel)?850:0
     const matches=owner?owner.text.split(/[\s，,；;：:（）()｜|]+/).filter(word=>word.length>1&&lastGoal.includes(word)).length:0
     const date=calendarCell(e)?base.match(/\d{4}-\d{2}-\d{2}/)?.[0]:null
-    return typedMatch+(related.some(p=>p.contains(e))?1000:0)+(date&&lastGoal.includes(date)?900:0)+(owner&&owner.title.length>1&&lastGoal.includes(owner.title)?800:0)+matches*20+(root?.contains(e)?200:0)+(base.length>1&&lastGoal.includes(base)?80:0)+(r.bottom>0&&r.top<window.innerHeight?10:0)
+    // "新增一个教室" and the real "新增教室" button express the same action.
+    // Keep that explicit target ahead of unrelated repeated row buttons, even offscreen.
+    const actionGoal=lastGoal.replace(/(?:一[个间名位条节]|1[个间名位条节])/g,'')
+    const requested=base.length>1&&(lastGoal.includes(base)||/^(?:新增|新建|创建|添加)/.test(base)&&actionGoal.includes(base))
+    return typedMatch+(related.some(p=>p.contains(e))?1000:0)+(date&&lastGoal.includes(date)?900:0)+(owner&&owner.title.length>1&&lastGoal.includes(owner.title)?800:0)+matches*20+(root?.contains(e)?200:0)+(requested?80:0)+(r.bottom>0&&r.top<window.innerHeight?10:0)
   }
   const entries=()=>{
     const root=scope(),related=popups(root)
@@ -123,7 +127,15 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     const nearby=owners.filter(o=>lastGoal.includes(o.title)).map(o=>redactPage(o.text,180)).join('；')
     return redactPage(`当前${root?'弹窗':'页面'}：${title(root)}；${values}${nearby?'；目标对象：'+nearby:''}`,480)
   }
-  const fingerprint=()=>{const {root,list}=entries();return JSON.stringify([window.location.href,title(root),list.map(e=>[name(e),state(e),entity(e)?.text])])}
+  const scrollContainer=root=>{
+    const start=root?.closest('.el-overlay-dialog')||root||document.querySelector('main')
+    for(let p=start;p&&p!==document.body;p=p.parentElement){
+      if(p.scrollHeight>p.clientHeight+1&&/(?:auto|scroll)/.test(window.getComputedStyle(p).overflowY))return p
+      if(root&&p.matches('.el-overlay'))break
+    }
+    return root?null:document.scrollingElement
+  }
+  const fingerprint=()=>{const {root,list}=entries();return JSON.stringify([window.location.href,title(root),scrollContainer(root)?.scrollTop||0,list.map(e=>[name(e),state(e),entity(e)?.text])])}
   const describe=(action,args)=>`${action} ${refs.get(args.ref)?.name||args.path||args.direction||args.artifactId||''}${args.value===undefined?'':' = '+redactPage(args.value,100)}`
   const navigate=async path=>{checkUrl(path);const before=window.location.pathname;await router.push(path);if(window.location.pathname===before&&path!==before)throw Error('当前页没有完成所需切换');if(before!==window.location.pathname)trail.push(before);return `当前标签页已切换到 ${window.location.pathname}`}
   const matchesOptionHint=(e,hint)=>{const host=e.closest('[data-agent-type][data-agent-id]');return role(e)==='option'&&host?.getAttribute('data-agent-type')===hint.type&&host.getAttribute('data-agent-id')===hint.id}
@@ -174,8 +186,10 @@ export function createPageDriver({document,window,router,allowed,contextAdapter}
     if(action==='observe')return `已读取当前页 ${window.location.pathname}`
     if(action==='scroll'){
       if(!['up','down'].includes(args.direction))throw Error('滚动方向不正确')
-      const root=scope(),main=root?.closest('.el-overlay-dialog')||root||document.querySelector('main')||window
-      main.scrollBy({top:args.direction==='down'?600:-600,behavior:'instant'});return `已滚动当前${root?'弹窗':'页面'}${args.direction==='down'?'下方':'上方'}`
+      const root=scope(),main=scrollContainer(root),before=main?.scrollTop||0
+      main?.scrollBy({top:args.direction==='down'?600:-600,behavior:'instant'})
+      const moved=(main?.scrollTop||0)-before
+      return moved?`已滚动当前${root?'弹窗':'页面'}${Math.abs(moved)}像素`:'当前区域已到滚动边界或不可滚动，没有移动；请定位本轮控件或切换正确区域，不要重复滚动'
     }
     if(!['click','fill','select'].includes(action))throw Error('不支持的网页动作')
     const item=refs.get(args.ref),e=item?.e,root=scope()

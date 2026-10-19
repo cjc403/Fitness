@@ -6,6 +6,22 @@ import { createRequire } from 'node:module'
 const require = createRequire(new URL('../../fitness-agent-runner/package.json',import.meta.url))
 const {chromium}=require('playwright-core')
 
+test('a quantified create request keeps a distant create button in budget and scrolls the real content parent',async()=>{
+ const code=await readFile(new URL('../src/agent/pageDriver.mjs',import.meta.url),'utf8')
+ const browser=await chromium.launch({channel:'msedge',headless:true,args:['--no-proxy-server']})
+ try{
+  const page=await browser.newPage();await page.route('http://room.fixture/**',r=>r.fulfill({body:r.request().url().endsWith('driver.mjs')?code:'<div id="scroller" style="height:300px;overflow-y:auto"><main>'+Array.from({length:90},(_,i)=>`<article style="height:70px"><h3>其他课程${i}</h3><button>编辑课程</button></article>`).join('')+'<button id="create">新增教室</button></main></div>',contentType:r.request().url().endsWith('driver.mjs')?'text/javascript;charset=utf-8':'text/html;charset=utf-8'}));await page.goto('http://room.fixture/')
+  const result=await page.evaluate(async()=>{
+   const {createPageDriver}=await import('/driver.mjs');const driver=createPageDriver({document,window,router:{},allowed:()=>true})
+   const observation=driver.observe({goal:'点开课程与排课，帮我新增一个教室，名称为操课房F'})
+   const shown=observation.nodes.some(n=>n.name==='新增教室');const before=driver.fingerprint()
+   await driver.act('scroll',{direction:'down'});const delta=document.querySelector('#scroller').scrollTop
+   return {shown,delta,fingerprintChanged:before!==driver.fingerprint(),nodes:observation.nodes.length}
+  })
+  assert.equal(result.shown,true,JSON.stringify(result));assert.equal(result.nodes,60);assert.ok(result.delta>0,JSON.stringify(result));assert.equal(result.fingerprintChanged,true,JSON.stringify(result))
+ }finally{await browser.close()}
+})
+
 test('DOM driver operates the same page, excludes assistant, fills real fields and rejects stale refs and external links',async()=>{
   const code=await readFile(new URL('../src/agent/pageDriver.mjs',import.meta.url),'utf8')
   const server=http.createServer((req,res)=>{res.setHeader('content-type',req.url==='/driver.mjs'?'text/javascript;charset=utf-8':'text/html;charset=utf-8');res.end(req.url==='/driver.mjs'?code:`<main><h1>经营看板</h1><label>姓名<input id="name"></label><button id="save">保存</button><a href="https://other.example/">外部链接</a><input type="password" aria-label="密码"></main><div data-page-agent-exclude><button>确认并提交这一次</button></div>`)}).listen(0,'127.0.0.1')

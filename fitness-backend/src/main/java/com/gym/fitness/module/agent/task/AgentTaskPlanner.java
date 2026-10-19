@@ -77,7 +77,7 @@ public class AgentTaskPlanner {
             List<Object> facts=new ArrayList<>();
             int corrections=0;
             for(int round=0;round<6;round++){
-                if(episode.calls>=100||episode.tokens>100000)throw invalid("任务规划已达到防循环安全上限（"+episode.calls+"次调用、"+episode.tokens+" token），已停止继续调用；这不是API余额不足。请核对已有回执，不要重复提交");
+                if(episode.calls>=100)throw invalid("任务规划已达到防循环安全上限（"+episode.calls+"次调用、"+episode.tokens+" token），已停止继续调用；这不是API余额不足。请核对已有回执，不要重复提交");
                 episode.calls=store.reserveModelCall(me,id,version,document);
                 var outcome=model.completePlanning(List.copyOf(episode.messages),definitions,episode.thinking,Duration.ofNanos(Math.max(0,deadline-System.nanoTime())));episode.touched=Instant.now();
                 if(!outcome.success()){

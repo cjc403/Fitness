@@ -34,6 +34,12 @@ class AgentTaskPlannerTest {
         planner=new AgentTaskPlanner(store,computer,model,business,tools,json,receipts,config);
     }
     JsonNode request(){return json.valueToTree(Map.of("version",0,"document","document-a","observation",Map.of("url","http://localhost:5173/coach-workbench","title","教练","text","当前页","revision","r1","nodes",List.of()),"history",List.of(),"artifacts",List.of()));}
+    @Test void productivePlanningCanContinuePastTheFormerAggregateTokenCap()throws Exception{
+        task=new AgentTaskStore.View(task.id(),0,task.goal(),"RUNNING",task.plan(),json.valueToTree(Map.of("modelCalls",16,"totalTokens",103774)),task.createdAt(),task.updatedAt());
+        when(store.check(eq(me),anyString(),anyLong(),anyString())).thenReturn(task);
+        when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("navigate","{\"path\":\"/training-plans\"}","fixture"));
+        assertEquals("navigate",planner.next(task.id(),request()).decision().action());verify(model,times(1)).completePlanning(anyList(),anyList(),anyBoolean(),any());
+    }
     @Test void aDisabledNavigationGroupAlsoBlocksTheBackAction()throws Exception{
         config.setTaskDisabledSkills(Set.of("navigation"));when(model.completePlanning(anyList(),anyList(),anyBoolean(),any())).thenReturn(action("back","{}","fixture"));
         assertThrows(RuntimeException.class,()->planner.next(task.id(),request()));verify(computer,never()).validatePlannedAction(anyString(),any(),any());

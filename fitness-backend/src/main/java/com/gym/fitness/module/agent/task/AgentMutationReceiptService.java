@@ -21,10 +21,10 @@ public class AgentMutationReceiptService {
     public AgentMutationReceiptService(JdbcTemplate jdbc,PlatformTransactionManager manager,ObjectMapper json,AgentTaskStore tasks,com.gym.fitness.module.chat.service.ChatService chat,AgentDomainVerifier domains){this.jdbc=jdbc;this.tx=new TransactionTemplate(manager);this.tx.setTimeout(25);this.json=json;this.tasks=tasks;this.chat=chat;this.domains=domains;}
     public record Receipt(String id,String taskId,long taskVersion,String method,String path,String status,JsonNode request,JsonNode before,JsonNode result,LocalDateTime expiresAt){}
     private record Row(Receipt view,String document,String hash){}
-    private static final Set<String> SAFE=Set.of("id","memberId","scheduleId","courseId","recipientUserId","venueId","version","expectedVersion","status","fee","maxCapacity","durationMinutes","intensity","type","name","title","startDate","endDate","startsAt","endsAt","scheduledStartTime","scheduledEndTime","plan","lead","booking","trial","data","message","success","code","goal","exercises","mode","sets","reps","minutes","weightKg","actualSets","actualReps","actualMinutes","actualWeightKg","hostId","coachId","roomId","maxStudents","trials","sessions","records","rating","performedOn","exerciseId","effort","bookingId","events","method","outcome","intent","source","ownerId","nextFollowAt","recordedSessionId","price","category","productType","validityDays","totalUses","accessAllowed");
+    private static final Set<String> SAFE=Set.of("id","memberId","scheduleId","courseId","recipientUserId","venueId","version","expectedVersion","status","fee","maxCapacity","durationMinutes","intensity","type","name","title","startDate","endDate","startsAt","endsAt","scheduledStartTime","scheduledEndTime","plan","lead","booking","trial","data","message","success","code","goal","exercises","mode","sets","reps","minutes","weightKg","actualSets","actualReps","actualMinutes","actualWeightKg","hostId","coachId","roomId","maxStudents","trials","sessions","records","rating","performedOn","exerciseId","effort","bookingId","events","method","outcome","intent","source","ownerId","nextFollowAt","recordedSessionId","capacity","price","category","productType","validityDays","totalUses","accessAllowed");
     public Receipt prepare(Session me,String task,long version,String document,String method,String path,JsonNode body){
         method=method.toUpperCase(Locale.ROOT);var target=AgentRequestTarget.parse(method,path);if(!supported(method,target.path()))throw invalid("此操作尚未注册为可核验网页技能，请使用原业务页面手动办理");
-        if(AgentProductPrice.target(target.path())&&!target.query().isEmpty())throw invalid("商品改价不接受额外查询参数");
+        if((AgentProductPrice.target(target.path())||AgentRoomCreation.target(method,target.path()))&&!target.query().isEmpty())throw invalid("商品改价不接受额外查询参数");
         if(body==null||!(body.isObject()||body.isNull())||body.toString().length()>65536)throw invalid("只支持有界JSON请求");
         final String verb=method;
         final String route=target.path();
@@ -38,7 +38,7 @@ public class AgentMutationReceiptService {
             String semantic=digest(semanticRequest(summary));
             for(var previous:jdbc.queryForList("SELECT request_summary FROM agent_task_receipt WHERE task_id=? AND method=? AND path=? AND status='SUCCEEDED'",String.class,task,verb,route))if(semantic.equals(digest(semanticRequest(read(previous)))))throw invalid("已有相同业务的成功回执，不能通过更换重试编号再次办理；请先核对保存结果");
             JsonNode before=snapshot(me,verb,route,false,body);guardGoal(me,current.goal(),verb,route,body,before);
-            if(!route.matches("/api/v1/admin/courses/\\d+")&&!route.equals("/api/v1/messages/send")&&!AgentProductPrice.target(route))domains.guard(current.goal(),before,body);
+            if(!route.matches("/api/v1/admin/courses/\\d+")&&!route.equals("/api/v1/messages/send")&&!AgentProductPrice.target(route)&&!AgentRoomCreation.target(verb,route))domains.guard(current.goal(),before,body);
             if(route.equals("/api/v1/messages/send")){
                 var contacts=chat.contacts();var contact=java.util.stream.Stream.concat(contacts.staff().stream(),contacts.members().stream()).filter(c->c.userId()==body.path("recipientUserId").asLong()).findFirst().orElseThrow(com.gym.fitness.module.agent.AgentIdentity::denied);
                 long sameName=java.util.stream.Stream.concat(contacts.staff().stream(),contacts.members().stream()).filter(c->contact.name().equals(c.name())).count();
@@ -81,6 +81,17 @@ public class AgentMutationReceiptService {
     private void valid(Row row,String expected){if(!expected.equals(row.view.status())||!row.view.expiresAt().isAfter(LocalDateTime.now()))throw invalid("提交许可已消费或过期，请核对原业务结果");}
     private Row row(String id,boolean lock){if(id==null||!id.matches("[a-f0-9-]{36}"))throw denied();var rows=jdbc.query("SELECT * FROM agent_task_receipt WHERE id=?"+(lock?" FOR UPDATE":""),(r,i)->new Row(new Receipt(r.getString("id"),r.getString("task_id"),r.getLong("task_version"),r.getString("method"),r.getString("path"),r.getString("status"),read(r.getString("request_summary")),read(r.getString("before_json")),r.getString("result_json")==null?NullNode.instance:read(r.getString("result_json")),r.getTimestamp("expires_at").toLocalDateTime()),r.getString("document_nonce"),r.getString("request_hash")),id);if(rows.size()!=1)throw denied();return rows.get(0);}
     private JsonNode snapshot(Session me,String method,String path,boolean lock,JsonNode body){
+        if(AgentRoomCreation.target(method,path)){
+            if(!me.permissions().contains("VENUE_WRITE")||!Set.of("SUPER_ADMIN","MANAGER").contains(me.role()))throw denied();
+            long venue=body.path("venueId").asLong(me.venueId()==null?0:me.venueId());
+            if(!"SUPER_ADMIN".equals(me.role())&&!Objects.equals(me.venueId(),venue))throw denied();
+            var rows=jdbc.queryForList("SELECT name FROM venue WHERE id=?",String.class,venue);if(rows.size()!=1)throw denied();
+            var out=json.createObjectNode().put("kind","room").put("venueId",venue).put("venueName",rows.get(0)).put("actorVenue",Objects.equals(me.venueId(),venue));
+            out.put("venueNameCount",jdbc.queryForObject("SELECT count(*) FROM venue WHERE name=?",Integer.class,rows.get(0)));
+            out.put("roomHighWatermark",jdbc.queryForObject("SELECT COALESCE(MAX(id),0) FROM room WHERE venue_id=?",Long.class,venue));
+            if(jdbc.queryForObject("SELECT count(*) FROM room WHERE venue_id=? AND name=?",Integer.class,venue,body.path("name").asText().trim())>0)throw invalid("该门店已有同名教室，请核对现有记录，禁止重复创建");
+            return out;
+        }
         if(AgentProductPrice.target(path)){
             if(!me.permissions().contains("PRODUCT_WRITE"))throw denied();
             long id=Long.parseLong(path.substring(path.lastIndexOf('/')+1));
@@ -97,6 +108,7 @@ public class AgentMutationReceiptService {
         return domains.before(me,method,path,body);
     }
     private boolean supported(String method,String path){
+        if(AgentRoomCreation.target(method,path))return true;
         if(path!=null&&AgentProductPrice.target(path))return "PUT".equals(method);
         if(path==null||path.length()>500||path.contains("?")||path.contains("%")||!Set.of("POST","PUT","DELETE").contains(method))return false;
         return path.matches("/api/v1/admin/(courses|schedules)(/\\d+)?")||path.matches("/api/v1/messages/send")
@@ -108,6 +120,7 @@ public class AgentMutationReceiptService {
     private String fingerprint(JsonNode body,AgentRequestTarget.Target target){if(target.query().isEmpty())return digest(body);var value=json.createObjectNode();value.set("body",body);value.set("query",target.query());return digest(value);}
     private void lockTask(String id){jdbc.queryForList("SELECT id FROM agent_task WHERE id=? FOR UPDATE",id);}
     private void guardGoal(Session me,String goal,String method,String path,JsonNode body,JsonNode before){
+        if(AgentRoomCreation.target(method,path)){AgentRoomCreation.guard(goal,before,body);return;}
         if(AgentProductPrice.target(path)){
             String name=before.path("name").asText();
             Integer count="SUPER_ADMIN".equals(me.role())?jdbc.queryForObject("SELECT count(*) FROM membership_product WHERE name=?",Integer.class,name):jdbc.queryForObject("SELECT count(*) FROM membership_product WHERE name=? AND venue_id=?",Integer.class,name,me.venueId());
@@ -153,6 +166,20 @@ public class AgentMutationReceiptService {
             if(receipt.result().path("data").path("id").asLong()!=current.path("id").asLong())return false;
             for(var field:AgentProductPrice.UNCHANGED.values())if(!AgentProductPrice.same(receipt.before().path(field),current.path(field)))return false;
             return true;
+        }catch(com.gym.fitness.common.exception.BusinessException|IllegalArgumentException unavailable){return false;}
+    }
+    public boolean verifyRoomCreation(Session me,Receipt receipt,String goal){
+        if(!"SUCCEEDED".equals(receipt.status())||!AgentRoomCreation.target(receipt.method(),receipt.path())||receipt.result().path("code").asInt(-1)!=0||!me.permissions().contains("VENUE_WRITE"))return false;
+        try{
+            // Request summary stores private note as a digest; only immutable evidence is compared below.
+            var data=receipt.result().path("data");long id=data.path("id").asLong(),venue=receipt.before().path("venueId").asLong();
+            if(id<=receipt.before().path("roomHighWatermark").asLong()||(!"SUPER_ADMIN".equals(me.role())&&!Objects.equals(me.venueId(),venue)))return false;
+            var rows=jdbc.queryForList("SELECT id,venue_id,name,capacity,status,note FROM room WHERE id=? AND venue_id=?",id,venue);if(rows.size()!=1)return false;
+            var row=rows.get(0);var body=json.createObjectNode().put("name",(String)row.get("name")).put("venueId",venue).put("capacity",((Number)row.get("capacity")).intValue()).put("status",(String)row.get("status")).put("note",(String)row.get("note"));
+            AgentRoomCreation.guard(goal,receipt.before(),body);
+            var current=project(body);
+            for(String field:List.of("name","capacity","status","noteHash"))if(!current.path(field).equals(receipt.request().path(field))||!current.path(field).equals(data.path(field)))return false;
+            return data.path("venueId").asLong()==venue;
         }catch(com.gym.fitness.common.exception.BusinessException|IllegalArgumentException unavailable){return false;}
     }
     private JsonNode project(JsonNode n){

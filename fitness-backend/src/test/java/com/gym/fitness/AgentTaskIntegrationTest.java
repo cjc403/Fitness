@@ -28,6 +28,35 @@ class AgentTaskIntegrationTest {
     @Autowired MockMvc mvc;@Autowired ObjectMapper json;@Autowired SysUserRepository users;@Autowired RoleRepository roles;@Autowired VenueRepository venues;@Autowired CourseRepository courses;@Autowired JwtTokenProvider jwt;@Autowired DataSource ds;
     @Autowired com.gym.fitness.module.lead.repository.SalesLeadRepository leadRows;
     @Autowired com.gym.fitness.module.commercial.repository.MembershipProductRepository productRows;
+    @Autowired com.gym.fitness.module.course.repository.RoomRepository roomRows;
+    @Test void roomCreationUsesFrozenApprovalAndCurrentRowEvidenceForTheExactUserGoal()throws Exception{
+        for(String role:List.of("SUPER_ADMIN","MANAGER")){
+            var u=account(role);String name="操课房F-"+UUID.randomUUID().toString().substring(0,8);String venue=venues.findById(u.getVenueId()).orElseThrow().getName();
+            var body=Map.<String,Object>of("venueId",u.getVenueId(),"name",name,"capacity",50,"status","ACTIVE","note","");
+            long count=roomRows.count();String doc="room-document";
+            String task=postTask(u,"",Map.of("document",doc,"goal","点开课程与排课，帮我新增一个教室，所属场馆为"+venue+"，名称为"+name+"，可容纳50人"),0).path("id").asText();
+            assertThat(postTask(u,"/"+task+"/verify",Map.of("version",0,"document",doc,"context",Map.of("path","/courses")),0).path("complete").asBoolean()).isFalse();
+            var receipts=json.readTree(mvc.perform(get("/api/v1/agent/tasks/"+task).header("Authorization",token(u,"v2-session"))).andReturn().getResponse().getContentAsString()).path("data");long version=receipts.path("version").asLong();
+            String permit=postTask(u,"/"+task+"/prepare",Map.of("version",version,"document",doc,"method","POST","path","/api/v1/admin/rooms","body",body),0).path("id").asText();
+            assertThat(roomRows.count()).isEqualTo(count);
+            postTask(u,"/"+task+"/approve/"+permit,Map.of("version",version,"document",doc),0);
+            var response=json.readTree(mvc.perform(post("/api/v1/admin/rooms").header("Authorization",token(u,"v2-session")).header("X-FitChain-Agent-Permit",permit).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(body))).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0)).andReturn().getResponse().getContentAsString());
+            assertThat(roomRows.count()).isEqualTo(count+1);long roomId=response.path("data").path("id").asLong();assertThat(roomRows.findById(roomId).orElseThrow().getCapacity()).isEqualTo(50);
+            postTask(u,"/"+task+"/prepare",Map.of("version",version,"document",doc,"method","POST","path","/api/v1/admin/rooms","body",body),1001);
+            mvc.perform(post("/api/v1/admin/rooms").header("Authorization",token(u,"v2-session")).header("X-FitChain-Agent-Permit",permit).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(body))).andExpect(status().isBadRequest());
+            assertThat(postTask(u,"/"+task+"/verify",Map.of("version",version,"document",doc,"context",Map.of("path","/courses")),0).path("complete").asBoolean()).isTrue();
+        }
+    }
+    @Test void roomPreviewRejectsWrongFieldsAndAllFourUnauthorizedRoles()throws Exception{
+        for(String role:List.of("SUPER_ADMIN","MANAGER","RECEPTION","COACH","SALES","MEMBER")){
+            var u=account(role);String name="教室保护"+UUID.randomUUID().toString().substring(0,8),doc="room-guard";
+            String task=postTask(u,"",Map.of("document",doc,"goal","新增一个教室，名称为"+name+"，可容纳50人"),0).path("id").asText();
+            var body=new LinkedHashMap<String,Object>(Map.of("name",name,"capacity",50,"venueId",u.getVenueId(),"status","ACTIVE","note",""));
+            if(List.of("SUPER_ADMIN","MANAGER").contains(role)){
+                for(var wrong:List.of(Map.entry("name","错误教室"),Map.entry("capacity",51),Map.entry("status","INACTIVE"),Map.entry("note","未要求的备注"))){var bad=new LinkedHashMap<>(body);bad.put(wrong.getKey(),wrong.getValue());postTask(u,"/"+task+"/prepare",Map.of("version",0,"document",doc,"method","POST","path","/api/v1/admin/rooms","body",bad),1001);}
+            }else postTask(u,"/"+task+"/prepare",Map.of("version",0,"document",doc,"method","POST","path","/api/v1/admin/rooms","body",body),1003);
+        }
+    }
     @Test void productPriceUsesActualControllerAndVerifierWithoutChangingExistingCommercialData()throws Exception{
         var u=account("MANAGER");var p=new com.gym.fitness.module.commercial.entity.MembershipProductEntity();
         p.setName("隔离季卡"+UUID.randomUUID().toString().substring(0,8));p.setCategory("CARD");p.setProductType("QUARTER_CARD");p.setDescription("保留商品说明");p.setVenueId(u.getVenueId());p.setValidityDays(90);p.setPrice(new BigDecimal("1299"));p.setStatus("ACTIVE");p=productRows.saveAndFlush(p);

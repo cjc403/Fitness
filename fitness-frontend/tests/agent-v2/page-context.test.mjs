@@ -20,6 +20,12 @@ test('product price uses its own field and decimal formatting does not cause rep
  context.fields[0].value='998.00'
  assert.deepEqual(chooseSemanticAction(context,{kind:'fill_field',field:'price',value:'998'}),{action:'observe',arguments:{},alreadySatisfied:true})
 })
+test('room capacity uses the room field rather than the course capacity alias',()=>{
+ const context={fields:[{key:'capacity',entityType:'room',entityId:'new',name:'可容纳',value:'20',ref:'capacity',writable:true,controlType:'number'}]}
+ assert.deepEqual(chooseSemanticAction(context,{kind:'fill_field',field:'容量',value:'50'}),{action:'fill',arguments:{ref:'capacity',value:'50'}})
+ context.fields[0].value='50'
+ assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'可容纳',value:'50'}).alreadySatisfied,true)
+})
 test('an already selected typed object is compared by its ID rather than a display label',()=>{
  const context={fields:[{key:'memberId',name:'会员',value:'林晓雨 · FC20260001',selectedId:'1',optionType:'member',ref:'m',writable:true,controlType:'combobox'}]}
  assert.equal(chooseSemanticAction(context,{kind:'fill_field',field:'memberId',value:'1'}).alreadySatisfied,true)

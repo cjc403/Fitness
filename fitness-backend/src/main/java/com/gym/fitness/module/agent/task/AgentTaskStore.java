@@ -44,7 +44,7 @@ public class AgentTaskStore {
         return tx.execute(ignored->{var row=owned(me,id,true);checkVersion(row,expected,document);if(!"RUNNING".equals(row.view.status()))throw invalid("任务当前不可规划");
             int last=row.view.checkpoint().path("modelCalls").asInt();
             for(var detail:jdbc.queryForList("SELECT detail_json FROM agent_task_step WHERE task_id=? AND kind='MODEL_CALL'",String.class,id))last=Math.max(last,decode(detail).path("call").asInt());
-            if(last>=100||row.view.checkpoint().path("totalTokens").asInt()>=100000)throw invalid("任务规划已达到防循环安全上限，已停止调用；这不是API余额不足。请核对已有结果，不要重复提交");
+            if(last>=100)throw invalid("任务规划已达到防循环安全上限，已停止调用；这不是API余额不足。请核对已有结果，不要重复提交");
             int next=last+1;jdbc.update("INSERT INTO agent_task_step(id,task_id,task_version,kind,detail_json,created_at) VALUES(?,?,?,'MODEL_CALL',?,?)",UUID.randomUUID().toString(),id,expected,encode(Map.of("call",next)),LocalDateTime.now());return next;
         });
     }

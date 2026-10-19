@@ -42,7 +42,8 @@ export function chooseSemanticAction(context={},args={}){
   if(args.kind==='fill_field'){
     const aliases={'价格':'fee','容量':'maxCapacity','课程名称':'name','备注':'note','训练目标':'goal','跟进结果':'outcome'}
     const productPrice=args.field==='价格'&&!(context.fields||[]).some(f=>f.key==='fee')&&(context.fields||[]).some(f=>f.key==='price'&&f.entityType==='product')
-    const key=productPrice?'price':aliases[args.field]||args.field
+    const roomCapacity=['容量','可容纳'].includes(args.field)&&!(context.fields||[]).some(f=>f.key==='maxCapacity')&&(context.fields||[]).some(f=>f.key==='capacity'&&f.entityType==='room')
+    const key=productPrice?'price':roomCapacity?'capacity':aliases[args.field]||args.field
     const requestedValue=key==='goal'?({'综合体能':'体能','体能训练':'体能','减脂塑形':'减脂','增肌训练':'增肌','综合健身':'综合训练'}[String(args.value)]||String(args.value)):key==='outcome'?({'愿意体验':'有意向','愿意进一步了解':'有意向'}[String(args.value)]||String(args.value)):String(args.value)
     let fields=(context.fields||[]).filter(f=>(f.key===key||f.name===args.field)&&f.writable&&(!args.id||String(f.entityId)===String(args.id)))
     if(fields.some(f=>f.controlType==='radio')){

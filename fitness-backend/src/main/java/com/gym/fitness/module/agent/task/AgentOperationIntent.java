@@ -19,12 +19,14 @@ final class AgentOperationIntent {
  }
  static boolean permits(String goal,String method,String path){
   if(!registeredMethod(method,path))return false;
+  if(AgentRoomCreation.target(method,path)&&positiveClauses(goal).stream().noneMatch(c->c.matches(".*(?:新增|新建|创建|添加).*教室.*")))return false;
   if(path.equals("/api/v1/admin/courses")&&method.equals("POST")&&positiveClauses(goal).stream().noneMatch(c->c.matches(".*(?:课程|团课|团体课|私教课|常规课).*")))return false;
   String outside=unquoted(goal);
   if(outside.matches("(?s).*(?:^|[，,。；;]|但|但是|并且)(?:不要|不必|无需|别|不)(?:再)?(?:提交|保存).*"))return false;
   String operation;
   if(AgentProductPrice.target(path))return method.equals("PUT")&&positiveClauses(goal).stream().anyMatch(c->c.matches(".*(?:修改|更新|编辑|调整|改成|改为|改到|设为|设成).*"));
   if(path.equals("/api/v1/messages/send")&&method.equals("POST")){if(outside.matches("(?s).*(?:^|[，,。；;]|但|但是|并且)(?:不要|不必|无需|别|不)(?:再)?发送.*"))return false;operation="发送|发(?:个|一条)?消息|发给";}
+  else if(AgentRoomCreation.target(method,path))operation="新增|新建|创建|添加";
   else if(path.matches("/api/v1/admin/courses(?:/\\d+)?"))operation=method.equals("DELETE")?"删除|移除|删掉":method.equals("POST")?"新建|新增|创建|添加":method.equals("PUT")?"修改|更新|编辑|调整|改成|改为|改到|设为|设成":"(?!)";
   else if(path.matches("/api/v1/admin/schedules(?:/\\d+)?"))operation=method.equals("DELETE")?"删除|移除|删掉":method.equals("POST")?"创建|新增|安排|排课|排一":method.equals("PUT")?"修改|更新|调整|改成|改为|改到":"(?!)";
   else if(path.matches("/api/v1/(?:admin|member)/bookings(?:/\\d+/(?:cancel|check-in|no-show|leave))?"))operation=path.endsWith("/cancel")?"取消":path.endsWith("/check-in")?"签到":path.endsWith("/no-show")?"爽约|未到|未出席":path.endsWith("/leave")?"请假":"(?<!取消)预约";
@@ -35,6 +37,7 @@ final class AgentOperationIntent {
   return positiveClauses(goal).stream().anyMatch(c->Pattern.compile(operation).matcher(c).find());
  }
  private static boolean registeredMethod(String method,String path){
+  if(AgentRoomCreation.PATH.equals(path))return method.equals("POST");
   if(AgentProductPrice.target(path))return method.equals("PUT");
   if(path.equals("/api/v1/messages/send"))return method.equals("POST");
   if(path.matches("/api/v1/admin/(?:courses|schedules)"))return method.equals("POST");
