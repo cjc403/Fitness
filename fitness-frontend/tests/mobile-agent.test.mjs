@@ -77,6 +77,22 @@ test('agent real tool form reads directly and write form only creates a preview'
   p.unmount()
 })
 
+test('business follow-up retains each query card and carries only the opaque server context', async () => {
+  let turns = 0
+  const p = runtime({ post: () => ++turns === 1
+    ? { answer: '营收1234.50元', contextId: 'server-query-1', results: [{ tool: 'analytics', label: '经营概况', data: { revenue: 1234.5 }, source: 'test', asOf: '2026-10-19T10:00:00', truncated: false }], actions: [] }
+    : { answer: '请补充时间', contextId: 'server-query-1', results: [], actions: [] } })
+  p.input.value = '查看经营概况'; await p.send()
+  p.input.value = '具体数字'; await p.send()
+  const chats = p.calls.filter(c => c.url.endsWith('/chat'))
+  assert.equal(chats[1].body.contextId, 'server-query-1')
+  assert.equal('results' in chats[1].body, false)
+  const answer = p.messages.value.find(m => m.text === '营收1234.50元')
+  assert.equal(answer.results[0].data.revenue, 1234.5)
+  assert.equal(p.messages.value.at(-1).results.length, 0)
+  p.unmount()
+})
+
 test('invalid required integer never reaches preview transport', async () => {
   const p = runtime(); await p.loadProfile(); p.selectedTool.value = 'book_course'
   for (const value of [undefined, 0, 1.2, 'abc']) { p.toolForm.scheduleId = value; await p.runTool() }

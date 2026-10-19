@@ -9,10 +9,12 @@
         <div v-if="!online" class="agent-warning" role="status">当前离线，无法查询或提交操作。恢复网络后可重试，系统不会自动补发。</div>
         <div v-if="profileError" class="agent-warning" role="alert">{{ profileError }} <button type="button" @click="loadProfile">重新连接</button></div>
         <div v-if="tab === 'chat'" ref="bodyRef" class="assistant-body" aria-live="polite">
-          <div v-for="(item, index) in messages" :key="index" :class="['bubble-row', item.role]"><div class="bubble">{{ item.text }}</div></div>
+          <div v-for="(item, index) in messages" :key="index" class="chat-turn">
+            <div :class="['bubble-row', item.role]"><div class="bubble">{{ item.text }}</div></div>
+            <article v-for="(receipt, receiptIndex) in item.results || []" :key="receiptIndex" class="result-card"><h3>{{ receipt.label }}</h3><small>{{ receipt.source }} · {{ formatTime(receipt.asOf) }}</small><AgentData :value="receipt.data" /><p v-if="receipt.truncated">结果已截断，请缩小查询范围。</p></article>
+          </div>
           <div v-if="loading" class="bubble-row bot"><div class="bubble">正在处理，请稍候…</div></div>
           <p v-if="pendingCount" class="preview-hint">已生成 {{ pendingCount }} 项操作预览。请到「执行记录」核对并确认。</p>
-          <article v-for="(item, index) in chatResults" :key="index" class="result-card"><h3>{{ item.label }}</h3><small>{{ item.source }} · {{ formatTime(item.asOf) }}</small><AgentData :value="item.data" /><p v-if="item.truncated">结果已截断，请缩小查询范围。</p></article>
         </div>
         <div v-if="tab === 'chat'" class="quick-list"><button v-for="item in suggestions" :key="item" type="button" :disabled="loading || !online" @click="ask(item)">{{ item }}</button></div>
         <form v-if="tab === 'chat'" class="assistant-input" @submit.prevent="send"><input v-model="input" aria-label="业务问题" placeholder="输入业务问题…" maxlength="1000" :disabled="!online" /><button type="submit" :disabled="loading || !online || !input.trim()">发送</button></form>
@@ -75,8 +77,9 @@ const authStore = useAuthStore(), sessionGeneration = authStore.sessionGeneratio
 let disposed = false, profileEpoch = 0, historyEpoch = 0, receiptEpoch = 0
 const isCurrentView = () => !disposed && authStore.sessionGeneration === sessionGeneration
 const config = () => ({ isRequestCurrent: isCurrentView })
-const messages = ref([{ role: 'bot', text: '你好！我可以查询当前账号的业务数据，并为支持的操作生成预览。写入需要你单独确认。' }])
-const suggestions = ref<string[]>([]), chatResults = ref<ToolResult[]>([]), actions = ref<AgentAction[]>([]), busyIds = ref<string[]>([])
+const messages = ref<{ role: string; text: string; results?: ToolResult[] }[]>([{ role: 'bot', text: '你好！我可以查询当前账号的业务数据，并为支持的操作生成预览。写入需要你单独确认。' }])
+const contextId = ref<string>()
+const suggestions = ref<string[]>([]), actions = ref<AgentAction[]>([]), busyIds = ref<string[]>([])
 const actionErrors = reactive<Record<string, string>>({}), selectedTool = ref(''), toolForm = reactive<Record<string, any>>({}), toolBusy = ref(false), toolError = ref(''), result = ref<ToolResult | null>(null)
 const currentTool = computed(() => profile.value?.tools.find(tool => tool.name === selectedTool.value))
 const toolFields = computed(() => Object.entries(currentTool.value?.parameters.properties || {}))
@@ -136,10 +139,10 @@ const send = async () => {
   }
   const history: AssistantTurn[] = messages.value.slice(1).slice(-6).map(item => ({ role: item.role === 'bot' ? 'assistant' : 'user', content: item.text.slice(0, 500) }))
   messages.value.push({ role: 'user', text }); input.value = ''; loading.value = true; scroll()
-  try { const response = await chat(text, history, config()); if (!isCurrentView()) return
-    messages.value.push({ role: 'bot', text: response.data.answer }); suggestions.value = response.data.suggestions || []
-    chatResults.value = response.data.results || []; mergeActions(response.data.actions || []); receiptEpoch++
-    modelFailed.value = response.data.mode?.toUpperCase().includes('LOCAL') || response.data.mode?.toUpperCase().includes('FALLBACK') || false
+  try { const response = await chat(text, history, config(), contextId.value); if (!isCurrentView()) return
+    messages.value.push({ role: 'bot', text: response.data.answer, results: response.data.results || [] }); suggestions.value = response.data.suggestions || []
+    contextId.value = response.data.contextId; mergeActions(response.data.actions || []); receiptEpoch++
+    modelFailed.value = response.data.mode?.toUpperCase().includes('FALLBACK') || false
     await loadProfile()
   } catch (error) { if (isCurrentView()) messages.value.push({ role: 'bot', text: errorText(error) }) }
   finally { if (isCurrentView()) { loading.value = false; scroll() } }
@@ -202,7 +205,7 @@ const confirmAction = (action: AgentAction) => performAction(action, false)
 const cancelAction = (action: AgentAction) => performAction(action, true)
 const syncNetwork = () => { online.value = navigator.onLine !== false }
 watch(() => authStore.sessionGeneration, () => {
-  open.value = false; profile.value = null; messages.value = []; actions.value = []; chatResults.value = []; suggestions.value = []; input.value = ''; result.value = null; selectedTool.value = ''; loading.value = false; toolBusy.value = false
+  open.value = false; profile.value = null; messages.value = []; actions.value = []; contextId.value = undefined; suggestions.value = []; input.value = ''; result.value = null; selectedTool.value = ''; loading.value = false; toolBusy.value = false
   for (const key of Object.keys(toolForm)) delete toolForm[key]
   for (const key of Object.keys(actionErrors)) delete actionErrors[key]
 }, { flush: 'sync' })

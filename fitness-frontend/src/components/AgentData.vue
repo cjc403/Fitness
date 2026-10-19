@@ -30,7 +30,7 @@ const labels: Record<string, string> = {
   bookedAt: '预约时间', checkedInAt: '签到时间', cancelledAt: '取消时间', cancelReason: '取消原因', waitlistPosition: '候补顺位',
   role: '角色', healthScore: '健康指数', durationMinutes: '时长（分钟）', intensity: '强度', maxCapacity: '容量',
   source: '来源', page: '页码', size: '每页数量', totalPages: '总页数', truncated: '是否截断', organizationName: '所属门店', roleName: '角色',
-  DRAFT: '草稿'
+  DRAFT: '草稿', from: '开始日期', to: '结束日期', revenue: '区间营收（元）', newMembers: '新增会员', totalMembers: '会员总数', activeMembers: '活跃会员', silentMembers: '沉默会员', churnedMembers: '流失会员', totalAttendances: '到店次数', highRiskMembers: '高风险会员'
 }
 const values: Record<string, string> = { ACTIVE: '生效中', DRAFT: '草稿', ARCHIVED: '已归档', CANCELLED: '已取消', CONFIRMED: '已确认', BOOKED: '已预约', ATTENDED: '已签到', WAITLISTED: '候补中', STRENGTH: '力量训练', DURATION: '时长训练', FAT_LOSS: '减脂', MUSCLE_GAIN: '增肌', POSTURE: '体态改善', ENDURANCE: '耐力', GENERAL: '综合体能', REGULAR: '普通课程', GROUP: '团体课程', PRIVATE: '私教课程', SCHEDULED: '待开课', COMPLETED: '已完成', SUPER_ADMIN: '总部管理员', MANAGER: '店长', RECEPTION: '前台', SALES: '会籍顾问', COACH: '教练', MEMBER: '会员' }
 const text = (value: unknown) => typeof value === 'boolean' ? value ? '是' : '否' : values[String(value)] || String(value).replace(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/, '$1 $2')

@@ -14,5 +14,5 @@ public final class AgentDtos {
   public ToolResult(String tool,String label,JsonNode data,String source,LocalDateTime asOf,boolean truncated){this(tool,label,data,source,asOf,truncated,null);}
  }
  public record Action(String id,String tool,String title,String summary,JsonNode parameters,String status,LocalDateTime createdAt,LocalDateTime expiresAt,JsonNode result,String error) {}
- public record Reply(String answer,List<String> suggestions,String source,String mode,List<ToolResult> results,List<Action> actions,String traceId) {}
+ public record Reply(String answer,List<String> suggestions,String source,String mode,List<ToolResult> results,List<Action> actions,String traceId,String contextId) {}
 }
