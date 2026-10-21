@@ -54,13 +54,13 @@ final class AgentGuidance {
   }
   return new Answer("角色说明："+boundary+"\n\n"+body+"\n\n以上为讲解与建议，本轮没有创建或修改业务记录。",mode,topic);
  }
- private static boolean safe(String text,String role,String topic){
+ static boolean safe(String text,String role,String topic){
   if(text==null||text.isBlank()||text.length()>6000||CLAIM.matcher(text).matches())return false;
   for(String line:text.split("[\\n。]"))if(!line.matches("(?s).*(?:示例|例如|假设|比如).*" )&&line.matches("(?s).*(?:营收|营业额|收入|净收款|实付金额).{0,16}(?:为|是|达|共|合计|总计|：|:|=).{0,3}\\d[\\d,.]*.*"))return false;
   if("TRAINING".equals(topic)&&!"COACH".equals(role)&&text.matches("(?s).*(?:你可以|您可以|你先|您先|请先|直接|点击|点开).{0,12}(?:创建计划|创建训练计划|发布计划|登记训练).*"))return false;
   return true;
  }
- private static String redact(String text){return text.replaceAll("(?i)sk-[a-z0-9_-]{16,}","[密钥已隐藏]").replaceAll("(?<!\\d)1[3-9]\\d{9}(?!\\d)","[手机号已隐藏]").replaceAll("(?<!\\d)\\d{17}[0-9Xx](?!\\d)","[证件号已隐藏]");}
+ static String redact(String text){return text.replaceAll("(?i)sk-[a-z0-9_-]{16,}","[密钥已隐藏]").replaceAll("(?<!\\d)1[3-9]\\d{9}(?!\\d)","[手机号已隐藏]").replaceAll("(?<!\\d)\\d{17}[0-9Xx](?!\\d)","[证件号已隐藏]");}
  static String roleBoundary(String role,String topic){
   if("TRAINING".equals(topic))return switch(role){
    case "COACH"->"教练可为本人有服务关系的学员创建草稿、发布计划和登记训练；仅限授权门店及学员。";

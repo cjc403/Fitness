@@ -94,6 +94,26 @@ class AgentServiceTest {
  @Test void invalidRangeDoesNotQueryOrSpendTokens(){analytics();for(String text:List.of("2026-02-30至2026-03-01营收","2026-10-19至2026-10-01营收","最近94天营收"))assertThat(service.chat(request(text)).answer()).contains("未完成");verifyNoInteractions(business,model,actions);}
  @Test void currentStoreQueryKeepsTheExistingScopeInsteadOfRejectingIt(){analytics();identity.actor().getRole().setCode("MANAGER");when(business.query(eq("analytics"),any())).thenReturn(revenue("12.34"));assertThat(service.chat(request("本店本月营收" )).answer()).contains("12.34 元");}
  @Test void aStartDateAloneDoesNotSilentlyBecomeASingleDayRange(){analytics();assertThat(service.chat(request("营收开始日期2026-10-01，结束日期还没选" )).answer()).contains("结束日期").doesNotContain("未完成");verifyNoInteractions(business,model,actions);}
+ @Test void generalChatGetsTheModelsOwnAnswerInsteadOfTheBusinessTemplate(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("两个不是一个东西：我是健身房系统里的助手，只能处理这里的数据；查资料用搜索引擎更合适。")));
+  var r=service.chat(request("百度和你哪个好用"));
+  assertThat(r.answer()).contains("查资料用搜索引擎更合适").doesNotContain("请说明要查询的业务","统计营收请提供");
+  verifyNoInteractions(actions,business);
+ }
+ @Test void generalChatStillCannotSmuggleABusinessOutcome(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("我更懂健身，已经成功为你创建教室。")));
+  assertThat(service.chat(request("百度和你哪个好用")).answer()).doesNotContain("已经成功为你创建教室");
+  verifyNoInteractions(actions);
+ }
+ @Test void generalChatRedactsSecretsAndPhoneNumbers(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("配置里那个 sk-abcdefghijklmnop 不要外传，手机号 13800001111 也别贴出来。")));
+  var r=service.chat(request("这个密钥安全吗"));
+  assertThat(r.answer()).contains("[密钥已隐藏]","[手机号已隐藏]").doesNotContain("sk-abcdefghijklmnop","13800001111");
+ }
+ @Test void emptyModelTextFallsBackToANeutralPromptRatherThanRevenueWording(){
+  when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("  ")));
+  assertThat(service.chat(request("随便聊聊今天天气")).answer()).contains("FitChain 运营助手").doesNotContain("统计营收请提供");
+ }
  @Test void teachingAnswerIsDisplayedWithoutQueryingOrPreparingBusinessActions(){
   when(model.complete(anyList(),anyList())).thenReturn(Optional.of(reply("先确定训练目标，再设置周期和动作；力量动作填写组数与次数，先保存草稿，核对后再发布。")));
   var r=service.chat(request("训练计划怎样设置比较好，你教教我"));

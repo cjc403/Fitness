@@ -44,3 +44,6 @@ deploy/linux/*.zip
 
 # Vite build cache
 fitness-frontend/.vite/
+
+# 未审计的原始 QA 证据（含截图/日志，可能含敏感数据）—— 不公开
+/docs/qa/agent-v2-20261017/

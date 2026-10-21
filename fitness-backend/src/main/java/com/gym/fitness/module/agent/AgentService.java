@@ -53,7 +53,7 @@ public class AgentService {
   messages.add(Map.of("role","user","content",message.asText()));
   var definitions=new ArrayList<>(allowed.stream().map(t->Map.<String,Object>of("type","function","function",Map.of("name",t.name(),"description",t.description(),"parameters",t.parameters()))).toList());
   definitions.add(clarificationDefinition(allowed));
-  messages.add(0,Map.of("role","system","content","需要用户补充参数时，调用request_clarification并列出缺少的工具字段。金额必须来自本轮真实查询；不要用自然语言声称写入完成。"));
+  messages.add(0,Map.of("role","system","content","需要用户补充参数时，调用request_clarification并列出缺少的工具字段。金额必须来自本轮真实查询；不要用自然语言声称写入完成。"+"用户闲聊、常识、观点或与门店业务无关的问题，直接用自然中文回答，不必调用工具，也不要调用request_clarification；"+"涉及本店真实数据（人数、金额、课程、预约等）必须调用工具，不得编造数字或操作结果。"));
   var errors=new ArrayList<String>();String question=null;
   if(model.isConfigured()){
    int calls=0;
@@ -66,7 +66,7 @@ public class AgentService {
      if(!prepared.isEmpty())answer="已生成待确认操作，尚未办理。请核对下方确认卡的对象、时间和内容，再手动确认。";
      else if(!results.isEmpty())answer=queryAnswer(results);
      else if(!errors.isEmpty())answer="本次查询或预览未完成："+String.join("；",errors)+"。请补充或修正对应资料；未执行写操作。";
-     else answer="请说明要查询的业务及范围；统计营收请提供开始日期和结束日期。需要操作时也可以使用业务工具填写资料生成确认卡。未执行写操作。";
+     else{String chat=chatAnswer(c.content(),role,message.asText(),context);if(chat!=null)answer=chat+"\n\n（以上为对话回复，本轮没有创建或修改业务记录。）";else answer="我是 FitChain 运营助手：可以帮你查课程、预约、营收和会员数据，也能聊健身安排或一般问题。"+"涉及门店真实数据我会走查询；需要写入时请核对确认卡后手动确认。";}
      return reply(context,role,results,prepared,trace,"MODEL",answer);
     }
     var callViews=new ArrayList<Map<String,Object>>();for(var call:c.calls())callViews.add(Map.of("id",call.id(),"type","function","function",Map.of("name",call.name(),"arguments",call.arguments())));
@@ -93,6 +93,13 @@ public class AgentService {
  }
  private Reply reply(AgentChatContext.Context context,String role,List<ToolResult> r,List<Action>a,String trace,String mode,String text){contexts.remember(context,null,null,context.pendingTool());return new Reply(text,suggestions(role),mode.startsWith("GUIDANCE")?"FitChain 功能讲解（非业务回执）":"FitChain 业务工具回执",mode,r,a,trace,context.id());}
  private AgentChatContext.Context remember(AgentChatContext.Context c,String tool,JsonNode args,ToolResult data){var saved=args.deepCopy();if("analytics".equals(tool)&&data.data()!=null&&data.data().path("from").isTextual()&&data.data().path("to").isTextual()){var a=json.createObjectNode();a.set("from",data.data().get("from"));a.set("to",data.data().get("to"));saved=a;}return contexts.remember(c,tool,saved,null);}
+ // 通用问答：模型只说文字、且通过同一套安全闸门（禁止声称写入/编造金额/越权建议，自动脱敏）时，直接采用它的话。
+ private String chatAnswer(String content,String role,String text,AgentChatContext.Context c){
+  if(content==null||content.isBlank())return null;
+  String t=content.trim();
+  if(!AgentGuidance.safe(t,role,AgentGuidance.topic(text,c)))return null;
+  return AgentGuidance.redact(t);
+ }
  private String queryAnswer(List<ToolResult> results){return results.stream().map(r->"analytics".equals(r.tool())?AgentRevenueAnswer.answer(r):"已查询当前权限范围内的"+r.label()+"，请查看对应的真实结果卡和查询时间。").distinct().collect(java.util.stream.Collectors.joining("\n"));}
  private Map<String,Object> clarificationDefinition(List<Tool> available){var schema=json.createObjectNode().put("type","object").put("additionalProperties",false);var p=schema.putObject("properties");var names=p.putObject("tool").put("type","string").putArray("enum");available.forEach(t->names.add(t.name()));var f=p.putObject("fields").put("type","array").put("minItems",1).put("maxItems",8);f.putObject("items").put("type","string").put("maxLength",60);schema.putArray("required").add("tool").add("fields");return Map.of("type","function","function",Map.of("name","request_clarification","description","缺少参数时询问用户；tool须为已授权业务工具，fields为其参数名。由服务器生成具体问题，不执行写入。","parameters",schema));}
  private String clarification(JsonNode args){allow(args,Set.of("tool","fields"));if(!args.path("tool").isTextual()||!args.path("fields").isArray()||args.get("fields").isEmpty()||args.get("fields").size()>8)throw invalid("请提供需要补充的业务工具字段");var t=tools.get(args.get("tool").asText());var labels=new LinkedHashSet<String>();for(var field:args.get("fields")){if(!field.isTextual()||!t.parameters().path("properties").has(field.asText()))throw invalid("需要补充的字段不属于当前业务工具");labels.add(t.parameters().path("properties").path(field.asText()).path("description").asText(field.asText()));}return "请补充「"+t.label()+"」的"+String.join("、",labels)+"，我再继续处理。尚未执行写操作。";}
