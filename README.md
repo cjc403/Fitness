@@ -4,7 +4,7 @@
 
 **一个能真正跑起来的连锁健身房中后台：六角色权限、资金闭环、以及会直接操作页面的 AI 助手。**
 
-[![CI](https://github.com/cjc403/Fitness/actions/workflows/ci.yml/badge.svg)](https://github.com/cjc403/Fitness/actions/workflows/ci.yml)
+[![Build](https://github.com/cjc403/Fitness/actions/workflows/build.yml/badge.svg)](https://github.com/cjc403/Fitness/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2f6bd8.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://adoptium.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F.svg)](https://spring.io/projects/spring-boot)
@@ -108,7 +108,15 @@ python -m unittest discover -s deploy/linux -p 'test_*.py'          # 部署脚�
 - [部署（Linux / systemd / nginx）](deploy/linux/README.md)
 - [维护约定（含 AI 协作规则）](AGENTS.md)
 
+## 已知问题
+
+- **Linux 上的全量测试尚未适配**：`.github/workflows/ci.yml` 里的测试套件目前在 Windows 上全绿（后端 558 / 前端 276 / 部署 16），
+  但在 Linux runner 上仍有失败（路径与换行符等跨平台差异）。因此徽章只反映 **Build**（编译 + 构建）。
+  欢迎 PR 帮忙把这些测试跑通 —— 这是很好的第一个贡献。
+- **AI 助手的视觉输入尚未接入**：当前通过 DOM 与文字操作页面，不读取截图。
+
 ## 贡献
+
 
 欢迎 Issue 与 PR。动手前请看 [CONTRIBUTING.md](CONTRIBUTING.md)；
 **安全问题请勿开公开 Issue**，按 [SECURITY.md](SECURITY.md) 私下联系。
